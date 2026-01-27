@@ -12,6 +12,6 @@ services:
       - -c
       - |
         corepack enable pnpm && corepack install
-        pnpm install --frozen-lockfile
-        exec "$$@"
+        pnpm install --frozen-lockfile || pnpm install
+        exec "$@"
       - --

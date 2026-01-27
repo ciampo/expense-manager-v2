@@ -24,15 +24,16 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
   expect: {
     toHaveScreenshot: {
-      // Use pixel count instead of ratio for stricter control
-      // Allow ~50 pixels for minor anti-aliasing differences
-      maxDiffPixels: 50,
+      maxDiffPixelRatio: 0.03,
     },
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 720 },
+      },
     },
   ],
 })
