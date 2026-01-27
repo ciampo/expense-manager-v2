@@ -1,0 +1,34 @@
+name: E2E Tests
+on: [push, pull_request]
+
+env:
+  VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: npx playwright install --with-deps chromium
+      - name: Seed test data
+        run: pnpm test:e2e:seed
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+      - name: Run E2E tests
+        run: pnpm test:e2e
+      - name: Cleanup test data
+        if: always()
+        run: pnpm test:e2e:cleanup
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/

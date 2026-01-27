@@ -1,0 +1,23 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+count.txt
+.env
+.env.local
+.env.test
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+todos.json
+
+# Test artifacts
+tests/.vitest-attachments/
+playwright-report/
+test-results/
+
+# Convex
+.convex/
