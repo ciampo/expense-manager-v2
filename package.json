@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=24.13.0",
+    "pnpm": ">=9.15.4"
+  },
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build && tsc --noEmit",
@@ -16,7 +20,7 @@
     "test:e2e:cleanup": "convex run seed:cleanup --prod",
     "test:visual": "playwright test --config playwright.visual.config.ts",
     "test:visual:update": "playwright test --config playwright.visual.config.ts --update-snapshots",
-    "test:visual:docker": "docker compose -f docker-compose.test.yml run --rm visual-tests",
+    "test:visual:docker": "docker compose -f docker-compose.test.yml run --rm visual-tests pnpm run test:visual",
     "test:visual:docker:update": "docker compose -f docker-compose.test.yml run --rm visual-tests pnpm run test:visual:update",
     "dev:e2e": "vite dev --port 3000 --mode test"
   },
