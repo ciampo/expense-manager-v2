@@ -36,11 +36,11 @@ function SignInPage() {
       formData.set('flow', 'signIn')
 
       await signIn('password', formData)
-      toast.success('Accesso effettuato')
+      toast.success('Signed in successfully')
       navigate({ to: '/dashboard' })
     } catch (error) {
       console.error('Sign in error:', error)
-      toast.error('Email o password non corretti')
+      toast.error('Invalid email or password')
     } finally {
       setIsLoading(false)
     }
@@ -49,9 +49,9 @@ function SignInPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Accedi</CardTitle>
+        <CardTitle>Sign In</CardTitle>
         <CardDescription>
-          Inserisci le tue credenziali per accedere
+          Enter your credentials to sign in
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -61,7 +61,7 @@ function SignInPage() {
             <Input
               id="email"
               type="email"
-              placeholder="nome@esempio.com"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -75,7 +75,7 @@ function SignInPage() {
                 to="/forgot-password"
                 className="text-sm text-muted-foreground hover:text-primary"
               >
-                Password dimenticata?
+                Forgot password?
               </Link>
             </div>
             <Input
@@ -90,12 +90,12 @@ function SignInPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Accesso in corso...' : 'Accedi'}
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
-            Non hai un account?{' '}
+            Don&apos;t have an account?{' '}
             <Link to="/sign-up" className="text-primary hover:underline">
-              Registrati
+              Sign Up
             </Link>
           </p>
         </CardFooter>

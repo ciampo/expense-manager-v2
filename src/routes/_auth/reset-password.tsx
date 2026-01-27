@@ -35,17 +35,17 @@ function ResetPasswordPage() {
     e.preventDefault()
 
     if (password !== confirmPassword) {
-      toast.error('Le password non coincidono')
+      toast.error('Passwords do not match')
       return
     }
 
     if (password.length < 8) {
-      toast.error('La password deve essere di almeno 8 caratteri')
+      toast.error('Password must be at least 8 characters')
       return
     }
 
     if (!code) {
-      toast.error('Link non valido. Richiedi un nuovo link di reset.')
+      toast.error('Invalid link. Please request a new reset link.')
       return
     }
 
@@ -58,11 +58,11 @@ function ResetPasswordPage() {
       formData.set('flow', 'reset-verification')
 
       await signIn('password', formData)
-      toast.success('Password reimpostata con successo')
+      toast.success('Password reset successfully')
       navigate({ to: '/sign-in' })
     } catch (error) {
       console.error('Password reset error:', error)
-      toast.error('Errore durante il reset della password. Il link potrebbe essere scaduto.')
+      toast.error('Error resetting password. The link may have expired.')
     } finally {
       setIsLoading(false)
     }
@@ -72,9 +72,9 @@ function ResetPasswordPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Link non valido</CardTitle>
+          <CardTitle>Invalid link</CardTitle>
           <CardDescription>
-            Il link per reimpostare la password non è valido o è scaduto.
+            The password reset link is invalid or has expired.
           </CardDescription>
         </CardHeader>
         <CardFooter>
@@ -82,7 +82,7 @@ function ResetPasswordPage() {
             to="/forgot-password"
             className="text-sm text-primary hover:underline"
           >
-            Richiedi un nuovo link
+            Request a new link
           </Link>
         </CardFooter>
       </Card>
@@ -92,17 +92,17 @@ function ResetPasswordPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Reimposta password</CardTitle>
-        <CardDescription>Inserisci la tua nuova password</CardDescription>
+        <CardTitle>Reset password</CardTitle>
+        <CardDescription>Enter your new password</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="password">Nuova password</Label>
+            <Label htmlFor="password">New password</Label>
             <Input
               id="password"
               type="password"
-              placeholder="Minimo 8 caratteri"
+              placeholder="Minimum 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -111,11 +111,11 @@ function ResetPasswordPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Conferma password</Label>
+            <Label htmlFor="confirmPassword">Confirm password</Label>
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="Ripeti la password"
+              placeholder="Repeat the password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -126,10 +126,10 @@ function ResetPasswordPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Salvataggio in corso...' : 'Reimposta password'}
+            {isLoading ? 'Saving...' : 'Reset password'}
           </Button>
           <Link to="/sign-in" className="text-sm text-primary hover:underline">
-            ← Torna al login
+            ← Back to sign in
           </Link>
         </CardFooter>
       </form>

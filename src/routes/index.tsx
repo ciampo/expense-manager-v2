@@ -21,10 +21,10 @@ function LandingPage() {
           <h1 className="text-xl font-bold">Expense Manager</h1>
           <div className="flex gap-2">
             <Button variant="ghost" render={<Link to="/sign-in" />}>
-              Accedi
+              Sign In
             </Button>
             <Button render={<Link to="/sign-up" />}>
-              Registrati
+              Sign Up
             </Button>
           </div>
         </div>
@@ -35,18 +35,18 @@ function LandingPage() {
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-4xl font-bold tracking-tight sm:text-5xl mb-6">
-              Gestisci le tue spese di lavoro
+              Manage your work expenses
             </h2>
             <p className="text-xl text-muted-foreground mb-8">
-              Traccia facilmente le spese di coworking, pranzi e cene di lavoro.
-              Genera report mensili e scarica i giustificativi in un click.
+              Easily track coworking, lunch, and business dinner expenses.
+              Generate monthly reports and download receipts in one click.
             </p>
             <div className="flex gap-4 justify-center">
               <Button size="lg" render={<Link to="/sign-up" />}>
-                Inizia gratis
+                Start for free
               </Button>
               <Button size="lg" variant="outline" render={<Link to="/sign-in" />}>
-                Accedi
+                Sign In
               </Button>
             </div>
           </div>
@@ -57,43 +57,43 @@ function LandingPage() {
               <CardHeader>
                 <CardTitle>📊 Dashboard</CardTitle>
                 <CardDescription>
-                  Visualizza tutte le tue spese in un&apos;unica vista ordinata
+                  View all your expenses in a single organized view
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Tabella interattiva con filtri e ordinamento per data, importo
-                  e categoria.
+                  Interactive table with filters and sorting by date, amount,
+                  and category.
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>📎 Allegati</CardTitle>
+                <CardTitle>📎 Attachments</CardTitle>
                 <CardDescription>
-                  Carica ricevute e fatture per ogni spesa
+                  Upload receipts and invoices for each expense
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Supporto per immagini e PDF fino a 10MB. Download multiplo in
-                  formato ZIP.
+                  Support for images and PDFs up to 10MB. Bulk download in
+                  ZIP format.
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>📄 Report</CardTitle>
+                <CardTitle>📄 Reports</CardTitle>
                 <CardDescription>
-                  Genera report mensili pronti per la contabilità
+                  Generate monthly reports ready for accounting
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Export CSV raggruppato per giorno e categoria. Download
-                  allegati del mese.
+                  CSV export grouped by day and category. Download monthly
+                  attachments.
                 </p>
               </CardContent>
             </Card>
@@ -104,8 +104,7 @@ function LandingPage() {
       {/* Footer */}
       <footer className="border-t py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Expense Manager. Tutti i diritti
-          riservati.
+          © {new Date().getFullYear()} Expense Manager. All rights reserved.
         </div>
       </footer>
     </div>

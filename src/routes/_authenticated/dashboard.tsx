@@ -38,10 +38,10 @@ function DashboardPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Gestisci le tue spese</p>
+          <p className="text-muted-foreground">Manage your expenses</p>
         </div>
         <Button render={<Link to="/expenses/new" />}>
-          + Nuova spesa
+          + New expense
         </Button>
       </div>
 
@@ -58,12 +58,12 @@ function TableSkeleton() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Data</TableHead>
-            <TableHead>Commerciante</TableHead>
-            <TableHead>Categoria</TableHead>
-            <TableHead className="text-right">Importo</TableHead>
-            <TableHead>Allegato</TableHead>
-            <TableHead className="text-right">Azioni</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Merchant</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+            <TableHead>Attachment</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -127,10 +127,10 @@ function ExpenseTable() {
           context.previousExpenses
         )
       }
-      toast.error('Errore durante l\'eliminazione')
+      toast.error('Error deleting expense')
     },
     onSuccess: () => {
-      toast.success('Spesa eliminata')
+      toast.success('Expense deleted')
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
@@ -149,10 +149,10 @@ function ExpenseTable() {
     return (
       <div className="rounded-md border p-8 text-center">
         <p className="text-muted-foreground mb-4">
-          Non hai ancora registrato nessuna spesa
+          You haven&apos;t recorded any expenses yet
         </p>
         <Button render={<Link to="/expenses/new" />}>
-          Aggiungi la tua prima spesa
+          Add your first expense
         </Button>
       </div>
     )
@@ -163,12 +163,12 @@ function ExpenseTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Data</TableHead>
-            <TableHead>Commerciante</TableHead>
-            <TableHead>Categoria</TableHead>
-            <TableHead className="text-right">Importo</TableHead>
-            <TableHead>Allegato</TableHead>
-            <TableHead className="text-right">Azioni</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Merchant</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+            <TableHead>Attachment</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -216,25 +216,24 @@ function ExpenseTable() {
                       className="text-destructive hover:text-destructive"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      Elimina
+                      Delete
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Eliminare questa spesa?</AlertDialogTitle>
+                      <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Questa azione non può essere annullata. La spesa e
-                        l&apos;eventuale allegato verranno eliminati
-                        definitivamente.
+                        This action cannot be undone. The expense and any
+                        attachment will be permanently deleted.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Annulla</AlertDialogCancel>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDelete(expense._id)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        Elimina
+                        Delete
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

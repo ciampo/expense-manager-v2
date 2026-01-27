@@ -72,17 +72,19 @@ export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 npx convex deploy
 ```
 
-### 1.6 Seed Initial Categories
+### 1.6 Seed Initial Data
 
-Seed the predefined categories on both projects:
+Seed the predefined categories using the existing seed scripts:
 
 ```bash
-# Production (already linked via npx convex dev)
+# Seed data in the currently linked Convex project
 npx convex run seed:seedCategories
 
-# Test project (using deploy key)
-CONVEX_DEPLOY_KEY=your_test_key npx convex run seed:seedCategories --prod
+# For the test project (using deploy key)
+CONVEX_DEPLOY_KEY=your_test_key npx convex run seed:e2e --prod
 ```
+
+> **Note:** The `seed:e2e` function seeds categories and prepares the database for E2E tests. Use `npx convex run seed:cleanup --prod` to clean up test data afterwards.
 
 ### 1.7 Configure Email Provider (Optional)
 
@@ -209,7 +211,7 @@ pnpm test:visual:local
 - [ ] `.env.local` contains production Convex URL
 - [ ] `.env.test` contains test Convex URL
 - [ ] `npx convex dev` runs without errors
-- [ ] Categories seeded: `npx convex run seed:seedCategories`
+- [ ] Categories seeded: `npx convex run seed:seedCategories` (or `pnpm test:e2e:seed` for test project)
 - [ ] Wrangler authenticated: `pnpm dlx wrangler whoami`
 
 ### Before CI/CD

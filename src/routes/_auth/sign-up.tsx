@@ -30,12 +30,12 @@ function SignUpPage() {
     e.preventDefault()
 
     if (password !== confirmPassword) {
-      toast.error('Le password non coincidono')
+      toast.error('Passwords do not match')
       return
     }
 
     if (password.length < 8) {
-      toast.error('La password deve essere di almeno 8 caratteri')
+      toast.error('Password must be at least 8 characters')
       return
     }
 
@@ -48,11 +48,11 @@ function SignUpPage() {
       formData.set('flow', 'signUp')
 
       await signIn('password', formData)
-      toast.success('Account creato con successo')
+      toast.success('Account created successfully')
       navigate({ to: '/dashboard' })
     } catch (error) {
       console.error('Sign up error:', error)
-      toast.error('Errore durante la registrazione. Riprova.')
+      toast.error('Error during registration. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -61,9 +61,9 @@ function SignUpPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Registrati</CardTitle>
+        <CardTitle>Sign Up</CardTitle>
         <CardDescription>
-          Crea un nuovo account per iniziare a gestire le tue spese
+          Create a new account to start managing your expenses
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -73,7 +73,7 @@ function SignUpPage() {
             <Input
               id="email"
               type="email"
-              placeholder="nome@esempio.com"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -85,7 +85,7 @@ function SignUpPage() {
             <Input
               id="password"
               type="password"
-              placeholder="Minimo 8 caratteri"
+              placeholder="Minimum 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -94,11 +94,11 @@ function SignUpPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Conferma password</Label>
+            <Label htmlFor="confirmPassword">Confirm password</Label>
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="Ripeti la password"
+              placeholder="Repeat the password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -109,12 +109,12 @@ function SignUpPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Registrazione in corso...' : 'Registrati'}
+            {isLoading ? 'Signing up...' : 'Sign Up'}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
-            Hai già un account?{' '}
+            Already have an account?{' '}
             <Link to="/sign-in" className="text-primary hover:underline">
-              Accedi
+              Sign In
             </Link>
           </p>
         </CardFooter>

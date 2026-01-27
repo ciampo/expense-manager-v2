@@ -56,13 +56,13 @@ function ReportsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Report</h1>
-        <p className="text-muted-foreground">Genera report mensili delle tue spese</p>
+        <h1 className="text-3xl font-bold">Reports</h1>
+        <p className="text-muted-foreground">Generate monthly reports of your expenses</p>
       </div>
 
       {/* Month selector */}
       <div className="mb-8">
-        <label className="text-sm font-medium mb-2 block">Seleziona mese</label>
+        <label className="text-sm font-medium mb-2 block">Select month</label>
         <Select value={selectedMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
           <SelectTrigger className="w-64">
             <SelectValue />
@@ -125,7 +125,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
   const handleDownloadCsv = async () => {
     if (!data.expenses.length) {
-      toast.error('Nessuna spesa da esportare')
+      toast.error('No expenses to export')
       return
     }
 
@@ -148,7 +148,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       const allCategories = [...new Set(data.expenses.map((e) => e.categoryName))].sort()
 
       // Build CSV
-      let csv = 'Data,' + allCategories.join(',') + ',Totale\n'
+      let csv = 'Date,' + allCategories.join(',') + ',Total\n'
       
       const dates = Object.keys(grouped).sort()
       for (const date of dates) {
@@ -166,7 +166,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       }
 
       // Add totals row
-      const totalsRow = ['TOTALE']
+      const totalsRow = ['TOTAL']
       for (const category of allCategories) {
         const categoryTotal = data.categories[category]?.total || 0
         totalsRow.push((categoryTotal / 100).toFixed(2).replace('.', ','))
@@ -177,11 +177,11 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       // Download
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const monthName = getMonthName(month, year).replace(' ', '-')
-      saveAs(blob, `spese-${monthName}.csv`)
+      saveAs(blob, `expenses-${monthName}.csv`)
       
-      toast.success('CSV scaricato')
+      toast.success('CSV downloaded')
     } catch {
-      toast.error('Errore durante la generazione del CSV')
+      toast.error('Error generating CSV')
     } finally {
       setIsDownloadingCsv(false)
     }
@@ -189,7 +189,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
   const handleDownloadZip = async () => {
     if (!attachments?.length) {
-      toast.error('Nessun allegato da scaricare')
+      toast.error('No attachments to download')
       return
     }
 
@@ -197,7 +197,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
     try {
       const zip = new JSZip()
       
-      toast.info('Download allegati in corso...')
+      toast.info('Downloading attachments...')
       
       // Download each attachment and add to zip
       for (const attachment of attachments) {
@@ -227,11 +227,11 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       // Generate and download zip
       const content = await zip.generateAsync({ type: 'blob' })
       const monthName = getMonthName(month, year).replace(' ', '-')
-      saveAs(content, `allegati-${monthName}.zip`)
+      saveAs(content, `attachments-${monthName}.zip`)
       
-      toast.success('ZIP scaricato')
+      toast.success('ZIP downloaded')
     } catch {
-      toast.error('Errore durante la generazione dello ZIP')
+      toast.error('Error generating ZIP')
     } finally {
       setIsDownloadingZip(false)
     }
@@ -245,7 +245,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Totale spese</CardDescription>
+            <CardDescription>Total expenses</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(data.total)}</p>
@@ -254,7 +254,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Numero spese</CardDescription>
+            <CardDescription>Number of expenses</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{data.expenses.length}</p>
@@ -263,7 +263,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Allegati</CardDescription>
+            <CardDescription>Attachments</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{attachments?.length || 0}</p>
@@ -274,12 +274,12 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       {/* Category breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle>Riepilogo per categoria</CardTitle>
-          <CardDescription>Spese raggruppate per categoria</CardDescription>
+          <CardTitle>Summary by category</CardTitle>
+          <CardDescription>Expenses grouped by category</CardDescription>
         </CardHeader>
         <CardContent>
           {categoryList.length === 0 ? (
-            <p className="text-muted-foreground">Nessuna spesa in questo mese</p>
+            <p className="text-muted-foreground">No expenses this month</p>
           ) : (
             <div className="space-y-3">
               {categoryList.map((category) => (
@@ -287,7 +287,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
                   <div>
                     <p className="font-medium">{category.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {category.count} {category.count === 1 ? 'spesa' : 'spese'}
+                      {category.count} {category.count === 1 ? 'expense' : 'expenses'}
                     </p>
                   </div>
                   <p className="font-bold">{formatCurrency(category.total)}</p>
@@ -301,22 +301,22 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       {/* Export actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Esporta</CardTitle>
-          <CardDescription>Scarica i dati del mese</CardDescription>
+          <CardTitle>Export</CardTitle>
+          <CardDescription>Download month data</CardDescription>
         </CardHeader>
         <CardContent className="flex gap-4">
           <Button
             onClick={handleDownloadCsv}
             disabled={isDownloadingCsv || data.expenses.length === 0}
           >
-            {isDownloadingCsv ? 'Generazione...' : '📄 Scarica CSV'}
+            {isDownloadingCsv ? 'Generating...' : '📄 Download CSV'}
           </Button>
           <Button
             variant="outline"
             onClick={handleDownloadZip}
             disabled={isDownloadingZip || !attachments?.length}
           >
-            {isDownloadingZip ? 'Generazione...' : '📎 Scarica allegati (ZIP)'}
+            {isDownloadingZip ? 'Generating...' : '📎 Download attachments (ZIP)'}
           </Button>
         </CardContent>
       </Card>

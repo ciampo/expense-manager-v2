@@ -37,7 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, parseCurrencyToCents, centsToInputValue, getTodayISO } from '@/lib/format'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import { it } from 'date-fns/locale'
+import { enUS } from 'date-fns/locale'
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -114,11 +114,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     mutationFn: useConvexMutation(api.expenses.create),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
-      toast.success('Spesa creata')
+      toast.success('Expense created')
       navigate({ to: '/dashboard' })
     },
     onError: () => {
-      toast.error('Errore durante la creazione')
+      toast.error('Error creating expense')
     },
   })
 
@@ -126,11 +126,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     mutationFn: useConvexMutation(api.expenses.update),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
-      toast.success('Spesa aggiornata')
+      toast.success('Expense updated')
       navigate({ to: '/dashboard' })
     },
     onError: () => {
-      toast.error('Errore durante l\'aggiornamento')
+      toast.error('Error updating expense')
     },
   })
 
@@ -138,11 +138,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     mutationFn: useConvexMutation(api.expenses.remove),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
-      toast.success('Spesa eliminata')
+      toast.success('Expense deleted')
       navigate({ to: '/dashboard' })
     },
     onError: () => {
-      toast.error('Errore durante l\'eliminazione')
+      toast.error('Error deleting expense')
     },
   })
 
@@ -152,10 +152,10 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       queryClient.invalidateQueries({ queryKey: convexQuery(api.categories.list, {}).queryKey })
       setCategoryId(newId)
       setNewCategoryName('')
-      toast.success('Categoria creata')
+      toast.success('Category created')
     },
     onError: () => {
-      toast.error('Errore durante la creazione della categoria')
+      toast.error('Error creating category')
     },
   })
 
@@ -167,10 +167,10 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     mutationFn: useConvexMutation(api.expenses.removeAttachment),
     onSuccess: () => {
       setAttachmentId(undefined)
-      toast.success('Allegato rimosso')
+      toast.success('Attachment removed')
     },
     onError: () => {
-      toast.error('Errore durante la rimozione dell\'allegato')
+      toast.error('Error removing attachment')
     },
   })
 
@@ -181,13 +181,13 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
     // Validate file type
     if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-      toast.error('Tipo di file non supportato. Usa immagini o PDF.')
+      toast.error('Unsupported file type. Use images or PDF.')
       return
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      toast.error('File troppo grande. Massimo 10MB.')
+      toast.error('File too large. Maximum 10MB.')
       return
     }
 
@@ -207,9 +207,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       const { storageId } = await response.json()
       setAttachmentId(storageId)
-      toast.success('File caricato')
+      toast.success('File uploaded')
     } catch {
-      toast.error('Errore durante il caricamento')
+      toast.error('Error uploading file')
     } finally {
       setIsUploading(false)
     }
@@ -220,18 +220,18 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     e.preventDefault()
 
     if (!categoryId) {
-      toast.error('Seleziona una categoria')
+      toast.error('Select a category')
       return
     }
 
     const amountCents = parseCurrencyToCents(amount)
     if (amountCents <= 0) {
-      toast.error('Inserisci un importo valido')
+      toast.error('Enter a valid amount')
       return
     }
 
     if (!merchant.trim()) {
-      toast.error('Inserisci il commerciante')
+      toast.error('Enter the merchant')
       return
     }
 
@@ -282,7 +282,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
       {/* Date */}
       <div className="space-y-2">
-        <Label>Data</Label>
+        <Label>Date</Label>
         <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
           <PopoverTrigger>
             <Button
@@ -290,7 +290,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               variant="outline"
               className="w-full justify-start text-left font-normal"
             >
-              {date ? format(new Date(date), 'PPP', { locale: it }) : 'Seleziona data'}
+              {date ? format(new Date(date), 'PPP', { locale: enUS }) : 'Select date'}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -303,7 +303,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                   setIsDateOpen(false)
                 }
               }}
-              locale={it}
+              locale={enUS}
             />
           </PopoverContent>
         </Popover>
@@ -311,7 +311,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Merchant (combobox) */}
       <div className="space-y-2">
-        <Label>Commerciante</Label>
+        <Label>Merchant</Label>
         <Popover open={isMerchantOpen} onOpenChange={setIsMerchantOpen}>
           <PopoverTrigger>
             <Button
@@ -320,13 +320,13 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               role="combobox"
               className="w-full justify-start text-left font-normal"
             >
-              {merchant || 'Seleziona o digita...'}
+              {merchant || 'Select or type...'}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
               <CommandInput
-                placeholder="Cerca o crea..."
+                placeholder="Search or create..."
                 value={merchant}
                 onValueChange={setMerchant}
               />
@@ -339,11 +339,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                       className="w-full justify-start"
                       onClick={() => setIsMerchantOpen(false)}
                     >
-                      + Usa &quot;{merchant}&quot;
+                      + Use &quot;{merchant}&quot;
                     </Button>
                   )}
                 </CommandEmpty>
-                <CommandGroup heading="Commercianti recenti">
+                <CommandGroup heading="Recent merchants">
                   {merchants?.map((m) => (
                     <CommandItem
                       key={m}
@@ -365,7 +365,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Category (combobox) */}
       <div className="space-y-2">
-        <Label>Categoria</Label>
+        <Label>Category</Label>
         <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
           <PopoverTrigger>
             <Button
@@ -380,14 +380,14 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                   {selectedCategory.name}
                 </>
               ) : (
-                'Seleziona categoria...'
+                'Select category...'
               )}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
               <CommandInput
-                placeholder="Cerca o crea..."
+                placeholder="Search or create..."
                 value={newCategoryName}
                 onValueChange={setNewCategoryName}
               />
@@ -401,11 +401,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                       onClick={handleCreateCategory}
                       disabled={createCategory.isPending}
                     >
-                      + Crea &quot;{newCategoryName}&quot;
+                      + Create &quot;{newCategoryName}&quot;
                     </Button>
                   )}
                 </CommandEmpty>
-                <CommandGroup heading="Categorie">
+                <CommandGroup heading="Categories">
                   {categories?.map((category) => (
                     <CommandItem
                       key={category._id}
@@ -419,7 +419,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                       {category.icon && <span className="mr-2">{category.icon}</span>}
                       {category.name}
                       {category.isPredefined && (
-                        <span className="ml-auto text-xs text-muted-foreground">predefinita</span>
+                        <span className="ml-auto text-xs text-muted-foreground">predefined</span>
                       )}
                     </CommandItem>
                   ))}
@@ -429,7 +429,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     <CommandSeparator />
                     <CommandGroup>
                       <CommandItem onSelect={handleCreateCategory}>
-                        + Crea &quot;{newCategoryName}&quot;
+                        + Create &quot;{newCategoryName}&quot;
                       </CommandItem>
                     </CommandGroup>
                   </>
@@ -442,7 +442,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Amount */}
       <div className="space-y-2">
-        <Label htmlFor="amount">Importo (EUR)</Label>
+        <Label htmlFor="amount">Amount (EUR)</Label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
           <Input
@@ -465,30 +465,30 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Attachment */}
       <div className="space-y-2">
-        <Label>Allegato (opzionale)</Label>
+        <Label>Attachment (optional)</Label>
         {attachmentId ? (
           <div className="flex items-center gap-2 p-3 border rounded-md">
-            <span>📎 Allegato caricato</span>
+            <span>📎 Attachment uploaded</span>
             <AlertDialog open={showDeleteAttachment} onOpenChange={setShowDeleteAttachment}>
               <AlertDialogTrigger>
                 <Button type="button" variant="ghost" size="sm" className="ml-auto text-destructive">
-                  Rimuovi
+                  Remove
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Rimuovere l&apos;allegato?</AlertDialogTitle>
+                  <AlertDialogTitle>Remove attachment?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    L&apos;allegato verrà eliminato definitivamente.
+                    The attachment will be permanently deleted.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Annulla</AlertDialogCancel>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleRemoveAttachment}
                     className="bg-destructive text-destructive-foreground"
                   >
-                    Rimuovi
+                    Remove
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -502,19 +502,19 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             disabled={isUploading}
           />
         )}
-        {isUploading && <p className="text-sm text-muted-foreground">Caricamento in corso...</p>}
+        {isUploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
         <p className="text-xs text-muted-foreground">
-          Immagini o PDF, massimo 10MB
+          Images or PDF, maximum 10MB
         </p>
       </div>
 
       {/* Comment */}
       <div className="space-y-2">
-        <Label htmlFor="comment">Note (opzionale)</Label>
+        <Label htmlFor="comment">Notes (optional)</Label>
         <Input
           id="comment"
           type="text"
-          placeholder="Aggiungi una nota..."
+          placeholder="Add a note..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
         />
@@ -524,37 +524,37 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       <div className="flex gap-4">
         <Button type="submit" disabled={isLoading}>
           {isLoading
-            ? 'Salvataggio...'
+            ? 'Saving...'
             : mode === 'create'
-              ? 'Crea spesa'
-              : 'Salva modifiche'}
+              ? 'Create expense'
+              : 'Save changes'}
         </Button>
         <Button type="button" variant="outline" onClick={() => navigate({ to: '/dashboard' })}>
-          Annulla
+          Cancel
         </Button>
 
         {mode === 'edit' && expense && (
           <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
             <AlertDialogTrigger>
               <Button type="button" variant="destructive" className="ml-auto">
-                Elimina
+                Delete
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Eliminare questa spesa?</AlertDialogTitle>
+                <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Questa azione non può essere annullata. La spesa e l&apos;eventuale
-                  allegato verranno eliminati definitivamente.
+                  This action cannot be undone. The expense and any attachment
+                  will be permanently deleted.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDeleteExpense}
                   className="bg-destructive text-destructive-foreground"
                 >
-                  Elimina
+                  Delete
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

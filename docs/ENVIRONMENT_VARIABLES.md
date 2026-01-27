@@ -187,9 +187,12 @@ VITE_CONVEX_URL=https://your-project.convex.cloud
 
 These files contain secrets and are in `.gitignore`:
 
+- `.env`
 - `.env.local`
 - `.env.test`
-- `.env` (any variation)
+- Any `*.local` files
+
+> **Note:** If you create additional env files (e.g., `.env.staging`, `.env.production`), add them to `.gitignore` before use.
 
 ### Safe to Commit
 
