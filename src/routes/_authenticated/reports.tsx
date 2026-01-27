@@ -32,7 +32,7 @@ export const Route = createFileRoute('/_authenticated/reports')({
 function getAvailableMonths() {
   const months = []
   const now = new Date()
-  
+
   for (let i = 0; i < 12; i++) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
     months.push({
@@ -41,7 +41,7 @@ function getAvailableMonths() {
       label: getMonthName(date.getMonth() + 1, date.getFullYear()),
     })
   }
-  
+
   return months
 }
 
@@ -133,7 +133,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
     try {
       // Group expenses by date and category
       const grouped: Record<string, Record<string, number>> = {}
-      
+
       for (const expense of data.expenses) {
         if (!grouped[expense.date]) {
           grouped[expense.date] = {}
@@ -147,20 +147,20 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       // Get all unique categories
       const allCategories = [...new Set(data.expenses.map((e) => e.categoryName))].sort()
 
-      // Build CSV
-      let csv = 'Date,' + allCategories.join(',') + ',Total\n'
-      
+      // Build CSV (using semicolon as delimiter for European locale compatibility)
+      let csv = 'Date;' + allCategories.join(';') + ';Total\n'
+
       const dates = Object.keys(grouped).sort()
       for (const date of dates) {
         const row = [date]
         let dayTotal = 0
-        
+
         for (const category of allCategories) {
           const amount = grouped[date][category] || 0
           row.push((amount / 100).toFixed(2).replace('.', ','))
           dayTotal += amount
         }
-        
+
         row.push((dayTotal / 100).toFixed(2).replace('.', ','))
         csv += row.join(';') + '\n'
       }
@@ -178,7 +178,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const monthName = getMonthName(month, year).replace(' ', '-')
       saveAs(blob, `expenses-${monthName}.csv`)
-      
+
       toast.success('CSV downloaded')
     } catch {
       toast.error('Error generating CSV')
@@ -196,16 +196,20 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
     setIsDownloadingZip(true)
     try {
       const zip = new JSZip()
-      
+
       toast.info('Downloading attachments...')
-      
+
+      // Track successful downloads and handle filename collisions
+      let successfulDownloads = 0
+      const filenameCount: Record<string, number> = {}
+
       // Download each attachment and add to zip
       for (const attachment of attachments) {
         if (attachment.url) {
           try {
             const response = await fetch(attachment.url)
             const blob = await response.blob()
-            
+
             // Get file extension from content type
             const contentType = response.headers.get('content-type') || 'application/octet-stream'
             let extension = '.bin'
@@ -214,22 +218,38 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
             else if (contentType.includes('gif')) extension = '.gif'
             else if (contentType.includes('webp')) extension = '.webp'
             else if (contentType.includes('pdf')) extension = '.pdf'
-            
-            // Create filename: date-merchant.extension
-            const filename = `${attachment.date}-${attachment.merchant.replace(/[^a-zA-Z0-9]/g, '_')}${extension}`
+
+            // Create base filename: date-merchant
+            const baseFilename = `${attachment.date}-${attachment.merchant.replace(/[^a-zA-Z0-9]/g, '_')}`
+
+            // Handle filename collisions by adding index suffix
+            const countKey = baseFilename + extension
+            const count = filenameCount[countKey] || 0
+            filenameCount[countKey] = count + 1
+            const filename = count > 0
+              ? `${baseFilename}-${count}${extension}`
+              : `${baseFilename}${extension}`
+
             zip.file(filename, blob)
+            successfulDownloads++
           } catch (error) {
             console.error('Failed to download attachment:', error)
           }
         }
       }
 
+      // Only generate ZIP if at least one file was successfully added
+      if (successfulDownloads === 0) {
+        toast.error('Impossibile scaricare gli allegati')
+        return
+      }
+
       // Generate and download zip
       const content = await zip.generateAsync({ type: 'blob' })
       const monthName = getMonthName(month, year).replace(' ', '-')
       saveAs(content, `attachments-${monthName}.zip`)
-      
-      toast.success('ZIP downloaded')
+
+      toast.success(`ZIP downloaded (${successfulDownloads} file)`)
     } catch {
       toast.error('Error generating ZIP')
     } finally {
@@ -251,7 +271,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
             <p className="text-2xl font-bold">{formatCurrency(data.total)}</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Number of expenses</CardDescription>
@@ -260,7 +280,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
             <p className="text-2xl font-bold">{data.expenses.length}</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Attachments</CardDescription>
