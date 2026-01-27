@@ -1,5 +1,8 @@
 name: E2E Tests
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 env:
   VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
