@@ -1,8 +1,28 @@
 name: Preview
-on: pull_request
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
+  cleanup:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Delete Cloudflare Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: delete --name expense-manager-preview-pr-${{ github.event.pull_request.number }}
   preview:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
