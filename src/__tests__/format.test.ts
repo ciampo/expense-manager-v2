@@ -8,7 +8,7 @@ import {
 } from '@/lib/format'
 
 describe('formatCurrency', () => {
-  it('formats cents to EUR with Italian locale', () => {
+  it('formats cents to EUR with English locale', () => {
     expect(formatCurrency(1250)).toMatch(/12[,.]50/)
     expect(formatCurrency(1250)).toContain('€')
   })
@@ -18,16 +18,18 @@ describe('formatCurrency', () => {
   })
 
   it('handles large amounts', () => {
-    expect(formatCurrency(1000000)).toMatch(/10[.]?000[,.]00/)
+    expect(formatCurrency(1000000)).toMatch(/10[,.]?000[,.]00/)
   })
 })
 
 describe('formatDate', () => {
-  it('formats ISO date to Italian locale (DD/MM/YYYY)', () => {
-    const result = formatDate('2024-03-15')
-    expect(result).toContain('15')
-    expect(result).toContain('3') // March
-    expect(result).toContain('2024')
+  it('formats ISO date to MM/DD/YYYY format', () => {
+    expect(formatDate('2024-03-15')).toBe('3/15/2024')
+    expect(formatDate('2024-12-01')).toBe('12/1/2024')
+  })
+
+  it('handles single digit months and days', () => {
+    expect(formatDate('2024-01-05')).toBe('1/5/2024')
   })
 })
 
@@ -36,7 +38,7 @@ describe('parseCurrencyToCents', () => {
     expect(parseCurrencyToCents('12.50')).toBe(1250)
   })
 
-  it('parses decimal with comma (Italian format)', () => {
+  it('parses decimal with comma (European format)', () => {
     expect(parseCurrencyToCents('12,50')).toBe(1250)
   })
 
