@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
 
 env:
+  VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
   AUTHOR_NAME: 'github-actions[bot]'
   AUTHOR_EMAIL: '41898282+github-actions[bot]@users.noreply.github.com'
   COMMIT_MESSAGE: |
