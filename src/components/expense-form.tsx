@@ -1,0 +1,566 @@
+import { useState, useCallback } from 'react'
+import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import { api } from '../../convex/_generated/api'
+import type { Id } from '../../convex/_generated/dataModel'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Calendar } from '@/components/ui/calendar'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Skeleton } from '@/components/ui/skeleton'
+import { formatCurrency, parseCurrencyToCents, centsToInputValue, getTodayISO } from '@/lib/format'
+import { toast } from 'sonner'
+import { format } from 'date-fns'
+import { it } from 'date-fns/locale'
+
+// Maximum file size: 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+
+interface ExpenseFormProps {
+  expense?: {
+    _id: Id<'expenses'>
+    date: string
+    merchant: string
+    amount: number
+    categoryId: Id<'categories'>
+    attachmentId?: Id<'_storage'>
+    comment?: string
+  }
+  mode: 'create' | 'edit'
+}
+
+export function ExpenseFormSkeleton() {
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <Skeleton className="h-10 w-32" />
+    </div>
+  )
+}
+
+export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  
+  // Fetch data
+  const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
+  const { data: merchants } = useSuspenseQuery(convexQuery(api.expenses.getMerchants, {}))
+
+  // Form state
+  const [date, setDate] = useState(expense?.date || getTodayISO())
+  const [merchant, setMerchant] = useState(expense?.merchant || '')
+  const [amount, setAmount] = useState(expense ? centsToInputValue(expense.amount) : '')
+  const [categoryId, setCategoryId] = useState<Id<'categories'> | null>(expense?.categoryId || null)
+  const [comment, setComment] = useState(expense?.comment || '')
+  const [attachmentId, setAttachmentId] = useState<Id<'_storage'> | undefined>(expense?.attachmentId)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  
+  // UI state
+  const [isDateOpen, setIsDateOpen] = useState(false)
+  const [isMerchantOpen, setIsMerchantOpen] = useState(false)
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [showDeleteAttachment, setShowDeleteAttachment] = useState(false)
+  const [showDeleteExpense, setShowDeleteExpense] = useState(false)
+
+  // Mutations
+  const createExpense = useMutation({
+    mutationFn: useConvexMutation(api.expenses.create),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
+      toast.success('Spesa creata')
+      navigate({ to: '/dashboard' })
+    },
+    onError: () => {
+      toast.error('Errore durante la creazione')
+    },
+  })
+
+  const updateExpense = useMutation({
+    mutationFn: useConvexMutation(api.expenses.update),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
+      toast.success('Spesa aggiornata')
+      navigate({ to: '/dashboard' })
+    },
+    onError: () => {
+      toast.error('Errore durante l\'aggiornamento')
+    },
+  })
+
+  const deleteExpense = useMutation({
+    mutationFn: useConvexMutation(api.expenses.remove),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
+      toast.success('Spesa eliminata')
+      navigate({ to: '/dashboard' })
+    },
+    onError: () => {
+      toast.error('Errore durante l\'eliminazione')
+    },
+  })
+
+  const createCategory = useMutation({
+    mutationFn: useConvexMutation(api.categories.create),
+    onSuccess: (newId: Id<'categories'>) => {
+      queryClient.invalidateQueries({ queryKey: convexQuery(api.categories.list, {}).queryKey })
+      setCategoryId(newId)
+      setNewCategoryName('')
+      toast.success('Categoria creata')
+    },
+    onError: () => {
+      toast.error('Errore durante la creazione della categoria')
+    },
+  })
+
+  const generateUploadUrl = useMutation({
+    mutationFn: useConvexMutation(api.storage.generateUploadUrl),
+  })
+
+  const removeAttachment = useMutation({
+    mutationFn: useConvexMutation(api.expenses.removeAttachment),
+    onSuccess: () => {
+      setAttachmentId(undefined)
+      toast.success('Allegato rimosso')
+    },
+    onError: () => {
+      toast.error('Errore durante la rimozione dell\'allegato')
+    },
+  })
+
+  // File upload handler
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+      toast.error('Tipo di file non supportato. Usa immagini o PDF.')
+      return
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File troppo grande. Massimo 10MB.')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const uploadUrl = await generateUploadUrl.mutateAsync({})
+      
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const { storageId } = await response.json()
+      setAttachmentId(storageId)
+      toast.success('File caricato')
+    } catch {
+      toast.error('Errore durante il caricamento')
+    } finally {
+      setIsUploading(false)
+    }
+  }, [generateUploadUrl])
+
+  // Handle form submit
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!categoryId) {
+      toast.error('Seleziona una categoria')
+      return
+    }
+
+    const amountCents = parseCurrencyToCents(amount)
+    if (amountCents <= 0) {
+      toast.error('Inserisci un importo valido')
+      return
+    }
+
+    if (!merchant.trim()) {
+      toast.error('Inserisci il commerciante')
+      return
+    }
+
+    const data = {
+      date,
+      merchant: merchant.trim(),
+      amount: amountCents,
+      categoryId,
+      attachmentId,
+      comment: comment.trim() || undefined,
+    }
+
+    if (mode === 'create') {
+      createExpense.mutate(data)
+    } else if (expense) {
+      updateExpense.mutate({ id: expense._id, ...data })
+    }
+  }
+
+  const handleDeleteExpense = () => {
+    if (expense) {
+      deleteExpense.mutate({ id: expense._id })
+    }
+  }
+
+  const handleRemoveAttachment = () => {
+    if (expense && attachmentId) {
+      removeAttachment.mutate({ id: expense._id })
+    } else {
+      // If not saved yet, just clear the state
+      setAttachmentId(undefined)
+    }
+    setShowDeleteAttachment(false)
+  }
+
+  const handleCreateCategory = () => {
+    if (newCategoryName.trim()) {
+      createCategory.mutate({ name: newCategoryName.trim() })
+    }
+  }
+
+  const isLoading = createExpense.isPending || updateExpense.isPending || deleteExpense.isPending
+
+  // Find selected category name
+  const selectedCategory = categories?.find((c) => c._id === categoryId)
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+      {/* Date */}
+      <div className="space-y-2">
+        <Label>Data</Label>
+        <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
+          <PopoverTrigger>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start text-left font-normal"
+            >
+              {date ? format(new Date(date), 'PPP', { locale: it }) : 'Seleziona data'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={date ? new Date(date) : undefined}
+              onSelect={(d) => {
+                if (d) {
+                  setDate(d.toISOString().split('T')[0])
+                  setIsDateOpen(false)
+                }
+              }}
+              locale={it}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Merchant (combobox) */}
+      <div className="space-y-2">
+        <Label>Commerciante</Label>
+        <Popover open={isMerchantOpen} onOpenChange={setIsMerchantOpen}>
+          <PopoverTrigger>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              className="w-full justify-start text-left font-normal"
+            >
+              {merchant || 'Seleziona o digita...'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput
+                placeholder="Cerca o crea..."
+                value={merchant}
+                onValueChange={setMerchant}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {merchant && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setIsMerchantOpen(false)}
+                    >
+                      + Usa &quot;{merchant}&quot;
+                    </Button>
+                  )}
+                </CommandEmpty>
+                <CommandGroup heading="Commercianti recenti">
+                  {merchants?.map((m) => (
+                    <CommandItem
+                      key={m}
+                      value={m}
+                      onSelect={() => {
+                        setMerchant(m)
+                        setIsMerchantOpen(false)
+                      }}
+                    >
+                      {m}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Category (combobox) */}
+      <div className="space-y-2">
+        <Label>Categoria</Label>
+        <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
+          <PopoverTrigger>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              className="w-full justify-start text-left font-normal"
+            >
+              {selectedCategory ? (
+                <>
+                  {selectedCategory.icon && <span className="mr-2">{selectedCategory.icon}</span>}
+                  {selectedCategory.name}
+                </>
+              ) : (
+                'Seleziona categoria...'
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput
+                placeholder="Cerca o crea..."
+                value={newCategoryName}
+                onValueChange={setNewCategoryName}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {newCategoryName && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={handleCreateCategory}
+                      disabled={createCategory.isPending}
+                    >
+                      + Crea &quot;{newCategoryName}&quot;
+                    </Button>
+                  )}
+                </CommandEmpty>
+                <CommandGroup heading="Categorie">
+                  {categories?.map((category) => (
+                    <CommandItem
+                      key={category._id}
+                      value={category.name}
+                      onSelect={() => {
+                        setCategoryId(category._id)
+                        setIsCategoryOpen(false)
+                        setNewCategoryName('')
+                      }}
+                    >
+                      {category.icon && <span className="mr-2">{category.icon}</span>}
+                      {category.name}
+                      {category.isPredefined && (
+                        <span className="ml-auto text-xs text-muted-foreground">predefinita</span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                {newCategoryName && !categories?.some(c => c.name.toLowerCase() === newCategoryName.toLowerCase()) && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup>
+                      <CommandItem onSelect={handleCreateCategory}>
+                        + Crea &quot;{newCategoryName}&quot;
+                      </CommandItem>
+                    </CommandGroup>
+                  </>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Amount */}
+      <div className="space-y-2">
+        <Label htmlFor="amount">Importo (EUR)</Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
+          <Input
+            id="amount"
+            type="text"
+            inputMode="decimal"
+            placeholder="0,00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="pl-8"
+            required
+          />
+        </div>
+        {amount && parseCurrencyToCents(amount) > 0 && (
+          <p className="text-sm text-muted-foreground">
+            {formatCurrency(parseCurrencyToCents(amount))}
+          </p>
+        )}
+      </div>
+
+      {/* Attachment */}
+      <div className="space-y-2">
+        <Label>Allegato (opzionale)</Label>
+        {attachmentId ? (
+          <div className="flex items-center gap-2 p-3 border rounded-md">
+            <span>📎 Allegato caricato</span>
+            <AlertDialog open={showDeleteAttachment} onOpenChange={setShowDeleteAttachment}>
+              <AlertDialogTrigger>
+                <Button type="button" variant="ghost" size="sm" className="ml-auto text-destructive">
+                  Rimuovi
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Rimuovere l&apos;allegato?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    L&apos;allegato verrà eliminato definitivamente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annulla</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleRemoveAttachment}
+                    className="bg-destructive text-destructive-foreground"
+                  >
+                    Rimuovi
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        ) : (
+          <Input
+            type="file"
+            accept={ACCEPTED_FILE_TYPES.join(',')}
+            onChange={handleFileChange}
+            disabled={isUploading}
+          />
+        )}
+        {isUploading && <p className="text-sm text-muted-foreground">Caricamento in corso...</p>}
+        <p className="text-xs text-muted-foreground">
+          Immagini o PDF, massimo 10MB
+        </p>
+      </div>
+
+      {/* Comment */}
+      <div className="space-y-2">
+        <Label htmlFor="comment">Note (opzionale)</Label>
+        <Input
+          id="comment"
+          type="text"
+          placeholder="Aggiungi una nota..."
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-4">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading
+            ? 'Salvataggio...'
+            : mode === 'create'
+              ? 'Crea spesa'
+              : 'Salva modifiche'}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => navigate({ to: '/dashboard' })}>
+          Annulla
+        </Button>
+
+        {mode === 'edit' && expense && (
+          <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
+            <AlertDialogTrigger>
+              <Button type="button" variant="destructive" className="ml-auto">
+                Elimina
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Eliminare questa spesa?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Questa azione non può essere annullata. La spesa e l&apos;eventuale
+                  allegato verranno eliminati definitivamente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteExpense}
+                  className="bg-destructive text-destructive-foreground"
+                >
+                  Elimina
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
+    </form>
+  )
+}

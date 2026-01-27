@@ -20,11 +20,11 @@ function LandingPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold">Expense Manager</h1>
           <div className="flex gap-2">
-            <Button variant="ghost" asChild>
-              <Link to="/sign-in">Accedi</Link>
+            <Button variant="ghost" render={<Link to="/sign-in" />}>
+              Accedi
             </Button>
-            <Button asChild>
-              <Link to="/sign-up">Registrati</Link>
+            <Button render={<Link to="/sign-up" />}>
+              Registrati
             </Button>
           </div>
         </div>
@@ -42,11 +42,11 @@ function LandingPage() {
               Genera report mensili e scarica i giustificativi in un click.
             </p>
             <div className="flex gap-4 justify-center">
-              <Button size="lg" asChild>
-                <Link to="/sign-up">Inizia gratis</Link>
+              <Button size="lg" render={<Link to="/sign-up" />}>
+                Inizia gratis
               </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/sign-in">Accedi</Link>
+              <Button size="lg" variant="outline" render={<Link to="/sign-in" />}>
+                Accedi
               </Button>
             </div>
           </div>
