@@ -1,4 +1,5 @@
 node_modules
+.pnpm-store
 .DS_Store
 dist
 dist-ssr
@@ -15,8 +16,8 @@ count.txt
 todos.json
 
 # Test artifacts
-tests/.vitest-attachments/
 playwright-report/
+playwright-report-visual/
 test-results/
 
 # Convex

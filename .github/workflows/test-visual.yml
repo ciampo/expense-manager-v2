@@ -4,27 +4,30 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
+
 jobs:
   visual:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.48.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.0-noble
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '24.13.0'
           cache: 'pnpm'
       - run: pnpm install
       - run: pnpm test:visual
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: visual-diff
-          path: tests/.vitest-attachments/
+          name: playwright-report-visual
+          path: playwright-report-visual/
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: actual-screenshots
-          path: tests/visual/__screenshots__/
+          name: test-results
+          path: test-results/

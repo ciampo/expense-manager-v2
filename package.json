@@ -2,7 +2,11 @@
   "name": "expense-manager-v2",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=24.13.0",
+    "pnpm": ">=10.28.2"
+  },
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build && tsc --noEmit",
@@ -14,10 +18,10 @@
     "test:e2e": "playwright test",
     "test:e2e:seed": "convex run seed:e2e --prod",
     "test:e2e:cleanup": "convex run seed:cleanup --prod",
-    "test:visual": "vitest run --config vitest.visual.config.ts",
-    "test:visual:docker": "vitest run --config vitest.visual.config.ts",
-    "test:visual:local": "docker compose -f docker-compose.test.yml run --rm visual-tests",
-    "test:visual:update": "docker compose -f docker-compose.test.yml run --rm visual-tests pnpm run test:visual -- --update",
+    "test:visual": "playwright test --config playwright.visual.config.ts",
+    "test:visual:update": "playwright test --config playwright.visual.config.ts --update-snapshots",
+    "test:visual:docker": "docker compose -f docker-compose.test.yml run --rm visual-tests pnpm run test:visual",
+    "test:visual:docker:update": "docker compose -f docker-compose.test.yml run --rm visual-tests pnpm run test:visual:update",
     "dev:e2e": "vite dev --port 3000 --mode test"
   },
   "dependencies": {
