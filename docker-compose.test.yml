@@ -7,4 +7,4 @@ services:
       - /app/node_modules
     environment:
       - CI=true
-    command: pnpm run test:visual:docker
+    command: pnpm run test:visual

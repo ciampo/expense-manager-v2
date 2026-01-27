@@ -45,7 +45,7 @@ jobs:
         run: pnpm install
 
       - name: Update Visual Regression Screenshots
-        run: pnpm run test:visual -- --update
+        run: pnpm run test:visual:update
 
       - name: Check for changes
         id: check_changes

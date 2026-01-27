@@ -15,8 +15,8 @@ count.txt
 todos.json
 
 # Test artifacts
-tests/.vitest-attachments/
 playwright-report/
+playwright-report-visual/
 test-results/
 
 # Convex
