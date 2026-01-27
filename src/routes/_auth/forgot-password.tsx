@@ -35,10 +35,10 @@ function ForgotPasswordPage() {
 
       await signIn('password', formData)
       setSubmitted(true)
-      toast.success('Email inviata')
+      toast.success('Email sent')
     } catch (error) {
       console.error('Password reset error:', error)
-      toast.error('Errore durante l\'invio dell\'email')
+      toast.error('Error sending email')
     } finally {
       setIsLoading(false)
     }
@@ -48,28 +48,28 @@ function ForgotPasswordPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Controlla la tua email</CardTitle>
+          <CardTitle>Check your email</CardTitle>
           <CardDescription>
-            Abbiamo inviato le istruzioni per reimpostare la password a{' '}
+            We sent password reset instructions to{' '}
             <strong>{email}</strong>
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Se non ricevi l&apos;email entro qualche minuto, controlla la
-            cartella spam o{' '}
+            If you don&apos;t receive the email within a few minutes, check your
+            spam folder or{' '}
             <button
               onClick={() => setSubmitted(false)}
               className="text-primary hover:underline"
             >
-              riprova
+              try again
             </button>
             .
           </p>
         </CardContent>
         <CardFooter>
           <Link to="/sign-in" className="text-sm text-primary hover:underline">
-            ← Torna al login
+            ← Back to sign in
           </Link>
         </CardFooter>
       </Card>
@@ -79,9 +79,9 @@ function ForgotPasswordPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Password dimenticata?</CardTitle>
+        <CardTitle>Forgot password?</CardTitle>
         <CardDescription>
-          Inserisci la tua email e ti invieremo le istruzioni per reimpostare la
+          Enter your email and we&apos;ll send you instructions to reset your
           password
         </CardDescription>
       </CardHeader>
@@ -92,7 +92,7 @@ function ForgotPasswordPage() {
             <Input
               id="email"
               type="email"
-              placeholder="nome@esempio.com"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -102,10 +102,10 @@ function ForgotPasswordPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Invio in corso...' : 'Invia istruzioni'}
+            {isLoading ? 'Sending...' : 'Send instructions'}
           </Button>
           <Link to="/sign-in" className="text-sm text-primary hover:underline">
-            ← Torna al login
+            ← Back to sign in
           </Link>
         </CardFooter>
       </form>

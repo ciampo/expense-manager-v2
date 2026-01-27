@@ -16,8 +16,8 @@ function EditExpensePage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Modifica spesa</h1>
-        <p className="text-muted-foreground">Modifica i dettagli della spesa</p>
+        <h1 className="text-3xl font-bold">Edit expense</h1>
+        <p className="text-muted-foreground">Edit the expense details</p>
       </div>
 
       <Suspense fallback={<ExpenseFormSkeleton />}>
@@ -35,7 +35,7 @@ function EditExpenseForm({ expenseId }: { expenseId: Id<'expenses'> }) {
   if (!expense) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">Spesa non trovata</p>
+        <p className="text-muted-foreground">Expense not found</p>
       </div>
     )
   }

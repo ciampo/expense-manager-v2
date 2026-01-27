@@ -25,10 +25,10 @@ function AuthenticatedLayout() {
   const handleSignOut = async () => {
     try {
       await signOut()
-      toast.success('Logout effettuato')
+      toast.success('Logged out successfully')
       navigate({ to: '/' })
     } catch {
-      toast.error('Errore durante il logout')
+      toast.error('Error during logout')
     }
   }
 
@@ -78,7 +78,7 @@ function AuthenticatedLayout() {
               to="/reports"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
             >
-              Report
+              Reports
             </Link>
 
             {/* User menu */}

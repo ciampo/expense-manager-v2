@@ -6,31 +6,31 @@ test.describe('Landing Page', () => {
 
     // Check main heading
     await expect(page.getByRole('heading', { level: 2 })).toContainText(
-      'Gestisci le tue spese di lavoro'
+      'Manage your work expenses'
     )
 
     // Check navigation buttons in main content
     const main = page.getByRole('main')
-    await expect(main.getByRole('link', { name: 'Inizia gratis' })).toBeVisible()
-    await expect(main.getByRole('link', { name: 'Accedi' })).toBeVisible()
+    await expect(main.getByRole('link', { name: 'Start for free' })).toBeVisible()
+    await expect(main.getByRole('link', { name: 'Sign In' })).toBeVisible()
   })
 
   test('should navigate to sign in page', async ({ page }) => {
     await page.goto('/')
 
-    await page.getByRole('link', { name: 'Accedi' }).first().click()
+    await page.getByRole('link', { name: 'Sign In' }).first().click()
 
     await expect(page).toHaveURL('/sign-in')
-    await expect(page.getByRole('heading', { name: 'Accedi' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible()
   })
 
   test('should navigate to sign up page', async ({ page }) => {
     await page.goto('/')
 
-    await page.getByRole('link', { name: 'Registrati' }).first().click()
+    await page.getByRole('link', { name: 'Sign Up' }).first().click()
 
     await expect(page).toHaveURL('/sign-up')
-    await expect(page.getByRole('heading', { name: 'Registrati' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Sign Up' })).toBeVisible()
   })
 })
 
@@ -40,15 +40,15 @@ test.describe('Authentication Flow', () => {
 
     await expect(page.getByLabel('Email')).toBeVisible()
     await expect(page.getByLabel('Password', { exact: true })).toBeVisible()
-    await expect(page.getByLabel('Conferma password')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Registrati' })).toBeVisible()
+    await expect(page.getByLabel('Confirm password')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Sign Up' })).toBeVisible()
   })
 
   test('sign in page should have forgot password link', async ({ page }) => {
     await page.goto('/sign-in')
 
-    await expect(page.getByText('Password dimenticata?')).toBeVisible()
-    await page.getByText('Password dimenticata?').click()
+    await expect(page.getByText('Forgot password?')).toBeVisible()
+    await page.getByText('Forgot password?').click()
 
     await expect(page).toHaveURL('/forgot-password')
   })
@@ -57,7 +57,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/sign-in')
 
     // Try to submit empty form
-    await page.getByRole('button', { name: 'Accedi' }).click()
+    await page.getByRole('button', { name: 'Sign In' }).click()
 
     // HTML5 validation should prevent submission
     const emailInput = page.getByLabel('Email')
