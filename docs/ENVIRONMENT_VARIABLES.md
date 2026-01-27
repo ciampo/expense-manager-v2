@@ -68,6 +68,7 @@ These secrets are configured in your GitHub repository settings.
 |-------------|-------------|--------|
 | `CLOUDFLARE_API_TOKEN` | API token for Cloudflare Workers deployment | Cloudflare Dashboard |
 | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account identifier | Cloudflare Dashboard |
+| `CONVEX_URL` | Production Convex project deployment URL | Convex Dashboard |
 | `CONVEX_TEST_URL` | Test Convex project deployment URL | Convex Dashboard |
 | `CONVEX_TEST_DEPLOY_KEY` | Deploy key for test Convex project | Convex Dashboard |
 
@@ -83,6 +84,11 @@ These secrets are configured in your GitHub repository settings.
 1. Go to Cloudflare Dashboard
 2. Workers & Pages (left sidebar)
 3. Copy "Account ID" from right sidebar
+
+#### `CONVEX_URL`
+1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
+2. Select your **production** project
+3. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
 
 #### `CONVEX_TEST_URL`
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
@@ -225,8 +231,9 @@ pnpm test:e2e
 # Required GitHub Secrets
 CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
-CONVEX_TEST_URL
-CONVEX_TEST_DEPLOY_KEY
+CONVEX_URL              # For production/preview deployments
+CONVEX_TEST_URL         # For E2E tests
+CONVEX_TEST_DEPLOY_KEY  # For E2E tests
 ```
 
 ### Convex Email (Optional)
