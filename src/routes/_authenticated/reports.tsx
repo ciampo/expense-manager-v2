@@ -224,9 +224,10 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
             // Handle filename collisions by adding index suffix
             const countKey = baseFilename + extension
-            filenameCount[countKey] = (filenameCount[countKey] || 0) + 1
-            const filename = filenameCount[countKey] > 1
-              ? `${baseFilename}-${filenameCount[countKey]}${extension}`
+            const count = filenameCount[countKey] || 0
+            filenameCount[countKey] = count + 1
+            const filename = count > 0
+              ? `${baseFilename}-${count}${extension}`
               : `${baseFilename}${extension}`
 
             zip.file(filename, blob)
