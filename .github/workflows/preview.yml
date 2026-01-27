@@ -23,7 +23,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env preview
+          command: deploy --name expense-manager-preview-pr-${{ github.event.pull_request.number }}
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
         with:
