@@ -9,9 +9,10 @@ test.describe('Landing Page', () => {
       'Gestisci le tue spese di lavoro'
     )
 
-    // Check navigation buttons
-    await expect(page.getByRole('link', { name: 'Accedi' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Registrati' })).toBeVisible()
+    // Check navigation buttons in main content
+    const main = page.getByRole('main')
+    await expect(main.getByRole('link', { name: 'Inizia gratis' })).toBeVisible()
+    await expect(main.getByRole('link', { name: 'Accedi' })).toBeVisible()
   })
 
   test('should navigate to sign in page', async ({ page }) => {
@@ -38,7 +39,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/sign-up')
 
     await expect(page.getByLabel('Email')).toBeVisible()
-    await expect(page.getByLabel('Password')).toBeVisible()
+    await expect(page.getByLabel('Password', { exact: true })).toBeVisible()
     await expect(page.getByLabel('Conferma password')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Registrati' })).toBeVisible()
   })
