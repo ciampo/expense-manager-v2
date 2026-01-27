@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
+import { useEffect } from 'react'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
@@ -51,8 +52,13 @@ function AuthenticatedLayout() {
   }
 
   // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: '/sign-in' })
+    }
+  }, [isLoading, isAuthenticated, navigate])
+
   if (!isAuthenticated) {
-    navigate({ to: '/sign-in' })
     return null
   }
 

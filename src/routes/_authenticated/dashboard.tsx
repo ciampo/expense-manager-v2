@@ -102,18 +102,20 @@ function ExpenseTable() {
   
   const [deletingId, setDeletingId] = useState<Id<'expenses'> | null>(null)
 
+  const expensesQueryKey = convexQuery(api.expenses.list, {}).queryKey
+
   const deleteExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.remove),
     onMutate: async (args: { id: Id<'expenses'> }) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['expenses'] })
+      await queryClient.cancelQueries({ queryKey: expensesQueryKey })
       
       // Snapshot current value
-      const previousExpenses = queryClient.getQueryData(['expenses'])
+      const previousExpenses = queryClient.getQueryData(expensesQueryKey)
       
       // Optimistically remove from cache
       queryClient.setQueryData(
-        convexQuery(api.expenses.list, {}).queryKey,
+        expensesQueryKey,
         (old: typeof expenses) => old?.filter((e) => e._id !== args.id)
       )
       
@@ -123,7 +125,7 @@ function ExpenseTable() {
       // Rollback on error
       if (context?.previousExpenses) {
         queryClient.setQueryData(
-          convexQuery(api.expenses.list, {}).queryKey,
+          expensesQueryKey,
           context.previousExpenses
         )
       }
@@ -133,7 +135,7 @@ function ExpenseTable() {
       toast.success('Expense deleted')
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
+      queryClient.invalidateQueries({ queryKey: expensesQueryKey })
     },
   })
 
