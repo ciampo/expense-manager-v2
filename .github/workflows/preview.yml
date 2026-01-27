@@ -7,6 +7,7 @@ jobs:
   cleanup:
     if: github.event.action == 'closed'
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Delete Cloudflare Worker
         continue-on-error: true
