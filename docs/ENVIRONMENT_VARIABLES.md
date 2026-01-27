@@ -1,0 +1,236 @@
+# Environment Variables Reference
+
+This document lists all environment variables used in the Expense Manager project and where they should be defined.
+
+---
+
+## Overview
+
+| Variable | Location | Purpose |
+|----------|----------|---------|
+| `VITE_CONVEX_URL` | `.env.local`, `.env.test` | Convex backend URL |
+| `CONVEX_DEPLOY_KEY` | GitHub Secrets, Local (temp) | Deploy/run functions on Convex |
+| `CLOUDFLARE_API_TOKEN` | GitHub Secrets | Deploy to Cloudflare Workers |
+| `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets | Cloudflare account identifier |
+| `AUTH_RESEND_KEY` | Convex Environment | Email provider for auth |
+
+---
+
+## Local Environment Files
+
+### `.env.local` (Production Convex)
+
+Used during local development. Points to your **production** Convex project.
+
+```env
+VITE_CONVEX_URL=https://your-production-project.convex.cloud
+```
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_CONVEX_URL` | Yes | Production Convex deployment URL |
+
+**How to get it:**
+1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
+2. Select your production project
+3. Copy the "Deployment URL" from the project overview
+
+---
+
+### `.env.test` (Test Convex)
+
+Used when running E2E tests locally (`pnpm dev:e2e`). Points to your **test** Convex project.
+
+```env
+VITE_CONVEX_URL=https://your-test-project.convex.cloud
+```
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_CONVEX_URL` | Yes | Test Convex deployment URL |
+
+**How to get it:**
+1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
+2. Select your test project (`expense-manager-test`)
+3. Copy the "Deployment URL" from the project overview
+
+---
+
+## GitHub Actions Secrets
+
+These secrets are configured in your GitHub repository settings.
+
+**Location:** Repository → Settings → Secrets and variables → Actions
+
+### Required Secrets
+
+| Secret Name | Description | Source |
+|-------------|-------------|--------|
+| `CLOUDFLARE_API_TOKEN` | API token for Cloudflare Workers deployment | Cloudflare Dashboard |
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account identifier | Cloudflare Dashboard |
+| `CONVEX_TEST_URL` | Test Convex project deployment URL | Convex Dashboard |
+| `CONVEX_TEST_DEPLOY_KEY` | Deploy key for test Convex project | Convex Dashboard |
+
+### How to Get Each Value
+
+#### `CLOUDFLARE_API_TOKEN`
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. Profile → API Tokens → Create Token
+3. Use template "Edit Cloudflare Workers"
+4. Copy the generated token
+
+#### `CLOUDFLARE_ACCOUNT_ID`
+1. Go to Cloudflare Dashboard
+2. Workers & Pages (left sidebar)
+3. Copy "Account ID" from right sidebar
+
+#### `CONVEX_TEST_URL`
+1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
+2. Select the **test** project
+3. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+
+#### `CONVEX_TEST_DEPLOY_KEY`
+1. Go to Convex Dashboard
+2. Select the **test** project
+3. Settings → Deploy Keys → Generate Deploy Key
+4. Copy the key (only shown once)
+
+---
+
+## Convex Environment Variables
+
+These are stored in Convex and available to your server functions.
+
+**Location:** Convex Dashboard → Project → Settings → Environment Variables
+
+Or via CLI:
+```bash
+npx convex env set VARIABLE_NAME=value
+```
+
+### Optional Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AUTH_RESEND_KEY` | No* | Resend API key for sending auth emails |
+
+*Required only if you want to send real emails (password reset, verification).
+
+### Setting Up Email Provider
+
+#### Using Resend
+```bash
+npx convex env set AUTH_RESEND_KEY=re_xxxxx
+```
+
+**How to get it:**
+1. Sign up at [Resend](https://resend.com/)
+2. Go to API Keys → Create API Key
+3. Copy the key
+
+---
+
+## CI/CD Environment Variables
+
+These are automatically set by GitHub Actions or defined in workflow files.
+
+### Automatically Available
+
+| Variable | Set By | Description |
+|----------|--------|-------------|
+| `CI` | GitHub Actions | Indicates running in CI environment |
+| `GITHUB_TOKEN` | GitHub Actions | Token for GitHub API operations |
+
+### Set in Workflows
+
+| Variable | Workflow File | Value |
+|----------|---------------|-------|
+| `VITE_CONVEX_URL` | `test-e2e.yml` | `${{ secrets.CONVEX_TEST_URL }}` |
+| `CONVEX_DEPLOY_KEY` | `test-e2e.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+
+---
+
+## Environment File Templates
+
+### `.env.local` Template
+```env
+# Convex Production URL
+# Get from: https://dashboard.convex.dev/ → Your Project → Deployment URL
+VITE_CONVEX_URL=https://your-project.convex.cloud
+```
+
+### `.env.test` Template
+```env
+# Convex Test URL (for E2E tests)
+# Get from: https://dashboard.convex.dev/ → Test Project → Deployment URL
+VITE_CONVEX_URL=https://your-test-project.convex.cloud
+```
+
+### `.env.example` (Committed to Git)
+```env
+# Convex deployment URL
+# Get from: https://dashboard.convex.dev/
+VITE_CONVEX_URL=https://your-project.convex.cloud
+```
+
+---
+
+## Security Notes
+
+### Files to NEVER Commit
+
+These files contain secrets and are in `.gitignore`:
+
+- `.env.local`
+- `.env.test`
+- `.env` (any variation)
+
+### Safe to Commit
+
+- `.env.example` (contains placeholder values only)
+
+### Rotating Secrets
+
+If a secret is compromised:
+
+1. **Cloudflare API Token:** Revoke in Cloudflare Dashboard → API Tokens → Delete, then create new
+2. **Convex Deploy Key:** Delete in Convex Dashboard → Settings → Deploy Keys, then create new
+3. **Update GitHub Secrets:** Repository → Settings → Secrets → Update each affected secret
+
+---
+
+## Quick Reference
+
+### Local Development
+```bash
+# Required files
+.env.local          → VITE_CONVEX_URL (production)
+
+# Start development
+npx convex dev      # Terminal 1
+pnpm dev            # Terminal 2
+```
+
+### E2E Testing (Local)
+```bash
+# Required files
+.env.test           → VITE_CONVEX_URL (test)
+
+# Run E2E tests
+pnpm test:e2e
+```
+
+### CI/CD
+```bash
+# Required GitHub Secrets
+CLOUDFLARE_API_TOKEN
+CLOUDFLARE_ACCOUNT_ID
+CONVEX_TEST_URL
+CONVEX_TEST_DEPLOY_KEY
+```
+
+### Convex Email (Optional)
+```bash
+# Set in Convex environment
+npx convex env set AUTH_RESEND_KEY=re_xxxxx
+```
