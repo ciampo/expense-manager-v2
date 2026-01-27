@@ -24,7 +24,9 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
   expect: {
     toHaveScreenshot: {
-      maxDiffPixelRatio: 0.01,
+      // Use pixel count instead of ratio for stricter control
+      // Allow ~50 pixels for minor anti-aliasing differences
+      maxDiffPixels: 50,
     },
   },
   projects: [

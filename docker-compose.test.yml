@@ -1,6 +1,6 @@
 services:
   visual-tests:
-    image: mcr.microsoft.com/playwright:v1.58.0-jammy
+    image: mcr.microsoft.com/playwright:v1.58.0-noble
     working_dir: /app
     volumes:
       - .:/app
