@@ -18,7 +18,7 @@ function LandingPage() {
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold">Expense Manager</h1>
+          <h1 className="text-xl font-bold">Expense Manager Ciao</h1>
           <div className="flex gap-2">
             <Button variant="ghost" render={<Link to="/sign-in" />}>
               Sign In
