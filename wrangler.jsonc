@@ -3,10 +3,5 @@
   "name": "expense-manager",
   "compatibility_date": "2025-01-27",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
-  "env": {
-    "preview": {
-      "name": "expense-manager-preview"
-    }
-  }
+  "main": "@tanstack/react-start/server-entry"
 }

@@ -1,9 +1,27 @@
 name: Preview
-on: pull_request
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
-  preview:
+  cleanup:
+    if: github.event.action == 'closed'
     runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Delete Cloudflare Worker
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: delete --name expense-manager-preview-pr-${{ github.event.pull_request.number }}
+  preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: preview-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       pull-requests: write
     steps:
@@ -23,7 +41,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env preview
+          command: deploy --name expense-manager-preview-pr-${{ github.event.pull_request.number }}
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
         with:
