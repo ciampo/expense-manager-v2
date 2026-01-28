@@ -19,6 +19,9 @@ jobs:
   preview:
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
+    concurrency:
+      group: preview-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       pull-requests: write
     steps:
