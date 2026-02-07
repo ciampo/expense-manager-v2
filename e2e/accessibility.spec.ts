@@ -65,15 +65,18 @@ test.describe('Accessibility Audit — Public Pages', () => {
 // ── Authenticated pages ───────────────────────────────────────
 
 test.describe('Accessibility Audit — Authenticated Pages', () => {
-  const testEmail = `a11y-test-${Date.now()}@example.com`
   const testPassword = 'TestPassword123!'
 
-  // Sign up and authenticate before each test
+  // Sign up a fresh user before each test. Each test gets its own
+  // browser context (no shared session), so we need a unique email
+  // per test to avoid "email already taken" errors.
   test.beforeEach(async ({ page }) => {
+    const uniqueEmail = `a11y-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
+
     await page.goto('/sign-up')
     await page.waitForLoadState('networkidle')
 
-    await page.getByLabel('Email').fill(testEmail)
+    await page.getByLabel('Email').fill(uniqueEmail)
     await page.getByLabel('Password', { exact: true }).fill(testPassword)
     await page.getByLabel('Confirm password').fill(testPassword)
     await page.getByRole('button', { name: 'Sign Up' }).click()
