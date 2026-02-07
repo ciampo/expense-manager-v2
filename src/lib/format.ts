@@ -8,11 +8,21 @@ export const formatCurrency = (cents: number): string =>
   )
 
 /**
+ * Parse a YYYY-MM-DD string as a **local** date.
+ * new Date('YYYY-MM-DD') is parsed as UTC midnight, which can shift
+ * to the previous day in negative UTC offset timezones.
+ */
+function parseLocalDate(isoDate: string): Date {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+/**
  * Format ISO date string for display using English locale (MM/DD/YYYY)
  * @param isoDate - ISO date string (YYYY-MM-DD)
  */
 export const formatDate = (isoDate: string): string =>
-  new Intl.DateTimeFormat('en-US').format(new Date(isoDate))
+  new Intl.DateTimeFormat('en-US').format(parseLocalDate(isoDate))
 
 /**
  * Format date for display with day of week
@@ -24,7 +34,7 @@ export const formatDateLong = (isoDate: string): string =>
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(new Date(isoDate))
+  }).format(parseLocalDate(isoDate))
 
 /**
  * Parse EUR input to cents
