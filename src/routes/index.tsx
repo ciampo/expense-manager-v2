@@ -87,7 +87,7 @@ function LandingPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle><span aria-hidden="true">📄</span> Reports</CardTitle></invoke>
+                <CardTitle><span aria-hidden="true">📄</span> Reports</CardTitle>
                 <CardDescription>
                   Generate monthly reports ready for accounting
                 </CardDescription>

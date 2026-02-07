@@ -273,10 +273,10 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     if (!merchant.trim()) {
       newErrors.merchant = 'Enter the merchant'
     }
-    if (Object.keys(newErrors).length > 0) {
+    if (Object.keys(newErrors).length > 0 || !categoryId) {
       setErrors(newErrors)
       const firstError = Object.values(newErrors)[0]
-      toast.error(firstError)
+      if (firstError) toast.error(firstError)
       return
     }
 
