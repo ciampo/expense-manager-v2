@@ -140,6 +140,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const [attachmentId, setAttachmentId] = useState<Id<'_storage'> | undefined>(expense?.attachmentId)
   const [newCategoryName, setNewCategoryName] = useState('')
   
+  // Validation errors
+  const [errors, setErrors] = useState<{ category?: string; amount?: string; merchant?: string }>({})
+
   // UI state
   const [isDateOpen, setIsDateOpen] = useState(false)
   const [isMerchantOpen, setIsMerchantOpen] = useState(false)
@@ -257,20 +260,23 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
 
+    const newErrors: typeof errors = {}
     if (!categoryId) {
-      toast.error('Select a category')
-      return
+      newErrors.category = 'Select a category'
     }
-
     const amountCents = parseCurrencyToCents(amount)
     if (amountCents <= 0) {
-      toast.error('Enter a valid amount')
-      return
+      newErrors.amount = 'Enter a valid amount'
     }
-
     if (!merchant.trim()) {
-      toast.error('Enter the merchant')
+      newErrors.merchant = 'Enter the merchant'
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      const firstError = Object.values(newErrors)[0]
+      toast.error(firstError)
       return
     }
 
@@ -404,6 +410,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             </Command>
           </PopoverContent>
         </Popover>
+        {errors.merchant && (
+          <p id="merchant-error" role="alert" className="text-sm text-destructive">
+            {errors.merchant}
+          </p>
+        )}
       </div>
 
       {/* Category (combobox) */}
@@ -483,6 +494,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             </Command>
           </PopoverContent>
         </Popover>
+        {errors.category && (
+          <p id="category-error" role="alert" className="text-sm text-destructive">
+            {errors.category}
+          </p>
+        )}
       </div>
 
       {/* Amount */}
@@ -504,6 +520,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         {amount && parseCurrencyToCents(amount) > 0 && (
           <p className="text-sm text-muted-foreground">
             {formatCurrency(parseCurrencyToCents(amount))}
+          </p>
+        )}
+        {errors.amount && (
+          <p id="amount-error" role="alert" className="text-sm text-destructive">
+            {errors.amount}
           </p>
         )}
       </div>
