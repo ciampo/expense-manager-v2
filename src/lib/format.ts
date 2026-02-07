@@ -49,10 +49,13 @@ export const centsToInputValue = (cents: number): string => {
 }
 
 /**
- * Get current date as ISO string (YYYY-MM-DD)
+ * Get current date as ISO string (YYYY-MM-DD) using **local** time.
+ * Using toISOString() would return UTC which can differ from local date
+ * in negative UTC offset timezones.
  */
 export const getTodayISO = (): string => {
-  return new Date().toISOString().split('T')[0]
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 /**
