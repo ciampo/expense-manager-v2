@@ -178,30 +178,24 @@ function ExpenseTable() {
           {expenses.map((expense) => (
             <TableRow
               key={expense._id}
-              tabIndex={0}
-              role="link"
-              aria-label={`Expense: ${expense.merchant}, ${formatDate(expense.date)}, ${formatCurrency(expense.amount)}`}
-              className="cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="cursor-pointer hover:bg-muted/50"
               onClick={() =>
                 navigate({
                   to: '/expenses/$expenseId',
                   params: { expenseId: expense._id },
                 })
               }
-              onKeyDown={(e) => {
-                if (
-                  (e.key === 'Enter' || e.key === ' ') &&
-                  e.target === e.currentTarget
-                ) {
-                  e.preventDefault()
-                  navigate({
-                    to: '/expenses/$expenseId',
-                    params: { expenseId: expense._id },
-                  })
-                }
-              }}
             >
-              <TableCell>{formatDate(expense.date)}</TableCell>
+              <TableCell>
+                <Link
+                  to="/expenses/$expenseId"
+                  params={{ expenseId: expense._id }}
+                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {formatDate(expense.date)}
+                </Link>
+              </TableCell>
               <TableCell>{expense.merchant}</TableCell>
               <TableCell>
                 {categoryMap.get(expense.categoryId) || 'N/A'}
