@@ -47,6 +47,11 @@ export const Route = createRootRouteWithContext<{
       {
         title: 'Expense Manager',
       },
+      {
+        name: 'description',
+        content:
+          'Track and manage your work-related expenses. Generate monthly reports and download receipts.',
+      },
     ],
     links: [
       {
