@@ -7,10 +7,13 @@ import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
-  const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL!
+  const CONVEX_URL = import.meta.env.VITE_CONVEX_URL
 
   if (!CONVEX_URL) {
-    console.error('Missing env var VITE_CONVEX_URL')
+    throw new Error(
+      'Missing required environment variable VITE_CONVEX_URL. ' +
+      'See docs/ENVIRONMENT_VARIABLES.md for setup instructions.'
+    )
   }
 
   const convexQueryClient = new ConvexQueryClient(CONVEX_URL)

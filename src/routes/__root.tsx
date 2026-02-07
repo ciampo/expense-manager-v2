@@ -47,24 +47,16 @@ export const Route = createRootRouteWithContext<{
       {
         title: 'Expense Manager',
       },
+      {
+        name: 'description',
+        content:
+          'Track and manage your work-related expenses. Generate monthly reports and download receipts.',
+      },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
-      },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.googleapis.com',
-      },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.gstatic.com',
-        crossOrigin: 'anonymous',
-      },
-      {
-        rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap',
       },
     ],
   }),
@@ -82,7 +74,7 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it">
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
