@@ -89,7 +89,7 @@ function AuthenticatedLayout() {
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button variant="ghost" aria-label="User menu" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>U</AvatarFallback>
                   </Avatar>
