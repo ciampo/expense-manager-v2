@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router'
 import { useConvexAuth } from 'convex/react'
 import { useEffect } from 'react'
-import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/_auth')({
   component: AuthLayout,
@@ -18,22 +17,9 @@ function AuthLayout() {
     }
   }, [isLoading, isAuthenticated, navigate])
 
-  // Show loading state while auth is being determined
-  if (isLoading || isAuthenticated) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <header className="border-b">
-          <div className="container mx-auto px-4 py-4">
-            <Skeleton className="h-6 w-40" />
-          </div>
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <Skeleton className="h-96 w-full rounded-lg" />
-          </div>
-        </main>
-      </div>
-    )
+  // Hide content while redirect is in progress to avoid flashing the form
+  if (!isLoading && isAuthenticated) {
+    return null
   }
 
   return (
