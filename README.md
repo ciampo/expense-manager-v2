@@ -54,12 +54,18 @@ A modern expense management application for tracking work-related expenses, buil
    npx convex dev
    ```
 
-5. In a new terminal, start the app:
+5. Configure authentication keys (run once per deployment):
+   ```bash
+   npx @convex-dev/auth
+   ```
+   This sets `JWT_PRIVATE_KEY` and `JWKS` on your Convex deployment.
+
+6. In a new terminal, start the app:
    ```bash
    pnpm dev
    ```
 
-6. Seed the predefined categories (run once):
+7. Seed the predefined categories (run once):
    ```bash
    npx convex run seed:seedCategories
    ```

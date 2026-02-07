@@ -60,7 +60,20 @@ This will:
 - Sync your schema to Convex
 - Start the Convex development server
 
-### 1.5 Deploy Schema to Test Project
+### 1.5 Configure Authentication Keys
+
+Each Convex deployment requires JWT keys for `@convex-dev/auth`. Generate and set them with:
+
+```bash
+# For the development deployment (linked via npx convex dev)
+npx @convex-dev/auth
+```
+
+This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on your Convex deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
+
+> **Note:** For the production deployment, run `npx @convex-dev/auth --prod` instead.
+
+### 1.6 Deploy Schema to Test Project
 
 The test project needs the same schema deployed:
 
@@ -72,7 +85,7 @@ export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 npx convex deploy
 ```
 
-### 1.6 Seed Initial Data
+### 1.7 Seed Initial Data
 
 Seed the predefined categories using the existing seed scripts:
 
@@ -86,7 +99,7 @@ CONVEX_DEPLOY_KEY=your_test_key npx convex run seed:e2e --prod
 
 > **Note:** The `seed:e2e` function seeds categories and prepares the database for E2E tests. Use `npx convex run seed:cleanup --prod` to clean up test data afterwards.
 
-### 1.7 Configure Email Provider (Optional)
+### 1.8 Configure Email Provider (Optional)
 
 For password reset emails in production:
 
