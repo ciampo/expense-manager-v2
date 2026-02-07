@@ -34,6 +34,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from '@/components/ui/input-group'
 import { formatCurrency, parseCurrencyToCents, centsToInputValue, getTodayISO } from '@/lib/format'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -515,21 +521,22 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       {/* Amount */}
       <div className="space-y-2">
         <Label htmlFor="amount">Amount (EUR)</Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
-          <Input
+        <InputGroup>
+          <InputGroupAddon align="inline-start">
+            <InputGroupText>€</InputGroupText>
+          </InputGroupAddon>
+          <InputGroupInput
             id="amount"
             type="text"
             inputMode="decimal"
             placeholder="0,00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="pl-8"
             required
             aria-describedby={errors.amount ? 'amount-error' : undefined}
             aria-invalid={!!errors.amount}
           />
-        </div>
+        </InputGroup>
         {amount && parseCurrencyToCents(amount) > 0 && (
           <p className="text-sm text-muted-foreground">
             {formatCurrency(parseCurrencyToCents(amount))}
