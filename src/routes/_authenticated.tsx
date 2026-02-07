@@ -33,6 +33,13 @@ function AuthenticatedLayout() {
     }
   }
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: '/sign-in' })
+    }
+  }, [isLoading, isAuthenticated, navigate])
+
   // Show loading state
   if (isLoading) {
     return (
@@ -50,13 +57,6 @@ function AuthenticatedLayout() {
       </div>
     )
   }
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate({ to: '/sign-in' })
-    }
-  }, [isLoading, isAuthenticated, navigate])
 
   if (!isAuthenticated) {
     return null
