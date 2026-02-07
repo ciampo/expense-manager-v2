@@ -122,6 +122,15 @@ Or via CLI:
 npx convex env set VARIABLE_NAME=value
 ```
 
+### Auth Variables (Auto-configured)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `JWT_PRIVATE_KEY` | Yes | Private key for signing JWTs (set by `npx @convex-dev/auth`) |
+| `JWKS` | Yes | JSON Web Key Set for verifying JWTs (set by `npx @convex-dev/auth`) |
+
+> **Note:** These are set automatically by running `npx @convex-dev/auth` (or `npx @convex-dev/auth --prod` for production). Do not edit them manually.
+
 ### Optional Variables
 
 | Variable | Required | Description |
