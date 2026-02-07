@@ -2,6 +2,31 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { auth } from './auth'
 
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
+
+function validateExpenseFields(args: {
+  date: string
+  merchant: string
+  amount: number
+  comment?: string
+}) {
+  if (!DATE_REGEX.test(args.date)) {
+    throw new Error('Invalid date format. Expected YYYY-MM-DD.')
+  }
+  if (args.amount <= 0) {
+    throw new Error('Amount must be greater than zero.')
+  }
+  if (!args.merchant.trim()) {
+    throw new Error('Merchant name is required.')
+  }
+  if (args.merchant.length > 200) {
+    throw new Error('Merchant name must be 200 characters or less.')
+  }
+  if (args.comment !== undefined && args.comment.length > 1000) {
+    throw new Error('Comment must be 1000 characters or less.')
+  }
+}
+
 /**
  * List all expenses for the current user, sorted by date (most recent first)
  */
@@ -88,14 +113,16 @@ export const create = mutation({
       throw new Error('Not authenticated')
     }
 
+    validateExpenseFields(args)
+
     const expenseId = await ctx.db.insert('expenses', {
       userId,
       date: args.date,
-      merchant: args.merchant,
+      merchant: args.merchant.trim(),
       amount: args.amount,
       categoryId: args.categoryId,
       attachmentId: args.attachmentId,
-      comment: args.comment,
+      comment: args.comment?.trim() || undefined,
       createdAt: Date.now(),
     })
 
@@ -127,6 +154,8 @@ export const update = mutation({
       throw new Error('Expense not found')
     }
 
+    validateExpenseFields(args)
+
     // If attachment changed and old one exists, delete it
     if (existing.attachmentId && existing.attachmentId !== args.attachmentId) {
       await ctx.storage.delete(existing.attachmentId)
@@ -134,11 +163,11 @@ export const update = mutation({
 
     await ctx.db.patch(args.id, {
       date: args.date,
-      merchant: args.merchant,
+      merchant: args.merchant.trim(),
       amount: args.amount,
       categoryId: args.categoryId,
       attachmentId: args.attachmentId,
-      comment: args.comment,
+      comment: args.comment?.trim() || undefined,
     })
 
     return args.id
