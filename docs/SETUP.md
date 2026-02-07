@@ -177,6 +177,8 @@ Click "New repository secret" for each:
 |-------------|-------------|
 | `CLOUDFLARE_API_TOKEN` | Your Cloudflare API token |
 | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
+| `CONVEX_PROD_URL` | Production Convex deployment URL (used by `deploy.yml`) |
+| `CONVEX_DEV_URL` | Development Convex deployment URL (used by `preview.yml` for PR previews) |
 | `CONVEX_TEST_URL` | Test Convex project URL (`https://xxx.convex.cloud`) |
 | `CONVEX_TEST_DEPLOY_KEY` | Test Convex project deploy key |
 
@@ -230,7 +232,7 @@ pnpm test:visual:docker
 ### Before CI/CD
 
 - [ ] GitHub repository created
-- [ ] All 4 GitHub secrets added
+- [ ] All 6 GitHub secrets added
 - [ ] Branch protection rules configured
 - [ ] Docker Desktop running
 
