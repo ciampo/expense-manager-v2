@@ -16,7 +16,7 @@ jobs:
       - run: pnpm install
       - run: pnpm build
         env:
-          VITE_CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          VITE_CONVEX_URL: ${{ secrets.CONVEX_PROD_URL }}
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

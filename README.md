@@ -25,8 +25,8 @@ A modern expense management application for tracking work-related expenses, buil
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm
+- Node.js >= 24.13.0
+- pnpm >= 10.28.2
 - Docker Desktop (for visual regression tests)
 
 ### Setup
@@ -139,6 +139,30 @@ pnpm test:visual:update
 
 ## Deployment
 
+### Convex
+
+The project uses three separate Convex deployments:
+
+| Deployment | Purpose | Configured via |
+|------------|---------|----------------|
+| **Development** | Local dev (`pnpm dev`) | `.env.local` |
+| **Test** | E2E and visual regression tests | `.env.test` |
+| **Production** | Live app (deployed from `main`) | GitHub Actions secret |
+
+#### Setting up auth keys
+
+Each Convex deployment requires JWT keys for authentication. Generate and set them with:
+
+```bash
+# For the dev deployment
+npx @convex-dev/auth
+
+# For the production deployment
+npx @convex-dev/auth --prod
+```
+
+This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respective Convex deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
+
 ### Cloudflare Workers
 
 1. Login to Cloudflare:
@@ -158,17 +182,19 @@ The project includes GitHub Actions workflows for:
 - **Unit Tests**: Run on every push/PR
 - **E2E Tests**: Run on every push/PR with test data seeding
 - **Visual Regression**: Run on every push/PR in Docker
-- **Deploy**: Auto-deploy to production on push to main
+- **Deploy**: Auto-deploy to production on push to `main`
 - **Preview**: Deploy preview on every PR
 
-Configure these GitHub secrets:
+Configure these GitHub Actions secrets:
 
 | Secret | Description |
 |--------|-------------|
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
-| `CONVEX_TEST_URL` | Test Convex project URL |
-| `CONVEX_TEST_DEPLOY_KEY` | Test Convex deploy key |
+| `CONVEX_PROD_URL` | Convex **production** deployment URL |
+| `CONVEX_DEV_URL` | Convex **development** deployment URL (used for PR previews) |
+| `CONVEX_TEST_URL` | Convex **test** deployment URL (used for E2E and visual tests) |
+| `CONVEX_TEST_DEPLOY_KEY` | Convex deploy key for the test deployment |
 
 ## License
 
