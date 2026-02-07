@@ -1,11 +1,19 @@
 import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
@@ -45,6 +53,7 @@ function AuthenticatedSkeleton() {
 
 function AuthenticatedLayout() {
   const { signOut } = useAuthActions()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleSignOut = async () => {
     try {
@@ -69,8 +78,8 @@ function AuthenticatedLayout() {
             Expense Manager
           </Link>
 
-          {/* Navigation */}
-          <nav aria-label="Main" className="flex items-center gap-6">
+          {/* Desktop Navigation */}
+          <nav aria-label="Main" className="hidden md:flex items-center gap-6">
             <Link
               to="/dashboard"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
@@ -101,6 +110,65 @@ function AuthenticatedLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
+
+          {/* Mobile hamburger menu */}
+          <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <DialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Open menu"
+                  className="md:hidden"
+                />
+              }
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="18" y2="18" />
+              </svg>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-xs">
+              <DialogTitle>Menu</DialogTitle>
+              <nav className="flex flex-col gap-4 mt-2">
+                <Link
+                  to="/dashboard"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/reports"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Reports
+                </Link>
+                <hr className="border-t" />
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    handleSignOut()
+                  }}
+                  className="text-sm font-medium text-destructive hover:text-destructive/80 transition-colors text-left"
+                >
+                  Logout
+                </button>
+              </nav>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
@@ -108,6 +176,13 @@ function AuthenticatedLayout() {
       <main id="main-content" tabIndex={-1} className="flex-1">
         <Outlet />
       </main>
+
+      {/* Footer */}
+      <footer className="border-t py-6">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} Expense Manager
+        </div>
+      </footer>
     </div>
   )
 }
