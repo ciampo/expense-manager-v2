@@ -7,54 +7,8 @@ import { useConvexAuth } from 'convex/react'
 import { useEffect } from 'react'
 
 import { routeTree } from './routeTree.gen'
-
-/**
- * Simple auth state bridge that allows non-React code (like beforeLoad)
- * to access the Convex auth state. Updated from inside the React tree
- * via the AuthBridge component.
- */
-export interface AuthStore {
-  isAuthenticated: boolean
-  isLoading: boolean
-  /** Returns a promise that resolves once auth state is no longer loading */
-  waitForAuth: () => Promise<{ isAuthenticated: boolean }>
-}
-
-function createAuthStore(): AuthStore {
-  let _isAuthenticated = false
-  let _isLoading = true
-  let _resolveAuth: ((value: { isAuthenticated: boolean }) => void) | null = null
-  let _authPromise = new Promise<{ isAuthenticated: boolean }>((resolve) => {
-    _resolveAuth = resolve
-  })
-
-  return {
-    get isAuthenticated() {
-      return _isAuthenticated
-    },
-    get isLoading() {
-      return _isLoading
-    },
-    set isAuthenticated(value: boolean) {
-      _isAuthenticated = value
-    },
-    set isLoading(value: boolean) {
-      const wasLoading = _isLoading
-      _isLoading = value
-      // Resolve the promise once loading completes
-      if (wasLoading && !value && _resolveAuth) {
-        _resolveAuth({ isAuthenticated: _isAuthenticated })
-        _resolveAuth = null
-      }
-    },
-    waitForAuth() {
-      if (!_isLoading) {
-        return Promise.resolve({ isAuthenticated: _isAuthenticated })
-      }
-      return _authPromise
-    },
-  }
-}
+import { createAuthStore } from '@/lib/auth-store'
+import type { AuthStore } from '@/lib/auth-store'
 
 /**
  * React component that bridges Convex auth state into the auth store.
