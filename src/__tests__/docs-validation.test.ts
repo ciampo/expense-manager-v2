@@ -34,14 +34,12 @@ describe('documentation validation', () => {
     let match: RegExpExecArray | null
     while ((match = pnpmPattern.exec(allDocs)) !== null) {
       const script = match[1]
-      if (pnpmBuiltins.has(script)) {
+      if (pnpmBuiltins.has(script) || script.startsWith('-')) {
         continue
       }
-      // Check anything that looks like it could be a package.json script
-      // (either contains a colon, or is a known short name like dev/build/deploy)
-      if (script.includes(':') || availableScripts.includes(script)) {
-        referencedScripts.add(script)
-      }
+      // Treat all non-builtin pnpm tokens as potential package.json scripts.
+      // This ensures typos like `pnpm buld` are caught as missing scripts.
+      referencedScripts.add(script)
     }
 
     const missingScripts = [...referencedScripts].filter(
