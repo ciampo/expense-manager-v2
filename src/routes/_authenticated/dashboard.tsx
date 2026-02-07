@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
@@ -97,6 +97,7 @@ function TableSkeleton() {
 
 function ExpenseTable() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { data: expenses } = useSuspenseQuery(convexQuery(api.expenses.list, {}))
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
   
@@ -177,39 +178,43 @@ function ExpenseTable() {
           {expenses.map((expense) => (
             <TableRow
               key={expense._id}
-              className="cursor-pointer hover:bg-muted/50"
+              tabIndex={0}
+              role="link"
+              aria-label={`Expense: ${expense.merchant}, ${formatDate(expense.date)}, ${formatCurrency(expense.amount)}`}
+              className="cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() =>
+                navigate({
+                  to: '/expenses/$expenseId',
+                  params: { expenseId: expense._id },
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  navigate({
+                    to: '/expenses/$expenseId',
+                    params: { expenseId: expense._id },
+                  })
+                }
+              }}
             >
+              <TableCell>{formatDate(expense.date)}</TableCell>
+              <TableCell>{expense.merchant}</TableCell>
               <TableCell>
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {formatDate(expense.date)}
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {expense.merchant}
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {categoryMap.get(expense.categoryId) || 'N/A'}
-                </Link>
+                {categoryMap.get(expense.categoryId) || 'N/A'}
               </TableCell>
               <TableCell className="text-right font-medium">
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {formatCurrency(expense.amount)}
-                </Link>
+                {formatCurrency(expense.amount)}
               </TableCell>
               <TableCell>
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {expense.attachmentId ? (
-                    <>
-                      <span aria-hidden="true">📎</span>
-                      <span className="sr-only">Has attachment</span>
-                    </>
-                  ) : (
-                    '-'
-                  )}
-                </Link>
+                {expense.attachmentId ? (
+                  <>
+                    <span aria-hidden="true">📎</span>
+                    <span className="sr-only">Has attachment</span>
+                  </>
+                ) : (
+                  '-'
+                )}
               </TableCell>
               <TableCell className="text-right">
                 <AlertDialog
