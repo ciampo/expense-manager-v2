@@ -1,4 +1,5 @@
 import { mutation, query } from './_generated/server'
+import { authTables } from '@convex-dev/auth/server'
 
 // Predefined categories for work expenses
 const PREDEFINED_CATEGORIES = [
@@ -111,20 +112,10 @@ export const cleanup = mutation({
       await ctx.db.delete(category._id)
     }
 
-    // Delete all auth-related records (order matters: sessions/tokens
-    // reference accounts/users, so delete dependents first)
-    const authTables = [
-      'authRefreshTokens',
-      'authVerificationCodes',
-      'authVerifiers',
-      'authRateLimits',
-      'authSessions',
-      'authAccounts',
-      'users',
-    ] as const
-
-    for (const table of authTables) {
-      const rows = await ctx.db.query(table).collect()
+    // Delete all auth-related records dynamically derived from the
+    // @convex-dev/auth schema — stays in sync if the library adds/removes tables.
+    for (const table of Object.keys(authTables)) {
+      const rows = await ctx.db.query(table as any).collect()
       for (const row of rows) {
         await ctx.db.delete(row._id)
       }
