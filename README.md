@@ -125,20 +125,21 @@ pnpm test:unit
 E2E tests require a dedicated Convex test project:
 
 1. Create a test Convex project: `expense-manager-test`
-2. Save the URL in `.env.test` (loaded by the Vite dev server in test mode)
-3. Set the test project's deploy key so Convex CLI commands target the test deployment:
-   ```bash
-   export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+2. Add the test project URL and deploy key to `.env.test`:
+   ```env
+   VITE_CONVEX_URL=https://your-test-project.convex.cloud
+   CONVEX_DEPLOY_KEY=your_test_project_deploy_key
    ```
-4. Deploy the schema: `npx convex deploy`
-5. Seed test data: `pnpm test:e2e:seed`
-6. Run tests:
+3. Deploy the schema: `npx convex deploy`
+4. Seed test data: `pnpm test:e2e:seed`
+5. Run tests:
    ```bash
    pnpm test:e2e
    ```
-7. Clean up test data afterwards: `pnpm test:e2e:cleanup`
 
-> **Note:** `CONVEX_DEPLOY_KEY` must be set (step 3) for the deploy, seed, and cleanup commands to target the test project instead of the development deployment.
+Test data (including auth users) is cleaned up automatically after each run via Playwright's `globalTeardown`.
+
+> **Note:** `CONVEX_DEPLOY_KEY` in `.env.test` is used by the deploy, seed, and cleanup commands to target the test project instead of the development deployment.
 
 ### Visual Regression Tests
 

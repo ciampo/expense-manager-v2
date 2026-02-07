@@ -31,10 +31,6 @@ This guide covers all the manual configuration steps required to set up the Expe
 1. In Convex Dashboard, click "New Project"
 2. Name it: `expense-manager-test`
 3. Copy the deployment URL
-4. Save it to `.env.test` in the project root:
-   ```
-   VITE_CONVEX_URL=https://your-test-project.convex.cloud
-   ```
 
 ### 1.3 Generate Deploy Key for Test Project
 
@@ -42,7 +38,15 @@ This guide covers all the manual configuration steps required to set up the Expe
 2. Go to Settings → Deploy Keys
 3. Click "Generate Deploy Key"
 4. Copy and save the key securely (it's only shown once)
-5. This key will be added to GitHub secrets later
+5. This key will be added to GitHub secrets later **and** to `.env.test`
+
+Save both values to `.env.test` in the project root:
+```env
+VITE_CONVEX_URL=https://your-test-project.convex.cloud
+CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+```
+
+> **Note:** `CONVEX_DEPLOY_KEY` in `.env.test` is used by the Convex CLI for deploy, seed, and cleanup commands, and by Playwright's `globalTeardown` to automatically clean up test data (including auth users) after each E2E run.
 
 ### 1.4 Initialize Convex Locally
 
@@ -77,11 +81,11 @@ This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on your Convex 
 
 ### 1.6 Deploy Schema to Test Project
 
-The test project needs the same schema deployed. Set `CONVEX_DEPLOY_KEY` to tell the Convex CLI which deployment to target — without it, commands will target the currently linked development project:
+The test project needs the same schema deployed. Source `CONVEX_DEPLOY_KEY` from `.env.test` (configured in step 1.3) to tell the Convex CLI which deployment to target:
 
 ```bash
-# Set the test project's deploy key (from Convex Dashboard > Settings > Deploy Keys)
-export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+# Load the deploy key from .env.test
+export $(grep CONVEX_DEPLOY_KEY .env.test | xargs)
 
 # Deploy schema to the test project
 npx convex deploy
@@ -97,14 +101,11 @@ Seed the predefined categories using the existing seed scripts:
 # Seed the development project (currently linked via npx convex dev)
 npx convex run seed:seedCategories
 
-# Seed the test project — CONVEX_DEPLOY_KEY tells the CLI which deployment to target
-CONVEX_DEPLOY_KEY=your_test_deploy_key npx convex run seed:e2e --prod
+# Seed the test project (CONVEX_DEPLOY_KEY must be set — see step 1.6)
+pnpm test:e2e:seed
 ```
 
-> **Note:** The `seed:e2e` function seeds categories and prepares the database for E2E tests. To clean up test data afterwards:
-> ```bash
-> CONVEX_DEPLOY_KEY=your_test_deploy_key npx convex run seed:cleanup --prod
-> ```
+> **Note:** Test data (including auth users created during E2E runs) is cleaned up automatically by Playwright's `globalTeardown` after each `pnpm test:e2e` run. You can also clean up manually with `pnpm test:e2e:cleanup` (requires `CONVEX_DEPLOY_KEY` to be set).
 
 ### 1.8 Configure Email Provider (Optional)
 
@@ -231,7 +232,7 @@ pnpm test:visual:docker
 ### Before Development
 
 - [ ] `.env.local` contains development Convex URL
-- [ ] `.env.test` contains test Convex URL
+- [ ] `.env.test` contains test Convex URL and `CONVEX_DEPLOY_KEY`
 - [ ] `npx convex dev` runs without errors
 - [ ] Categories seeded: `npx convex run seed:seedCategories` (or `pnpm test:e2e:seed` for test project)
 - [ ] Wrangler authenticated: `pnpm dlx wrangler whoami`

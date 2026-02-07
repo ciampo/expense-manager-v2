@@ -9,7 +9,7 @@ This document lists all environment variables used in the Expense Manager projec
 | Variable | Location | Purpose |
 |----------|----------|---------|
 | `VITE_CONVEX_URL` | `.env.local`, `.env.test` | Convex backend URL |
-| `CONVEX_DEPLOY_KEY` | GitHub Secrets, Local (temp) | Deploy/run functions on Convex |
+| `CONVEX_DEPLOY_KEY` | `.env.test`, GitHub Secrets | Deploy/run functions on test Convex project |
 | `CLOUDFLARE_API_TOKEN` | GitHub Secrets | Deploy to Cloudflare Workers |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets | Cloudflare account identifier |
 | `AUTH_RESEND_KEY` | Convex Environment | Email provider for auth |
@@ -41,20 +41,23 @@ CONVEX_DEPLOYMENT=dev:your-project  # Auto-populated by `npx convex dev`
 
 ### `.env.test` (Test Convex)
 
-Used when running E2E tests locally (`pnpm dev:e2e`). Points to your **test** Convex project.
+Used when running E2E tests locally (`pnpm dev:e2e`). Points to your **test** Convex project and provides the deploy key for seeding/cleanup.
 
 ```env
 VITE_CONVEX_URL=https://your-test-project.convex.cloud
+CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 ```
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `VITE_CONVEX_URL` | Yes | Test Convex deployment URL |
+| `CONVEX_DEPLOY_KEY` | Yes | Production deploy key for the test Convex project (used by seed, cleanup, and deploy commands) |
 
-**How to get it:**
+**How to get the values:**
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select your test project (`expense-manager-test`)
-3. Copy the "Deployment URL" from the project overview
+3. Copy the "Deployment URL" for `VITE_CONVEX_URL`
+4. Go to Settings → Deploy Keys → Generate Deploy Key for `CONVEX_DEPLOY_KEY`
 
 ---
 
@@ -192,6 +195,10 @@ VITE_CONVEX_URL=https://your-project.convex.cloud
 # Convex Test URL (for E2E tests)
 # Get from: https://dashboard.convex.dev/ → Test Project → Deployment URL
 VITE_CONVEX_URL=https://your-test-project.convex.cloud
+
+# Convex production deploy key for the test project (used by E2E test seed/cleanup)
+# Get from: Convex Dashboard → Test Project → Settings → Deploy Keys
+CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 ```
 
 ### `.env.example` (Committed to Git)
@@ -246,8 +253,9 @@ pnpm dev            # Terminal 2
 ```bash
 # Required files
 .env.test           → VITE_CONVEX_URL (test)
+                    → CONVEX_DEPLOY_KEY (test project deploy key)
 
-# Run E2E tests
+# Run E2E tests (cleanup runs automatically via Playwright globalTeardown)
 pnpm test:e2e
 ```
 
