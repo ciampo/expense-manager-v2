@@ -33,7 +33,7 @@ function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <main className="flex-1 flex items-center justify-center">
+      <main id="main-content" className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-4xl font-bold tracking-tight sm:text-5xl mb-6">
