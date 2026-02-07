@@ -34,7 +34,7 @@ jobs:
       - run: pnpm install
       - run: pnpm build
         env:
-          VITE_CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          VITE_CONVEX_URL: ${{ secrets.CONVEX_DEV_URL }}
       - name: Deploy to Cloudflare
         id: deploy
         uses: cloudflare/wrangler-action@v3
