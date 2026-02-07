@@ -86,16 +86,16 @@ export const e2e = mutation({
 })
 
 /**
- * Clean up E2E test data
- * Removes all test data from the database
+ * Clean up all E2E test data including auth users.
+ * Removes expenses, user-created categories, and all auth-related records.
+ * Predefined categories are preserved so the next seed is a no-op.
  */
 export const cleanup = mutation({
   args: {},
   handler: async (ctx) => {
-    // Delete all expenses
+    // Delete all expenses (and their attachments)
     const expenses = await ctx.db.query('expenses').collect()
     for (const expense of expenses) {
-      // Delete attachment if exists
       if (expense.attachmentId) {
         await ctx.storage.delete(expense.attachmentId)
       }
@@ -107,11 +107,29 @@ export const cleanup = mutation({
       .query('categories')
       .filter((q) => q.neq(q.field('userId'), undefined))
       .collect()
-
     for (const category of userCategories) {
       await ctx.db.delete(category._id)
     }
 
-    return { success: true, message: 'E2E test data cleaned up' }
+    // Delete all auth-related records (order matters: sessions/tokens
+    // reference accounts/users, so delete dependents first)
+    const authTables = [
+      'authRefreshTokens',
+      'authVerificationCodes',
+      'authVerifiers',
+      'authRateLimits',
+      'authSessions',
+      'authAccounts',
+      'users',
+    ] as const
+
+    for (const table of authTables) {
+      const rows = await ctx.db.query(table).collect()
+      for (const row of rows) {
+        await ctx.db.delete(row._id)
+      }
+    }
+
+    return { success: true, message: 'E2E test data and auth users cleaned up' }
   },
 })
