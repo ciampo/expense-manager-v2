@@ -321,12 +321,14 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
       {/* Date */}
       <div className="space-y-2">
-        <Label>Date</Label>
+        <Label htmlFor="date-picker">Date</Label>
         <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
           <PopoverTrigger>
             <Button
+              id="date-picker"
               type="button"
               variant="outline"
+              aria-label="Select date"
               className="w-full justify-start text-left font-normal"
             >
               {date ? format(new Date(date), 'PPP', { locale: enUS }) : 'Select date'}
@@ -350,13 +352,15 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Merchant (combobox) */}
       <div className="space-y-2">
-        <Label>Merchant</Label>
+        <Label htmlFor="merchant-combobox">Merchant</Label>
         <Popover open={isMerchantOpen} onOpenChange={setIsMerchantOpen}>
           <PopoverTrigger>
             <Button
+              id="merchant-combobox"
               type="button"
               variant="outline"
               role="combobox"
+              aria-label="Select merchant"
               className="w-full justify-start text-left font-normal"
             >
               {merchant || 'Select or type...'}
@@ -404,13 +408,15 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Category (combobox) */}
       <div className="space-y-2">
-        <Label>Category</Label>
+        <Label htmlFor="category-combobox">Category</Label>
         <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
           <PopoverTrigger>
             <Button
+              id="category-combobox"
               type="button"
               variant="outline"
               role="combobox"
+              aria-label="Select category"
               className="w-full justify-start text-left font-normal"
             >
               {selectedCategory ? (
@@ -504,7 +510,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Attachment */}
       <div className="space-y-2">
-        <Label>Attachment (optional)</Label>
+        <Label htmlFor="attachment-input">Attachment (optional)</Label>
         {attachmentId ? (
           <div className="space-y-3 p-3 border rounded-md">
             <AttachmentPreview attachmentId={attachmentId} />
@@ -535,6 +541,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           </div>
         ) : (
           <Input
+            id="attachment-input"
             type="file"
             accept={ACCEPTED_FILE_TYPES.join(',')}
             onChange={handleFileChange}
