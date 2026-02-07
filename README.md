@@ -16,7 +16,7 @@ A modern expense management application for tracking work-related expenses, buil
 
 - **Framework**: [TanStack Start](https://tanstack.com/start) (React meta-framework)
 - **Database & Auth**: [Convex](https://convex.dev)
-- **UI Components**: [ShadCN UI](https://ui.shadcn.com) with custom Nova preset
+- **UI Components**: [ShadCN UI](https://ui.shadcn.com) (base-nova style, built on Base UI primitives)
 - **Styling**: Tailwind CSS v4
 - **Hosting**: Cloudflare Workers
 - **Testing**: Vitest + Playwright + Visual Regression with Docker
@@ -126,10 +126,13 @@ E2E tests require a dedicated Convex test project:
 
 1. Create a test Convex project: `expense-manager-test`
 2. Save the URL in `.env.test`
-3. Run tests:
+3. Deploy the schema to the test project (see [SETUP.md](docs/SETUP.md) section 1.6)
+4. Seed test data: `pnpm test:e2e:seed`
+5. Run tests:
    ```bash
    pnpm test:e2e
    ```
+6. Clean up test data afterwards: `pnpm test:e2e:cleanup`
 
 ### Visual Regression Tests
 
@@ -201,6 +204,14 @@ Configure these GitHub Actions secrets:
 | `CONVEX_DEV_URL` | Convex **development** deployment URL (used for PR previews) |
 | `CONVEX_TEST_URL` | Convex **test** deployment URL (used for E2E and visual tests) |
 | `CONVEX_TEST_DEPLOY_KEY` | Convex deploy key for the test deployment |
+
+## Known Limitations
+
+- **No SSR data prefetching**: All data is fetched client-side via Convex real-time subscriptions. TanStack Router `loader` functions are not used.
+- **No dark mode toggle**: The app uses a light theme only. The `next-themes` dependency is present but not wired up with a `ThemeProvider`.
+- **No pagination**: All expenses are loaded at once. For large datasets, this may impact performance.
+- **Client-only file type validation**: Attachment file type checks happen only on the client. Convex does not support server-side MIME type validation on upload.
+- **UTC date handling**: Dates are stored as `YYYY-MM-DD` strings and may shift by one day in timezones with negative UTC offsets due to UTC parsing.
 
 ## License
 
