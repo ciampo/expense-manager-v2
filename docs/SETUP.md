@@ -4,8 +4,8 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 ## Prerequisites
 
-- Node.js 20+
-- pnpm (`npm install -g pnpm`)
+- Node.js >= 24.13.0
+- pnpm >= 10.28.2 (enable via `corepack enable`)
 - Docker Desktop (for visual regression tests)
 - GitHub account
 - Cloudflare account
