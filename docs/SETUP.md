@@ -15,7 +15,7 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 ## 1. Convex Setup
 
-### 1.1 Create Production Project
+### 1.1 Create Development Project
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Click "New Project"
@@ -47,7 +47,7 @@ This guide covers all the manual configuration steps required to set up the Expe
 ### 1.4 Initialize Convex Locally
 
 ```bash
-# Link to production project and generate types
+# Link to development project and generate types
 npx convex dev
 ```
 
@@ -223,7 +223,7 @@ pnpm test:visual:docker
 
 ### Before Development
 
-- [ ] `.env.local` contains production Convex URL
+- [ ] `.env.local` contains development Convex URL
 - [ ] `.env.test` contains test Convex URL
 - [ ] `npx convex dev` runs without errors
 - [ ] Categories seeded: `npx convex run seed:seedCategories` (or `pnpm test:e2e:seed` for test project)

@@ -18,21 +18,23 @@ This document lists all environment variables used in the Expense Manager projec
 
 ## Local Environment Files
 
-### `.env.local` (Production Convex)
+### `.env.local` (Development Convex)
 
-Used during local development. Points to your **production** Convex project.
+Used during local development. Points to your **development** Convex project.
 
 ```env
-VITE_CONVEX_URL=https://your-production-project.convex.cloud
+VITE_CONVEX_URL=https://your-dev-project.convex.cloud
+CONVEX_DEPLOYMENT=dev:your-project  # Auto-populated by `npx convex dev`
 ```
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_CONVEX_URL` | Yes | Production Convex deployment URL |
+| `VITE_CONVEX_URL` | Yes | Development Convex deployment URL |
+| `CONVEX_DEPLOYMENT` | Auto | Set automatically by `npx convex dev` -- do not edit manually |
 
 **How to get it:**
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
-2. Select your production project
+2. Select your development project
 3. Copy the "Deployment URL" from the project overview
 
 ---
@@ -168,9 +170,12 @@ These are automatically set by GitHub Actions or defined in workflow files.
 
 ### `.env.local` Template
 ```env
-# Convex Production URL
+# Convex Development URL
 # Get from: https://dashboard.convex.dev/ → Your Project → Deployment URL
 VITE_CONVEX_URL=https://your-project.convex.cloud
+
+# Auto-populated by `npx convex dev` -- do not edit manually
+# CONVEX_DEPLOYMENT=dev:your-project
 ```
 
 ### `.env.test` Template
@@ -221,7 +226,7 @@ If a secret is compromised:
 ### Local Development
 ```bash
 # Required files
-.env.local          → VITE_CONVEX_URL (production)
+.env.local          → VITE_CONVEX_URL (development)
 
 # Start development
 npx convex dev      # Terminal 1
