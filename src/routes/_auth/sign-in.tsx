@@ -102,7 +102,7 @@ function SignInPage() {
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             Don&apos;t have an account?{' '}
-            <Link to="/sign-up" className="text-primary hover:underline">
+            <Link to="/sign-up" className="text-primary underline hover:text-primary/80">
               Sign Up
             </Link>
           </p>

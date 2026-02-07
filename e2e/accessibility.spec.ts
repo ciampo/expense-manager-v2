@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
 test.describe('Accessibility Audit', () => {
-  test('landing page should have no critical accessibility violations', async ({
+  test('landing page should have no accessibility violations', async ({
     page,
   }) => {
     await page.goto('/')
@@ -15,7 +15,7 @@ test.describe('Accessibility Audit', () => {
     expect(results.violations).toEqual([])
   })
 
-  test('sign-in page should have no critical accessibility violations', async ({
+  test('sign-in page should have no accessibility violations', async ({
     page,
   }) => {
     await page.goto('/sign-in')
@@ -28,7 +28,7 @@ test.describe('Accessibility Audit', () => {
     expect(results.violations).toEqual([])
   })
 
-  test('sign-up page should have no critical accessibility violations', async ({
+  test('sign-up page should have no accessibility violations', async ({
     page,
   }) => {
     await page.goto('/sign-up')

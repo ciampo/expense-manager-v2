@@ -85,7 +85,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           Skip to content
         </a>
-        {children}
+        <div id="main-content">
+          {children}
+        </div>
         <Toaster />
         {import.meta.env.DEV && (
           <>

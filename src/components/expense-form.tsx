@@ -367,6 +367,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               variant="outline"
               role="combobox"
               aria-label="Select merchant"
+              aria-describedby={errors.merchant ? 'merchant-error' : undefined}
+              aria-invalid={!!errors.merchant}
               className="w-full justify-start text-left font-normal"
             >
               {merchant || 'Select or type...'}
@@ -428,6 +430,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               variant="outline"
               role="combobox"
               aria-label="Select category"
+              aria-describedby={errors.category ? 'category-error' : undefined}
+              aria-invalid={!!errors.category}
               className="w-full justify-start text-left font-normal"
             >
               {selectedCategory ? (
@@ -515,6 +519,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             onChange={(e) => setAmount(e.target.value)}
             className="pl-8"
             required
+            aria-describedby={errors.amount ? 'amount-error' : undefined}
+            aria-invalid={!!errors.amount}
           />
         </div>
         {amount && parseCurrencyToCents(amount) > 0 && (

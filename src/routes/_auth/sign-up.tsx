@@ -137,7 +137,7 @@ function SignUpPage() {
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             Already have an account?{' '}
-            <Link to="/sign-in" className="text-primary hover:underline">
+            <Link to="/sign-in" className="text-primary underline hover:text-primary/80">
               Sign In
             </Link>
           </p>
