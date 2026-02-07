@@ -49,25 +49,25 @@ A modern expense management application for tracking work-related expenses, buil
    # Edit .env.local with your Convex URL
    ```
 
-4. Start Convex development server:
+4. Start Convex development server (leave this running):
    ```bash
    npx convex dev
    ```
 
-5. Configure authentication keys (run once per deployment):
+5. Open a **new terminal** and configure authentication keys (run once per deployment):
    ```bash
    npx @convex-dev/auth
    ```
    This sets `JWT_PRIVATE_KEY` and `JWKS` on your Convex deployment.
 
-6. In a new terminal, start the app:
-   ```bash
-   pnpm dev
-   ```
-
-7. Seed the predefined categories (run once):
+6. Seed the predefined categories (run once, same terminal as step 5):
    ```bash
    npx convex run seed:seedCategories
+   ```
+
+7. Start the app (same terminal):
+   ```bash
+   pnpm dev
    ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
@@ -125,14 +125,20 @@ pnpm test:unit
 E2E tests require a dedicated Convex test project:
 
 1. Create a test Convex project: `expense-manager-test`
-2. Save the URL in `.env.test`
-3. Deploy the schema to the test project (see [SETUP.md](docs/SETUP.md) section 1.6)
-4. Seed test data: `pnpm test:e2e:seed`
-5. Run tests:
+2. Save the URL in `.env.test` (loaded by the Vite dev server in test mode)
+3. Set the test project's deploy key so Convex CLI commands target the test deployment:
+   ```bash
+   export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+   ```
+4. Deploy the schema: `npx convex deploy`
+5. Seed test data: `pnpm test:e2e:seed`
+6. Run tests:
    ```bash
    pnpm test:e2e
    ```
-6. Clean up test data afterwards: `pnpm test:e2e:cleanup`
+7. Clean up test data afterwards: `pnpm test:e2e:cleanup`
+
+> **Note:** `CONVEX_DEPLOY_KEY` must be set (step 3) for the deploy, seed, and cleanup commands to target the test project instead of the development deployment.
 
 ### Visual Regression Tests
 

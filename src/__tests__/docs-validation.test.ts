@@ -10,7 +10,7 @@ function readFile(relativePath: string): string {
 }
 
 describe('documentation validation', () => {
-  it('README script references match package.json scripts', () => {
+  it('README and SETUP script references match package.json scripts', () => {
     const pkg = JSON.parse(readFile('package.json'))
     const readme = readFile('README.md')
     const setupDoc = readFile('docs/SETUP.md')

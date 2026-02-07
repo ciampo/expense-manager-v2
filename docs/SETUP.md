@@ -60,9 +60,11 @@ This will:
 - Sync your schema to Convex
 - Start the Convex development server
 
+> **Note:** `npx convex dev` is a long-running watcher. Leave it running and open a **new terminal** for the following steps.
+
 ### 1.5 Configure Authentication Keys
 
-Each Convex deployment requires JWT keys for `@convex-dev/auth`. Generate and set them with:
+Each Convex deployment requires JWT keys for `@convex-dev/auth`. In a **separate terminal** (while `convex dev` is still running), generate and set them with:
 
 ```bash
 # For the development deployment (linked via npx convex dev)
@@ -75,29 +77,34 @@ This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on your Convex 
 
 ### 1.6 Deploy Schema to Test Project
 
-The test project needs the same schema deployed:
+The test project needs the same schema deployed. Set `CONVEX_DEPLOY_KEY` to tell the Convex CLI which deployment to target — without it, commands will target the currently linked development project:
 
 ```bash
-# Set the test project's deploy key
+# Set the test project's deploy key (from Convex Dashboard > Settings > Deploy Keys)
 export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 
-# Deploy schema to test project
+# Deploy schema to the test project
 npx convex deploy
 ```
+
+> **Important:** All `convex` commands in this terminal session will target the test deployment as long as `CONVEX_DEPLOY_KEY` is set. To switch back to the development project, run `unset CONVEX_DEPLOY_KEY`.
 
 ### 1.7 Seed Initial Data
 
 Seed the predefined categories using the existing seed scripts:
 
 ```bash
-# Seed data in the currently linked Convex project
+# Seed the development project (currently linked via npx convex dev)
 npx convex run seed:seedCategories
 
-# For the test project (using deploy key)
-CONVEX_DEPLOY_KEY=your_test_key npx convex run seed:e2e --prod
+# Seed the test project — CONVEX_DEPLOY_KEY tells the CLI which deployment to target
+CONVEX_DEPLOY_KEY=your_test_deploy_key npx convex run seed:e2e --prod
 ```
 
-> **Note:** The `seed:e2e` function seeds categories and prepares the database for E2E tests. Use `npx convex run seed:cleanup --prod` to clean up test data afterwards.
+> **Note:** The `seed:e2e` function seeds categories and prepares the database for E2E tests. To clean up test data afterwards:
+> ```bash
+> CONVEX_DEPLOY_KEY=your_test_deploy_key npx convex run seed:cleanup --prod
+> ```
 
 ### 1.8 Configure Email Provider (Optional)
 
