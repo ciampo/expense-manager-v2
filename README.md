@@ -84,7 +84,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `pnpm test:unit` | Run unit tests |
 | `pnpm test:e2e` | Run E2E tests |
 | `pnpm test:visual:docker` | Run visual regression tests in Docker |
-| `pnpm test:visual:update` | Update visual regression baselines |
+| `pnpm test:visual:docker:update` | Update visual regression baselines |
 | `pnpm deploy` | Deploy to Cloudflare Workers |
 
 ### Project Structure

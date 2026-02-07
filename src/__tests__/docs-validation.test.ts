@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 
-const ROOT = resolve(__dirname, '../..')
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 function readFile(relativePath: string): string {
   return readFileSync(resolve(ROOT, relativePath), 'utf-8')
@@ -20,29 +21,25 @@ describe('documentation validation', () => {
     const pnpmPattern = /pnpm\s+([\w:.-]+)/g
     const allDocs = readme + '\n' + setupDoc
 
+    // pnpm subcommands that are never package.json scripts
+    const pnpmBuiltins = new Set([
+      'install',
+      'add',
+      'remove',
+      'dlx',
+      'run',
+    ])
+
     const referencedScripts = new Set<string>()
     let match: RegExpExecArray | null
     while ((match = pnpmPattern.exec(allDocs)) !== null) {
       const script = match[1]
-      // Skip non-script pnpm commands
-      if (
-        [
-          'install',
-          'add',
-          'remove',
-          'dlx',
-          'run',
-          'dev',
-          'build',
-          'preview',
-          'deploy',
-        ].includes(script)
-      ) {
+      if (pnpmBuiltins.has(script)) {
         continue
       }
-      // Only check scripts that look like they could be package.json scripts
-      // (contain a colon, which is the convention for custom scripts)
-      if (script.includes(':')) {
+      // Check anything that looks like it could be a package.json script
+      // (either contains a colon, or is a known short name like dev/build/deploy)
+      if (script.includes(':') || availableScripts.includes(script)) {
         referencedScripts.add(script)
       }
     }
