@@ -199,7 +199,7 @@ Click "New repository secret" for each:
 The first visual test run will pull the Playwright Docker image (~1GB):
 
 ```bash
-pnpm test:visual:local
+pnpm test:visual:docker
 ```
 
 ---
@@ -234,7 +234,7 @@ pnpm dev
 pnpm test:unit
 
 # Run visual tests (requires Docker)
-pnpm test:visual:local
+pnpm test:visual:docker
 ```
 
 ---
@@ -253,7 +253,7 @@ Run `pnpm dlx wrangler login` to re-authenticate.
 
 Ensure you're running tests in Docker for consistent results:
 ```bash
-pnpm test:visual:local
+pnpm test:visual:docker
 ```
 
 ### E2E tests fail in CI

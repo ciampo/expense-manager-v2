@@ -77,7 +77,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `pnpm test` | Run all tests |
 | `pnpm test:unit` | Run unit tests |
 | `pnpm test:e2e` | Run E2E tests |
-| `pnpm test:visual:local` | Run visual regression tests in Docker |
+| `pnpm test:visual:docker` | Run visual regression tests in Docker |
 | `pnpm test:visual:update` | Update visual regression baselines |
 | `pnpm deploy` | Deploy to Cloudflare Workers |
 
@@ -130,11 +130,11 @@ E2E tests require a dedicated Convex test project:
 Visual tests run in Docker to ensure consistent screenshots:
 
 ```bash
-# Run tests
-pnpm test:visual:local
+# Run tests (in Docker for consistent screenshots)
+pnpm test:visual:docker
 
 # Update baselines after intentional UI changes
-pnpm test:visual:update
+pnpm test:visual:docker:update
 ```
 
 ## Deployment
