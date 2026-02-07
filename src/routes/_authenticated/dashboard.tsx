@@ -201,7 +201,14 @@ function ExpenseTable() {
               </TableCell>
               <TableCell>
                 <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {expense.attachmentId ? '📎' : '-'}
+                  {expense.attachmentId ? (
+                    <>
+                      <span aria-hidden="true">📎</span>
+                      <span className="sr-only">Has attachment</span>
+                    </>
+                  ) : (
+                    '-'
+                  )}
                 </Link>
               </TableCell>
               <TableCell className="text-right">

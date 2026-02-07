@@ -329,14 +329,14 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
             onClick={handleDownloadCsv}
             disabled={isDownloadingCsv || data.expenses.length === 0}
           >
-            {isDownloadingCsv ? 'Generating...' : '📄 Download CSV'}
+            {isDownloadingCsv ? 'Generating...' : <><span aria-hidden="true">📄</span> Download CSV</>}
           </Button>
           <Button
             variant="outline"
             onClick={handleDownloadZip}
             disabled={isDownloadingZip || !attachments?.length}
           >
-            {isDownloadingZip ? 'Generating...' : '📎 Download attachments (ZIP)'}
+            {isDownloadingZip ? 'Generating...' : <><span aria-hidden="true">📎</span> Download attachments (ZIP)</>}
           </Button>
         </CardContent>
       </Card>

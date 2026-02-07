@@ -57,7 +57,7 @@ function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6 mt-16 max-w-4xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle>📊 Dashboard</CardTitle>
+                <CardTitle><span aria-hidden="true">📊</span> Dashboard</CardTitle>
                 <CardDescription>
                   View all your expenses in a single organized view
                 </CardDescription>
@@ -72,7 +72,7 @@ function LandingPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>📎 Attachments</CardTitle>
+                <CardTitle><span aria-hidden="true">📎</span> Attachments</CardTitle>
                 <CardDescription>
                   Upload receipts and invoices for each expense
                 </CardDescription>
@@ -87,7 +87,7 @@ function LandingPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>📄 Reports</CardTitle>
+                <CardTitle><span aria-hidden="true">📄</span> Reports</CardTitle></invoke>
                 <CardDescription>
                   Generate monthly reports ready for accounting
                 </CardDescription>
