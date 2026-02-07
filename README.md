@@ -16,7 +16,7 @@ A modern expense management application for tracking work-related expenses, buil
 
 - **Framework**: [TanStack Start](https://tanstack.com/start) (React meta-framework)
 - **Database & Auth**: [Convex](https://convex.dev)
-- **UI Components**: [ShadCN UI](https://ui.shadcn.com) with custom Nova preset
+- **UI Components**: [ShadCN UI](https://ui.shadcn.com) (base-nova style, built on Base UI primitives)
 - **Styling**: Tailwind CSS v4
 - **Hosting**: Cloudflare Workers
 - **Testing**: Vitest + Playwright + Visual Regression with Docker
@@ -49,19 +49,25 @@ A modern expense management application for tracking work-related expenses, buil
    # Edit .env.local with your Convex URL
    ```
 
-4. Start Convex development server:
+4. Start Convex development server (leave this running):
    ```bash
    npx convex dev
    ```
 
-5. In a new terminal, start the app:
+5. Open a **new terminal** and configure authentication keys (run once per deployment):
    ```bash
-   pnpm dev
+   npx @convex-dev/auth
    ```
+   This sets `JWT_PRIVATE_KEY` and `JWKS` on your Convex deployment.
 
-6. Seed the predefined categories (run once):
+6. Seed the predefined categories (run once, same terminal as step 5):
    ```bash
    npx convex run seed:seedCategories
+   ```
+
+7. Start the app (same terminal):
+   ```bash
+   pnpm dev
    ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
@@ -77,8 +83,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `pnpm test` | Run all tests |
 | `pnpm test:unit` | Run unit tests |
 | `pnpm test:e2e` | Run E2E tests |
-| `pnpm test:visual:local` | Run visual regression tests in Docker |
-| `pnpm test:visual:update` | Update visual regression baselines |
+| `pnpm test:visual:docker` | Run visual regression tests in Docker |
+| `pnpm test:visual:docker:update` | Update visual regression baselines |
 | `pnpm deploy` | Deploy to Cloudflare Workers |
 
 ### Project Structure
@@ -119,22 +125,31 @@ pnpm test:unit
 E2E tests require a dedicated Convex test project:
 
 1. Create a test Convex project: `expense-manager-test`
-2. Save the URL in `.env.test`
-3. Run tests:
+2. Save the URL in `.env.test` (loaded by the Vite dev server in test mode)
+3. Set the test project's deploy key so Convex CLI commands target the test deployment:
+   ```bash
+   export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+   ```
+4. Deploy the schema: `npx convex deploy`
+5. Seed test data: `pnpm test:e2e:seed`
+6. Run tests:
    ```bash
    pnpm test:e2e
    ```
+7. Clean up test data afterwards: `pnpm test:e2e:cleanup`
+
+> **Note:** `CONVEX_DEPLOY_KEY` must be set (step 3) for the deploy, seed, and cleanup commands to target the test project instead of the development deployment.
 
 ### Visual Regression Tests
 
 Visual tests run in Docker to ensure consistent screenshots:
 
 ```bash
-# Run tests
-pnpm test:visual:local
+# Run tests (in Docker for consistent screenshots)
+pnpm test:visual:docker
 
 # Update baselines after intentional UI changes
-pnpm test:visual:update
+pnpm test:visual:docker:update
 ```
 
 ## Deployment
@@ -195,6 +210,14 @@ Configure these GitHub Actions secrets:
 | `CONVEX_DEV_URL` | Convex **development** deployment URL (used for PR previews) |
 | `CONVEX_TEST_URL` | Convex **test** deployment URL (used for E2E and visual tests) |
 | `CONVEX_TEST_DEPLOY_KEY` | Convex deploy key for the test deployment |
+
+## Known Limitations
+
+- **No SSR data prefetching**: All data is fetched client-side via Convex real-time subscriptions. TanStack Router `loader` functions are not used.
+- **No dark mode toggle**: The app uses a light theme only. The `next-themes` dependency is present but not wired up with a `ThemeProvider`.
+- **No pagination**: All expenses are loaded at once. For large datasets, this may impact performance.
+- **Client-only file type validation**: Attachment file type checks happen only on the client. Convex does not support server-side MIME type validation on upload.
+- **UTC date handling**: Dates are stored as `YYYY-MM-DD` strings and may shift by one day in timezones with negative UTC offsets due to UTC parsing.
 
 ## License
 

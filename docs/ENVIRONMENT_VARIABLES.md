@@ -18,21 +18,23 @@ This document lists all environment variables used in the Expense Manager projec
 
 ## Local Environment Files
 
-### `.env.local` (Production Convex)
+### `.env.local` (Development Convex)
 
-Used during local development. Points to your **production** Convex project.
+Used during local development. Points to your **development** Convex project.
 
 ```env
-VITE_CONVEX_URL=https://your-production-project.convex.cloud
+VITE_CONVEX_URL=https://your-dev-project.convex.cloud
+CONVEX_DEPLOYMENT=dev:your-project  # Auto-populated by `npx convex dev`
 ```
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_CONVEX_URL` | Yes | Production Convex deployment URL |
+| `VITE_CONVEX_URL` | Yes | Development Convex deployment URL |
+| `CONVEX_DEPLOYMENT` | Auto | Set automatically by `npx convex dev` -- do not edit manually |
 
 **How to get it:**
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
-2. Select your production project
+2. Select your development project
 3. Copy the "Deployment URL" from the project overview
 
 ---
@@ -68,7 +70,8 @@ These secrets are configured in your GitHub repository settings.
 |-------------|-------------|--------|
 | `CLOUDFLARE_API_TOKEN` | API token for Cloudflare Workers deployment | Cloudflare Dashboard |
 | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account identifier | Cloudflare Dashboard |
-| `CONVEX_URL` | Production Convex project deployment URL | Convex Dashboard |
+| `CONVEX_PROD_URL` | Production Convex deployment URL | Convex Dashboard |
+| `CONVEX_DEV_URL` | Development Convex deployment URL (for PR previews) | Convex Dashboard |
 | `CONVEX_TEST_URL` | Test Convex project deployment URL | Convex Dashboard |
 | `CONVEX_TEST_DEPLOY_KEY` | Deploy key for test Convex project | Convex Dashboard |
 
@@ -85,9 +88,14 @@ These secrets are configured in your GitHub repository settings.
 2. Workers & Pages (left sidebar)
 3. Copy "Account ID" from right sidebar
 
-#### `CONVEX_URL`
+#### `CONVEX_PROD_URL`
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select your **production** project
+3. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+
+#### `CONVEX_DEV_URL`
+1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
+2. Select your **development** project
 3. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
 
 #### `CONVEX_TEST_URL`
@@ -113,6 +121,15 @@ Or via CLI:
 ```bash
 npx convex env set VARIABLE_NAME=value
 ```
+
+### Auth Variables (Auto-configured)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `JWT_PRIVATE_KEY` | Yes | Private key for signing JWTs (set by `npx @convex-dev/auth`) |
+| `JWKS` | Yes | JSON Web Key Set for verifying JWTs (set by `npx @convex-dev/auth`) |
+
+> **Note:** These are set automatically by running `npx @convex-dev/auth` (or `npx @convex-dev/auth --prod` for production). Do not edit them manually.
 
 ### Optional Variables
 
@@ -151,6 +168,8 @@ These are automatically set by GitHub Actions or defined in workflow files.
 
 | Variable | Workflow File | Value |
 |----------|---------------|-------|
+| `VITE_CONVEX_URL` | `deploy.yml` | `${{ secrets.CONVEX_PROD_URL }}` |
+| `VITE_CONVEX_URL` | `preview.yml` | `${{ secrets.CONVEX_DEV_URL }}` |
 | `VITE_CONVEX_URL` | `test-e2e.yml` | `${{ secrets.CONVEX_TEST_URL }}` |
 | `CONVEX_DEPLOY_KEY` | `test-e2e.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
 
@@ -160,9 +179,12 @@ These are automatically set by GitHub Actions or defined in workflow files.
 
 ### `.env.local` Template
 ```env
-# Convex Production URL
+# Convex Development URL
 # Get from: https://dashboard.convex.dev/ → Your Project → Deployment URL
 VITE_CONVEX_URL=https://your-project.convex.cloud
+
+# Auto-populated by `npx convex dev` -- do not edit manually
+# CONVEX_DEPLOYMENT=dev:your-project
 ```
 
 ### `.env.test` Template
@@ -213,7 +235,7 @@ If a secret is compromised:
 ### Local Development
 ```bash
 # Required files
-.env.local          → VITE_CONVEX_URL (production)
+.env.local          → VITE_CONVEX_URL (development)
 
 # Start development
 npx convex dev      # Terminal 1
@@ -234,7 +256,8 @@ pnpm test:e2e
 # Required GitHub Secrets
 CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
-CONVEX_URL              # For production/preview deployments
+CONVEX_PROD_URL         # For production deployments (deploy.yml)
+CONVEX_DEV_URL          # For PR preview deployments (preview.yml)
 CONVEX_TEST_URL         # For E2E tests
 CONVEX_TEST_DEPLOY_KEY  # For E2E tests
 ```

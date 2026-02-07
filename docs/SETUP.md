@@ -4,8 +4,8 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 ## Prerequisites
 
-- Node.js 20+
-- pnpm (`npm install -g pnpm`)
+- Node.js >= 24.13.0
+- pnpm >= 10.28.2 (enable via `corepack enable`)
 - Docker Desktop (for visual regression tests)
 - GitHub account
 - Cloudflare account
@@ -15,7 +15,7 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 ## 1. Convex Setup
 
-### 1.1 Create Production Project
+### 1.1 Create Development Project
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Click "New Project"
@@ -47,7 +47,7 @@ This guide covers all the manual configuration steps required to set up the Expe
 ### 1.4 Initialize Convex Locally
 
 ```bash
-# Link to production project and generate types
+# Link to development project and generate types
 npx convex dev
 ```
 
@@ -60,33 +60,53 @@ This will:
 - Sync your schema to Convex
 - Start the Convex development server
 
-### 1.5 Deploy Schema to Test Project
+> **Note:** `npx convex dev` is a long-running watcher. Leave it running and open a **new terminal** for the following steps.
 
-The test project needs the same schema deployed:
+### 1.5 Configure Authentication Keys
+
+Each Convex deployment requires JWT keys for `@convex-dev/auth`. In a **separate terminal** (while `convex dev` is still running), generate and set them with:
 
 ```bash
-# Set the test project's deploy key
+# For the development deployment (linked via npx convex dev)
+npx @convex-dev/auth
+```
+
+This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on your Convex deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
+
+> **Note:** For the production deployment, run `npx @convex-dev/auth --prod` instead.
+
+### 1.6 Deploy Schema to Test Project
+
+The test project needs the same schema deployed. Set `CONVEX_DEPLOY_KEY` to tell the Convex CLI which deployment to target — without it, commands will target the currently linked development project:
+
+```bash
+# Set the test project's deploy key (from Convex Dashboard > Settings > Deploy Keys)
 export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 
-# Deploy schema to test project
+# Deploy schema to the test project
 npx convex deploy
 ```
 
-### 1.6 Seed Initial Data
+> **Important:** All `convex` commands in this terminal session will target the test deployment as long as `CONVEX_DEPLOY_KEY` is set. To switch back to the development project, run `unset CONVEX_DEPLOY_KEY`.
+
+### 1.7 Seed Initial Data
 
 Seed the predefined categories using the existing seed scripts:
 
 ```bash
-# Seed data in the currently linked Convex project
+# Seed the development project (currently linked via npx convex dev)
 npx convex run seed:seedCategories
 
-# For the test project (using deploy key)
-CONVEX_DEPLOY_KEY=your_test_key npx convex run seed:e2e --prod
+# Seed the test project — CONVEX_DEPLOY_KEY tells the CLI which deployment to target
+CONVEX_DEPLOY_KEY=your_test_deploy_key npx convex run seed:e2e --prod
 ```
 
-> **Note:** The `seed:e2e` function seeds categories and prepares the database for E2E tests. Use `npx convex run seed:cleanup --prod` to clean up test data afterwards.
+> **Note:** The `seed:e2e` function seeds categories and prepares the database for E2E tests. To clean up test data afterwards:
+> ```bash
+> CONVEX_DEPLOY_KEY=your_test_deploy_key npx convex run seed:cleanup --prod
+> ```
 
-### 1.7 Configure Email Provider (Optional)
+### 1.8 Configure Email Provider (Optional)
 
 For password reset emails in production:
 
@@ -164,6 +184,8 @@ Click "New repository secret" for each:
 |-------------|-------------|
 | `CLOUDFLARE_API_TOKEN` | Your Cloudflare API token |
 | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
+| `CONVEX_PROD_URL` | Production Convex deployment URL (used by `deploy.yml`) |
+| `CONVEX_DEV_URL` | Development Convex deployment URL (used by `preview.yml` for PR previews) |
 | `CONVEX_TEST_URL` | Test Convex project URL (`https://xxx.convex.cloud`) |
 | `CONVEX_TEST_DEPLOY_KEY` | Test Convex project deploy key |
 
@@ -199,7 +221,7 @@ Click "New repository secret" for each:
 The first visual test run will pull the Playwright Docker image (~1GB):
 
 ```bash
-pnpm test:visual:local
+pnpm test:visual:docker
 ```
 
 ---
@@ -208,7 +230,7 @@ pnpm test:visual:local
 
 ### Before Development
 
-- [ ] `.env.local` contains production Convex URL
+- [ ] `.env.local` contains development Convex URL
 - [ ] `.env.test` contains test Convex URL
 - [ ] `npx convex dev` runs without errors
 - [ ] Categories seeded: `npx convex run seed:seedCategories` (or `pnpm test:e2e:seed` for test project)
@@ -217,7 +239,7 @@ pnpm test:visual:local
 ### Before CI/CD
 
 - [ ] GitHub repository created
-- [ ] All 4 GitHub secrets added
+- [ ] All 6 GitHub secrets added
 - [ ] Branch protection rules configured
 - [ ] Docker Desktop running
 
@@ -234,7 +256,7 @@ pnpm dev
 pnpm test:unit
 
 # Run visual tests (requires Docker)
-pnpm test:visual:local
+pnpm test:visual:docker
 ```
 
 ---
@@ -253,7 +275,7 @@ Run `pnpm dlx wrangler login` to re-authenticate.
 
 Ensure you're running tests in Docker for consistent results:
 ```bash
-pnpm test:visual:local
+pnpm test:visual:docker
 ```
 
 ### E2E tests fail in CI
