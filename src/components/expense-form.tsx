@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { api } from '../../convex/_generated/api'
@@ -80,6 +80,45 @@ export function ExpenseFormSkeleton() {
         <Skeleton className="h-10 w-full" />
       </div>
       <Skeleton className="h-10 w-32" />
+    </div>
+  )
+}
+
+function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
+  const { data: url, isLoading } = useQuery(
+    convexQuery(api.storage.getUrl, { storageId: attachmentId })
+  )
+  const [isImage, setIsImage] = useState(true)
+
+  if (isLoading) {
+    return <Skeleton className="h-32 w-full rounded-md" />
+  }
+
+  if (!url) {
+    return <p className="text-sm text-muted-foreground">Attachment not available</p>
+  }
+
+  return (
+    <div className="space-y-2">
+      {isImage ? (
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          <img
+            src={url}
+            alt="Attachment preview"
+            className="max-h-48 rounded-md border object-contain"
+            onError={() => setIsImage(false)}
+          />
+        </a>
+      ) : (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+        >
+          📄 View PDF attachment
+        </a>
+      )}
     </div>
   )
 }
@@ -467,12 +506,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       <div className="space-y-2">
         <Label>Attachment (optional)</Label>
         {attachmentId ? (
-          <div className="flex items-center gap-2 p-3 border rounded-md">
-            <span>📎 Attachment uploaded</span>
+          <div className="space-y-3 p-3 border rounded-md">
+            <AttachmentPreview attachmentId={attachmentId} />
             <AlertDialog open={showDeleteAttachment} onOpenChange={setShowDeleteAttachment}>
               <AlertDialogTrigger>
-                <Button type="button" variant="ghost" size="sm" className="ml-auto text-destructive">
-                  Remove
+                <Button type="button" variant="ghost" size="sm" className="text-destructive">
+                  Remove attachment
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
