@@ -19,14 +19,16 @@ function LandingPage() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold">Expense Manager</h1>
-          <div className="flex gap-2">
-            <Button variant="ghost" render={<Link to="/sign-in" />}>
-              Sign In
-            </Button>
-            <Button render={<Link to="/sign-up" />}>
-              Sign Up
-            </Button>
-          </div>
+          <nav aria-label="Main">
+            <div className="flex gap-2">
+              <Button variant="ghost" render={<Link to="/sign-in" />}>
+                Sign In
+              </Button>
+              <Button render={<Link to="/sign-up" />}>
+                Sign Up
+              </Button>
+            </div>
+          </nav>
         </div>
       </header>
 
