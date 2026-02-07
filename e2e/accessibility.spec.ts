@@ -1,17 +1,22 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
-test.describe('Accessibility Audit', () => {
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+
+async function runAxeAudit(page: Page) {
+  return new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
+}
+
+// ── Public pages ──────────────────────────────────────────────
+
+test.describe('Accessibility Audit — Public Pages', () => {
   test('landing page should have no accessibility violations', async ({
     page,
   }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
-
+    const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
   })
 
@@ -21,10 +26,7 @@ test.describe('Accessibility Audit', () => {
     await page.goto('/sign-in')
     await page.waitForLoadState('networkidle')
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
-
+    const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
   })
 
@@ -34,10 +36,7 @@ test.describe('Accessibility Audit', () => {
     await page.goto('/sign-up')
     await page.waitForLoadState('networkidle')
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
-
+    const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
   })
 
@@ -58,6 +57,62 @@ test.describe('Accessibility Audit', () => {
   }) => {
     await page.goto('/')
 
+    const nav = page.locator('header nav')
+    await expect(nav).toHaveCount(1)
+  })
+})
+
+// ── Authenticated pages ───────────────────────────────────────
+
+test.describe('Accessibility Audit — Authenticated Pages', () => {
+  const testEmail = `a11y-test-${Date.now()}@example.com`
+  const testPassword = 'TestPassword123!'
+
+  // Sign up and authenticate before each test
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/sign-up')
+    await page.waitForLoadState('networkidle')
+
+    await page.getByLabel('Email').fill(testEmail)
+    await page.getByLabel('Password', { exact: true }).fill(testPassword)
+    await page.getByLabel('Confirm password').fill(testPassword)
+    await page.getByRole('button', { name: 'Sign Up' }).click()
+
+    // Wait for redirect to dashboard after successful sign-up
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    await page.waitForLoadState('networkidle')
+  })
+
+  test('dashboard should have no accessibility violations', async ({
+    page,
+  }) => {
+    const results = await runAxeAudit(page)
+    expect(results.violations).toEqual([])
+  })
+
+  test('new expense page should have no accessibility violations', async ({
+    page,
+  }) => {
+    await page.goto('/expenses/new')
+    await page.waitForLoadState('networkidle')
+
+    const results = await runAxeAudit(page)
+    expect(results.violations).toEqual([])
+  })
+
+  test('reports page should have no accessibility violations', async ({
+    page,
+  }) => {
+    await page.goto('/reports')
+    await page.waitForLoadState('networkidle')
+
+    const results = await runAxeAudit(page)
+    expect(results.violations).toEqual([])
+  })
+
+  test('authenticated layout should have a nav landmark', async ({
+    page,
+  }) => {
     const nav = page.locator('header nav')
     await expect(nav).toHaveCount(1)
   })
