@@ -240,7 +240,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
       // Only generate ZIP if at least one file was successfully added
       if (successfulDownloads === 0) {
-        toast.error('Impossibile scaricare gli allegati')
+        toast.error('Unable to download attachments')
         return
       }
 
