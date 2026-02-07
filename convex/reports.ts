@@ -29,9 +29,13 @@ export const monthlyData = query({
       )
       .collect()
 
-    // Get all categories to include names
-    const allCategories = await ctx.db.query('categories').collect()
-    const categoryMap = new Map(allCategories.map((c) => [c._id, c]))
+    // Collect unique category IDs from this month's expenses
+    const categoryIds = [...new Set(expenses.map((e) => e.categoryId))]
+    // Fetch only the categories referenced by these expenses
+    const categories = await Promise.all(categoryIds.map((id) => ctx.db.get(id)))
+    const categoryMap = new Map(
+      categories.filter(Boolean).map((c) => [c!._id, c!])
+    )
 
     // Calculate totals by category
     const categoryTotals: Record<string, { name: string; total: number; count: number }> = {}
