@@ -15,7 +15,7 @@ import appCss from '../App.css?url'
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+    <main id="main-content" className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
       <h1 className="text-6xl font-bold text-foreground">404</h1>
       <p className="mt-4 text-xl text-muted-foreground">Page not found</p>
       <p className="mt-2 text-muted-foreground">
@@ -27,7 +27,7 @@ function NotFoundComponent() {
       >
         Go back home
       </Link>
-    </div>
+    </main>
   )
 }
 
@@ -85,9 +85,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           Skip to content
         </a>
-        <div id="main-content">
-          {children}
-        </div>
+        {children}
         <Toaster />
         {import.meta.env.DEV && (
           <>

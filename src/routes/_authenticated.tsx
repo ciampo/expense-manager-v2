@@ -49,7 +49,7 @@ function AuthenticatedLayout() {
             <Skeleton className="h-8 w-8 rounded-full" />
           </div>
         </header>
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main id="main-content" className="flex-1 container mx-auto px-4 py-8">
           <Skeleton className="h-8 w-64 mb-4" />
           <Skeleton className="h-64 w-full" />
         </main>
@@ -106,7 +106,7 @@ function AuthenticatedLayout() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         <Outlet />
       </main>
     </div>
