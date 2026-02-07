@@ -34,12 +34,30 @@ export const list = query({
 })
 
 /**
- * Get a single category by ID
+ * Get a single category by ID.
+ * Predefined categories (no userId) are accessible to anyone.
+ * Custom categories are only accessible to their owner.
  */
 export const get = query({
   args: { id: v.id('categories') },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id)
+    const category = await ctx.db.get(args.id)
+    if (!category) {
+      return null
+    }
+
+    // Predefined categories are public
+    if (!category.userId) {
+      return category
+    }
+
+    // Custom categories require ownership
+    const userId = await auth.getUserId(ctx)
+    if (!userId || category.userId !== userId) {
+      return null
+    }
+
+    return category
   },
 })
 
