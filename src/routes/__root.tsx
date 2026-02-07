@@ -82,7 +82,7 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it">
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
