@@ -4,12 +4,7 @@ import AxeBuilder from '@axe-core/playwright'
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 
 async function runAxeAudit(page: Page) {
-  return new AxeBuilder({ page })
-    .withTags(WCAG_TAGS)
-    // Exclude transient Sonner toast container — its color contrast is a
-    // known upstream issue and toasts are not permanent page content.
-    .exclude('[data-sonner-toaster]')
-    .analyze()
+  return new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
 }
 
 // ── Public pages ──────────────────────────────────────────────
@@ -90,12 +85,25 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     // aren't attached until hydration finishes. Without this wait,
     // clicking the submit button triggers a native form GET submit
     // (URL becomes /sign-up?) instead of React's onSubmit handler.
-    // We verify hydration by filling a controlled input and checking
-    // the React state update reflects back into the DOM value.
-    const emailInput = page.getByLabel('Email')
-    await emailInput.fill('hydration-probe')
-    await expect(emailInput).toHaveValue('hydration-probe', { timeout: 15000 })
-    await emailInput.clear()
+    //
+    // We detect hydration by checking for React's internal fiber
+    // properties (__reactFiber$xxx / __reactProps$xxx) on a DOM element.
+    // These are added during hydration and are the most reliable signal
+    // that React has taken ownership of the server-rendered HTML.
+    // Note: a "controlled input value" probe is NOT sufficient — Playwright's
+    // fill() sets the DOM value directly via keyboard events regardless
+    // of whether React's onChange is attached.
+    await page.waitForFunction(
+      () => {
+        const form = document.querySelector('form')
+        if (!form) return false
+        return Object.keys(form).some(
+          (key) =>
+            key.startsWith('__reactFiber') || key.startsWith('__reactProps')
+        )
+      },
+      { timeout: 15000 }
+    )
 
     await page.getByLabel('Email').fill(uniqueEmail)
     await page.getByLabel('Password', { exact: true }).fill(testPassword)
@@ -137,16 +145,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     // Wait for the expense form to render
     await page.getByRole('button', { name: /create expense/i }).waitFor()
 
-    // The PopoverTrigger `render` prop fix eliminates the nested-interactive
-    // issue (no more <button> inside <button>). `aria-required-attr` is still
-    // disabled because the Base UI Calendar may flag missing ARIA attributes
-    // on internal controls that we don't own.
-    // TODO: re-evaluate whether aria-required-attr can be re-enabled
-    const results = await new AxeBuilder({ page })
-      .withTags(WCAG_TAGS)
-      .exclude('[data-sonner-toaster]')
-      .disableRules(['nested-interactive', 'aria-required-attr'])
-      .analyze()
+    const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
   })
 
