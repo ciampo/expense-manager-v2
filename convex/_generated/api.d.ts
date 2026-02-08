@@ -11,6 +11,7 @@
 import type * as ResendOTPPasswordReset from "../ResendOTPPasswordReset.js";
 import type * as auth from "../auth.js";
 import type * as categories from "../categories.js";
+import type * as crons from "../crons.js";
 import type * as expenses from "../expenses.js";
 import type * as http from "../http.js";
 import type * as reports from "../reports.js";
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   ResendOTPPasswordReset: typeof ResendOTPPasswordReset;
   auth: typeof auth;
   categories: typeof categories;
+  crons: typeof crons;
   expenses: typeof expenses;
   http: typeof http;
   reports: typeof reports;

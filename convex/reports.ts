@@ -21,15 +21,11 @@ export const monthlyData = query({
     const startDate = `${args.year}-${monthStr}-01`
     const endDate = `${args.year}-${monthStr}-31` // This works because string comparison
 
-    // Get all expenses for the month
+    // Get all expenses for the month using the composite date index
     const expenses = await ctx.db
       .query('expenses')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) =>
-        q.and(
-          q.gte(q.field('date'), startDate),
-          q.lte(q.field('date'), endDate)
-        )
+      .withIndex('by_user_and_date', (q) =>
+        q.eq('userId', userId).gte('date', startDate).lte('date', endDate),
       )
       .collect()
 
@@ -90,14 +86,10 @@ export const monthlyAttachments = query({
 
     const expenses = await ctx.db
       .query('expenses')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) =>
-        q.and(
-          q.gte(q.field('date'), startDate),
-          q.lte(q.field('date'), endDate),
-          q.neq(q.field('attachmentId'), undefined)
-        )
+      .withIndex('by_user_and_date', (q) =>
+        q.eq('userId', userId).gte('date', startDate).lte('date', endDate),
       )
+      .filter((q) => q.neq(q.field('attachmentId'), undefined))
       .collect()
 
     // Get URLs for all attachments

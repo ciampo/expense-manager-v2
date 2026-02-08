@@ -102,10 +102,12 @@ expense-manager-v2/
 ├── convex/                  # Convex backend
 │   ├── schema.ts            # Database schema
 │   ├── auth.ts              # Auth configuration
-│   ├── expenses.ts          # Expense functions
+│   ├── expenses.ts          # Expense CRUD + server-side validation
 │   ├── categories.ts        # Category functions
 │   ├── reports.ts           # Report functions
-│   └── storage.ts           # File storage functions
+│   ├── storage.ts           # File storage + upload ownership tracking
+│   ├── validation.ts        # Pure validation helpers (date, amount, etc.)
+│   └── crons.ts             # Scheduled jobs (orphan upload cleanup)
 ├── e2e/                     # Playwright E2E tests
 ├── tests/
 │   └── visual/              # Visual regression tests
@@ -233,12 +235,46 @@ Configure these GitHub Actions secrets:
 | `CONVEX_TEST_URL` | `expense-manager-test` project → **production** deployment URL |
 | `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key |
 
+## Backend Security & Validation
+
+### File Upload Ownership
+
+File attachments go through a tracked ownership flow:
+
+1. Client uploads file to Convex storage → receives a `storageId`
+2. Client calls `confirmUpload({ storageId })` → records a `(storageId, userId)` mapping in the `uploads` table. Rejects if another user already claimed the file (via `uploads` or `expenses`)
+3. `getUrl` grants access if the user owns the upload record (preview) or an expense referencing the file (saved data)
+4. `expenses.create` / `expenses.update` verify the user owns the upload record before linking it to an expense
+5. `deleteFile` verifies ownership via the expenses table before deleting
+
+A daily cron job (`crons.ts`, 3:00 AM UTC) cleans up orphaned files in two passes:
+- **Tracked orphans**: upload records older than 24 h with no matching expense (any user)
+- **Untracked orphans**: storage files with no upload record and no expense reference (e.g. `confirmUpload` failed)
+
+### Server-side Expense Validation
+
+All expense mutations (`create`, `update`) validate fields server-side:
+
+| Field | Rules |
+|-------|-------|
+| `date` | Must be a valid `YYYY-MM-DD` calendar date (e.g. `2026-02-30` is rejected) |
+| `amount` | Must be a positive integer (EUR cents) — `Number.isInteger` check |
+| `merchant` | Required after trimming, max 200 characters |
+| `comment` | Optional, max 1000 characters after trimming; empty → stored as absent |
+
+### Authorization
+
+- All expense and storage queries/mutations require authentication
+- Expenses are scoped to the owning user (`userId`)
+- Custom categories are only accessible to their creator; predefined categories are public
+- `categories.get` returns `null` for another user's custom category
+
 ## Known Limitations
 
 - **No SSR data prefetching**: All data is fetched client-side via Convex real-time subscriptions. TanStack Router `loader` functions are not used.
 - **No dark mode toggle**: The app uses a light theme only. The `next-themes` dependency is present but not wired up with a `ThemeProvider`.
 - **No pagination**: All expenses are loaded at once. For large datasets, this may impact performance.
-- **Client-only file type validation**: Attachment file type checks happen only on the client. Convex does not support server-side MIME type validation on upload.
+- **Client-only file type validation**: Attachment MIME type checks happen only on the client. Convex does not support server-side MIME type validation on upload. File ownership is verified server-side (see [Backend Security](#backend-security--validation)).
 - **UTC date handling**: Dates are stored as `YYYY-MM-DD` strings and may shift by one day in timezones with negative UTC offsets due to UTC parsing.
 
 ## License

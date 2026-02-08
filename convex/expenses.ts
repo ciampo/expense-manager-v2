@@ -1,6 +1,8 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { auth } from './auth'
+import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
+import { validateExpenseFields } from './validation'
 
 /**
  * List all expenses for the current user, sorted by date (most recent first)
@@ -88,14 +90,22 @@ export const create = mutation({
       throw new Error('Not authenticated')
     }
 
+    validateExpenseFields(args)
+
+    // Verify the user owns the uploaded file
+    if (args.attachmentId) {
+      await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
+    }
+
     const expenseId = await ctx.db.insert('expenses', {
       userId,
       date: args.date,
-      merchant: args.merchant,
+      merchant: args.merchant.trim(),
       amount: args.amount,
       categoryId: args.categoryId,
       attachmentId: args.attachmentId,
-      comment: args.comment,
+      // Empty/whitespace-only comments are stored as undefined (absent)
+      comment: args.comment?.trim() || undefined,
       createdAt: Date.now(),
     })
 
@@ -127,18 +137,33 @@ export const update = mutation({
       throw new Error('Expense not found')
     }
 
-    // If attachment changed and old one exists, delete it
+    validateExpenseFields(args)
+
+    // If the attachment is changing, verify the user owns the new upload
+    if (args.attachmentId && args.attachmentId !== existing.attachmentId) {
+      await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
+    }
+
+    // If attachment changed and old one exists, clean it up.
+    // Storage deletion is best-effort — if the file is already gone
+    // (e.g. cleaned up by the cron), the update should still proceed.
     if (existing.attachmentId && existing.attachmentId !== args.attachmentId) {
-      await ctx.storage.delete(existing.attachmentId)
+      try {
+        await ctx.storage.delete(existing.attachmentId)
+      } catch {
+        // File may have already been deleted
+      }
+      await deleteUploadRecord(ctx, existing.attachmentId)
     }
 
     await ctx.db.patch(args.id, {
       date: args.date,
-      merchant: args.merchant,
+      merchant: args.merchant.trim(),
       amount: args.amount,
       categoryId: args.categoryId,
       attachmentId: args.attachmentId,
-      comment: args.comment,
+      // Empty/whitespace-only comments are stored as undefined (absent)
+      comment: args.comment?.trim() || undefined,
     })
 
     return args.id
@@ -161,9 +186,15 @@ export const remove = mutation({
       throw new Error('Expense not found')
     }
 
-    // Delete attachment if exists
+    // Clean up attachment if it exists. Storage deletion is best-effort
+    // so a missing file doesn't block expense deletion.
     if (expense.attachmentId) {
-      await ctx.storage.delete(expense.attachmentId)
+      try {
+        await ctx.storage.delete(expense.attachmentId)
+      } catch {
+        // File may have already been deleted
+      }
+      await deleteUploadRecord(ctx, expense.attachmentId)
     }
 
     await ctx.db.delete(args.id)
@@ -188,7 +219,12 @@ export const removeAttachment = mutation({
     }
 
     if (expense.attachmentId) {
-      await ctx.storage.delete(expense.attachmentId)
+      try {
+        await ctx.storage.delete(expense.attachmentId)
+      } catch {
+        // File may have already been deleted
+      }
+      await deleteUploadRecord(ctx, expense.attachmentId)
       await ctx.db.patch(args.id, { attachmentId: undefined })
     }
 
