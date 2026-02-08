@@ -133,7 +133,19 @@ export const getUrl = query({
       .collect()
 
     if (uploads.length > 0 && uploads.every((u) => u.userId === userId)) {
-      return await ctx.storage.getUrl(args.storageId)
+      // Safety: ensure no expense for a *different* user references this file.
+      // This guards against data inconsistencies where an uploads row exists
+      // but the file is actually attached to another user's expense.
+      const conflictingExpense = await ctx.db
+        .query('expenses')
+        .withIndex('by_attachment', (q) =>
+          q.eq('attachmentId', args.storageId),
+        )
+        .first()
+
+      if (!conflictingExpense || conflictingExpense.userId === userId) {
+        return await ctx.storage.getUrl(args.storageId)
+      }
     }
 
     // Check 2: user owns an expense referencing this file
@@ -213,14 +225,22 @@ export const cleanupOrphanedUploads = internalMutation({
       .take(CLEANUP_BATCH_SIZE)
 
     for (const upload of oldUploads) {
+      // Use by_attachment (not by_user_and_attachment) so we check if ANY
+      // expense references this file — not just the uploader's. This prevents
+      // deleting a file that a different user's expense legitimately references
+      // (e.g. if the uploads row has a mismatched userId).
       const expense = await ctx.db
         .query('expenses')
-        .withIndex('by_user_and_attachment', (q) =>
-          q.eq('userId', upload.userId).eq('attachmentId', upload.storageId),
+        .withIndex('by_attachment', (q) =>
+          q.eq('attachmentId', upload.storageId),
         )
         .first()
 
-      if (!expense) {
+      if (expense) {
+        // File is still in use — only clean up the stale upload record
+        await ctx.db.delete(upload._id)
+      } else {
+        // Truly orphaned — delete both the storage file and the record
         try {
           await ctx.storage.delete(upload.storageId)
         } catch (err) {
