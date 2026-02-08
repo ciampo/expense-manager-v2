@@ -12,7 +12,7 @@ This document lists all environment variables used in the Expense Manager projec
 | `CONVEX_DEPLOY_KEY` | `.env.e2e`, GitHub Secrets | Deploy/run functions on test Convex project |
 | `CLOUDFLARE_API_TOKEN` | GitHub Secrets | Deploy to Cloudflare Workers |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets | Cloudflare account identifier |
-| `AUTH_RESEND_KEY` | Convex Environment | Email provider for auth |
+| `AUTH_RESEND_KEY` | Convex Environment | Resend API key for password reset emails |
 
 ---
 
@@ -146,21 +146,23 @@ npx convex env set VARIABLE_NAME=value
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AUTH_RESEND_KEY` | No* | Resend API key for sending auth emails |
+| `AUTH_RESEND_KEY` | Yes | Resend API key for password reset emails |
 
-*Required only if you want to send real emails (password reset, verification).
+Required for the forgot-password flow to work. Without it, users cannot reset their passwords.
 
 ### Setting Up Email Provider
 
 #### Using Resend
 ```bash
-npx convex env set AUTH_RESEND_KEY=re_xxxxx
+npx convex env set AUTH_RESEND_KEY re_xxxxx
 ```
 
 **How to get it:**
-1. Sign up at [Resend](https://resend.com/)
+1. Sign up at [Resend](https://resend.com/) (free tier is sufficient for development)
 2. Go to API Keys → Create API Key
-3. Copy the key
+3. Copy the key (starts with `re_`)
+
+> **Note:** Set this variable in every Convex deployment where password reset should work (development, production, test projects). See [SETUP.md](./SETUP.md#18-configure-email-provider-password-reset) for details.
 
 ---
 

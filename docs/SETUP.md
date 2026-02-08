@@ -129,23 +129,23 @@ pnpm test:e2e:seed
 
 > **Note:** Test data (including auth users created during E2E runs) is cleaned up automatically by Playwright's `globalTeardown` after each `pnpm test:e2e` run. You can also clean up manually with `pnpm test:e2e:cleanup` (requires `CONVEX_DEPLOY_KEY` to be set).
 
-### 1.8 Configure Email Provider (Optional)
+### 1.8 Configure Email Provider (Password Reset)
 
-For password reset emails in production:
+The forgot-password flow sends an OTP code via email using [Resend](https://resend.com/). This step is required for password reset to work in both development and production.
 
-#### Using Resend (Recommended)
-
-1. Sign up at [Resend](https://resend.com/)
-2. Create an API key
-3. Add to Convex environment:
+1. Sign up at [Resend](https://resend.com/) (free tier is fine for development)
+2. Create an API key in the Resend dashboard
+3. Add the key to your **development** Convex environment:
    ```bash
-   npx convex env set AUTH_RESEND_KEY=re_xxxxx
+   npx convex env set AUTH_RESEND_KEY re_xxxxx
    ```
-4. Verify your domain in Resend for production emails
+4. For your **test project** (if using E2E tests with password reset):
+   ```bash
+   CONVEX_DEPLOY_KEY=<test-deploy-key> npx convex env set AUTH_RESEND_KEY re_xxxxx
+   ```
+5. For **production**, also verify your email domain in the Resend dashboard and update the sender address in `convex/ResendOTPPasswordReset.ts`
 
-#### Development Mode
-
-In development, Convex Auth logs emails to the console instead of sending them. No additional setup required.
+> **Note:** During development, Resend's free tier allows sending to your own email using the `onboarding@resend.dev` sender. No domain verification is needed for development.
 
 ---
 
