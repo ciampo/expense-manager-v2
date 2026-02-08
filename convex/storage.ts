@@ -261,6 +261,7 @@ export const cleanupOrphanedUploads = internalMutation({
         // Truly orphaned — delete storage file + upload record.
         try {
           await ctx.storage.delete(upload.storageId)
+          deletedFiles++
         } catch (err) {
           console.warn(
             `Cleanup: could not delete storage file ${upload.storageId}:`,
@@ -268,7 +269,6 @@ export const cleanupOrphanedUploads = internalMutation({
           )
         }
         await ctx.db.delete(upload._id)
-        deletedFiles++
       }
     }
 
@@ -292,13 +292,13 @@ export const cleanupOrphanedUploads = internalMutation({
 
       try {
         await ctx.storage.delete(file._id)
+        deletedFiles++
       } catch (err) {
         console.warn(
           `Cleanup: could not delete untracked file ${file._id}:`,
           err,
         )
       }
-      deletedFiles++
     }
 
     if (deletedFiles > 0) {
