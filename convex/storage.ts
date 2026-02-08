@@ -113,6 +113,12 @@ export const confirmUpload = mutation({
       throw new Error('Not authenticated')
     }
 
+    // Verify the storage file actually exists
+    const fileRecord = await ctx.db.system.get(args.storageId)
+    if (!fileRecord) {
+      throw new Error('Storage file does not exist')
+    }
+
     // Reject if another user already claimed via uploads table
     const existingUpload = await getUploadRecord(ctx, args.storageId)
     if (existingUpload) {
@@ -215,6 +221,7 @@ export const deleteFile = mutation({
 
     await ctx.storage.delete(args.storageId)
     await deleteUploadRecord(ctx, args.storageId)
+    await ctx.db.patch(expense._id, { attachmentId: undefined })
     return true
   },
 })
