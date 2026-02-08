@@ -52,18 +52,16 @@ function ForgotPasswordPage() {
       formData.set('flow', 'reset')
 
       await signIn('password', formData)
-      toast.success('Verification code sent to your email')
-      setStep('code')
     } catch (error) {
+      // Silently swallow -- never reveal whether the email exists
+      // to prevent account-enumeration attacks.
       console.error('Password reset request error:', error)
-      const message =
-        error instanceof Error && /not found/i.test(error.message)
-          ? 'No account found with this email address.'
-          : 'Error sending reset code. Please try again.'
-      setErrors({ form: message })
-      toast.error(message)
     } finally {
       setIsLoading(false)
+      // Always advance to the code step and show the same message
+      // regardless of whether the account exists.
+      toast('If an account with that email exists, a verification code was sent.')
+      setStep('code')
     }
   }
 
