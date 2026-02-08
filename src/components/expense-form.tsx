@@ -551,10 +551,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           <div className="space-y-3 p-3 border rounded-md">
             <AttachmentPreview attachmentId={attachmentId} />
             <AlertDialog open={showDeleteAttachment} onOpenChange={setShowDeleteAttachment}>
-              <AlertDialogTrigger>
-                <Button type="button" variant="ghost" size="sm" className="text-destructive">
-                  Remove attachment
-                </Button>
+              <AlertDialogTrigger
+                render={
+                  <Button type="button" variant="ghost" size="sm" className="text-destructive" />
+                }
+              >
+                Remove attachment
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -617,10 +619,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
         {mode === 'edit' && expense && (
           <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
-            <AlertDialogTrigger>
-              <Button type="button" variant="destructive" className="ml-auto">
-                Delete
-              </Button>
+            <AlertDialogTrigger
+              render={
+                <Button type="button" variant="destructive" className="ml-auto" />
+              }
+            >
+              Delete
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>

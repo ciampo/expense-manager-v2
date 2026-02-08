@@ -220,15 +220,17 @@ function ExpenseTable() {
                     setDeletingId(open ? expense._id : null)
                   }
                 >
-                  <AlertDialogTrigger>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Delete
-                    </Button>
+                  <AlertDialogTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    }
+                  >
+                    Delete
                   </AlertDialogTrigger>
                   <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                     <AlertDialogHeader>
