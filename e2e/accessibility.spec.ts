@@ -41,6 +41,16 @@ test.describe('Accessibility Audit — Public Pages', () => {
     expect(results.violations).toEqual([])
   })
 
+  test('forgot-password page should have no accessibility violations', async ({
+    page,
+  }) => {
+    await page.goto('/forgot-password')
+    await page.getByRole('heading', { name: /forgot password/i }).waitFor()
+
+    const results = await runAxeAudit(page)
+    expect(results.violations).toEqual([])
+  })
+
   test('should have a skip-to-content link', async ({ page }) => {
     await page.goto('/')
 
