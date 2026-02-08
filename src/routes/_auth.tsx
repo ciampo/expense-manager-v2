@@ -34,7 +34,7 @@ function AuthLayout() {
       </header>
 
       {/* Main content */}
-      <main id="main-content" className="flex-1 flex items-center justify-center p-4">
+      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Outlet />
         </div>

@@ -14,7 +14,8 @@ test.describe('Accessibility Audit — Public Pages', () => {
     page,
   }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    // Wait for the hero heading to confirm the page has rendered
+    await page.getByRole('heading', { name: /expense manager/i }).waitFor()
 
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
@@ -24,7 +25,7 @@ test.describe('Accessibility Audit — Public Pages', () => {
     page,
   }) => {
     await page.goto('/sign-in')
-    await page.waitForLoadState('networkidle')
+    await page.getByRole('heading', { name: /sign in/i }).waitFor()
 
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
@@ -34,7 +35,7 @@ test.describe('Accessibility Audit — Public Pages', () => {
     page,
   }) => {
     await page.goto('/sign-up')
-    await page.waitForLoadState('networkidle')
+    await page.getByRole('heading', { name: /sign up/i }).waitFor()
 
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
@@ -74,7 +75,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     const uniqueEmail = `a11y-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
 
     await page.goto('/sign-up')
-    await page.waitForLoadState('networkidle')
+    await page.getByRole('heading', { name: /sign up/i }).waitFor()
 
     await page.getByLabel('Email').fill(uniqueEmail)
     await page.getByLabel('Password', { exact: true }).fill(testPassword)
@@ -83,7 +84,8 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
 
     // Wait for redirect to dashboard after successful sign-up
     await page.waitForURL('**/dashboard', { timeout: 30000 })
-    await page.waitForLoadState('networkidle')
+    // Wait for the dashboard to fully render (main content area visible)
+    await page.locator('main#main-content').waitFor()
   })
 
   test('dashboard should have no accessibility violations', async ({
@@ -97,7 +99,8 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     page,
   }) => {
     await page.goto('/expenses/new')
-    await page.waitForLoadState('networkidle')
+    // Wait for the expense form to render
+    await page.getByRole('button', { name: /save/i }).waitFor()
 
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
@@ -107,7 +110,8 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     page,
   }) => {
     await page.goto('/reports')
-    await page.waitForLoadState('networkidle')
+    // Wait for the reports page to render
+    await page.locator('main#main-content').waitFor()
 
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
