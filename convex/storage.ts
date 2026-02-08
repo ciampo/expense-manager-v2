@@ -7,55 +7,79 @@ import { auth } from './auth'
 const ORPHAN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const CLEANUP_BATCH_SIZE = 100
 
-// ---------------------------------------------------------------------------
-// Shared helpers (used by both storage.ts and expenses.ts)
-// ---------------------------------------------------------------------------
+// ── Helpers ─────────────────────────────────────────────────────────────
+//
+// These are used by both storage.ts and expenses.ts.  They are
+// intentionally typed with minimal context interfaces so they can accept
+// both MutationCtx and QueryCtx.
+//
+// Convex mutations are **serializable transactions**: two concurrent
+// mutations that touch the same rows are automatically serialised and
+// retried, so the `uploads` table will always contain at most one record
+// per storageId.  All lookups therefore use `.first()`.
 
 /**
- * Verify that the given `attachmentId` has an `uploads` record owned by `userId`.
- * Throws if no records exist or any record belongs to another user.
+ * Return the single `uploads` record for a storageId, or `null`.
+ */
+async function getUploadRecord(
+  ctx: { db: QueryCtx['db'] },
+  storageId: Id<'_storage'>,
+) {
+  return ctx.db
+    .query('uploads')
+    .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
+    .first()
+}
+
+/**
+ * Return `true` if any expense — regardless of owner — references the
+ * given storageId.
+ */
+async function isFileReferencedByExpense(
+  ctx: { db: QueryCtx['db'] },
+  storageId: Id<'_storage'>,
+) {
+  const expense = await ctx.db
+    .query('expenses')
+    .withIndex('by_attachment', (q) => q.eq('attachmentId', storageId))
+    .first()
+  return expense !== null
+}
+
+/**
+ * Verify that `storageId` has an upload record owned by `userId`.
  *
- * Collects all matching rows (instead of `.first()`) so that even if duplicate
- * records exist the check is deterministic and never grants access based on
- * whichever row happens to be returned first.
+ * Throws if no record exists or the record belongs to a different user.
+ * Called by `expenses.create` and `expenses.update` when attaching a file.
  */
 export async function verifyAttachmentOwnership(
   ctx: { db: QueryCtx['db'] },
   attachmentId: Id<'_storage'>,
   userId: Id<'users'>,
 ) {
-  const uploads = await ctx.db
-    .query('uploads')
-    .withIndex('by_storage_id', (q) => q.eq('storageId', attachmentId))
-    .collect()
-
-  if (uploads.length === 0 || !uploads.every((u) => u.userId === userId)) {
+  const upload = await getUploadRecord(ctx, attachmentId)
+  if (!upload || upload.userId !== userId) {
     throw new Error('Attachment not found or not owned by current user')
   }
 }
 
 /**
- * Delete all `uploads` records for a given storageId.
- *
- * Collects all matching rows so that no stale records are left behind even
- * if duplicate rows exist for the same storageId.
+ * Delete the upload record for a storageId (if one exists).
  */
 export async function deleteUploadRecord(
   ctx: { db: MutationCtx['db'] },
   storageId: Id<'_storage'>,
 ) {
-  const uploads = await ctx.db
-    .query('uploads')
-    .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
-    .collect()
-
-  for (const upload of uploads) {
+  const upload = await getUploadRecord(ctx, storageId)
+  if (upload) {
     await ctx.db.delete(upload._id)
   }
 }
 
+// ── Public mutations ────────────────────────────────────────────────────
+
 /**
- * Generate an upload URL for file storage
+ * Generate a presigned upload URL.
  */
 export const generateUploadUrl = mutation({
   args: {},
@@ -64,7 +88,6 @@ export const generateUploadUrl = mutation({
     if (!userId) {
       throw new Error('Not authenticated')
     }
-
     return await ctx.storage.generateUploadUrl()
   },
 })
@@ -72,10 +95,15 @@ export const generateUploadUrl = mutation({
 /**
  * Register ownership of a freshly uploaded file.
  *
- * The client must call this immediately after uploading a file and receiving
- * the storageId. It records a (storageId → userId) mapping in the `uploads`
- * table so that `getUrl` and expense mutations can verify ownership before
- * the file is linked to an expense.
+ * The client calls this immediately after uploading a file and receiving
+ * the storageId.  It creates a `(storageId, userId)` mapping in the
+ * `uploads` table that downstream queries and mutations rely on.
+ *
+ * **Rejects** if:
+ * - Another user already has an upload record for this storageId, OR
+ * - Another user's expense already references this storageId.
+ *
+ * **Idempotent**: succeeds silently if the same user already registered.
  */
 export const confirmUpload = mutation({
   args: { storageId: v.id('_storage') },
@@ -85,21 +113,26 @@ export const confirmUpload = mutation({
       throw new Error('Not authenticated')
     }
 
-    // Collect all existing records for this storageId (normally 0 or 1,
-    // but we handle duplicates defensively).
-    const existing = await ctx.db
-      .query('uploads')
-      .withIndex('by_storage_id', (q) => q.eq('storageId', args.storageId))
-      .collect()
-
-    // Reject if any record belongs to a different user
-    if (existing.some((u) => u.userId !== userId)) {
-      throw new Error('File already claimed by another user')
+    // Reject if another user already claimed via uploads table
+    const existingUpload = await getUploadRecord(ctx, args.storageId)
+    if (existingUpload) {
+      if (existingUpload.userId !== userId) {
+        throw new Error('File already claimed by another user')
+      }
+      return // idempotent — same user already registered
     }
 
-    // Idempotent: skip if the same user already registered this upload
-    if (existing.length > 0) {
-      return
+    // Reject if another user's expense already references this file
+    // (covers pre-existing data that predates the uploads table)
+    const existingExpense = await ctx.db
+      .query('expenses')
+      .withIndex('by_attachment', (q) =>
+        q.eq('attachmentId', args.storageId),
+      )
+      .first()
+
+    if (existingExpense && existingExpense.userId !== userId) {
+      throw new Error('File already claimed by another user')
     }
 
     await ctx.db.insert('uploads', {
@@ -110,12 +143,18 @@ export const confirmUpload = mutation({
   },
 })
 
+// ── Public queries ──────────────────────────────────────────────────────
+
 /**
- * Get a download URL for a file (verifies ownership).
+ * Get a temporary download URL for a file.
  *
- * Ownership is satisfied when the current user either:
- * - Has a record in the `uploads` table for this storageId (preview before save), OR
- * - Has an expense that references this storageId (viewing saved attachment)
+ * Access is granted when the current user:
+ * 1. Owns the upload record — covers the preview-before-save flow, OR
+ * 2. Owns an expense that references the file — covers saved attachments.
+ *
+ * Cross-user conflicts are enforced at write time (`confirmUpload`,
+ * `verifyAttachmentOwnership`), so the read path does not need to
+ * re-verify them.
  */
 export const getUrl = query({
   args: { storageId: v.id('_storage') },
@@ -125,30 +164,13 @@ export const getUrl = query({
       return null
     }
 
-    // Check 1: user owns the upload record(s) (covers preview-before-save).
-    // Collect all rows so the check is deterministic even if duplicates exist.
-    const uploads = await ctx.db
-      .query('uploads')
-      .withIndex('by_storage_id', (q) => q.eq('storageId', args.storageId))
-      .collect()
-
-    if (uploads.length > 0 && uploads.every((u) => u.userId === userId)) {
-      // Safety: ensure no expense for a *different* user references this file.
-      // This guards against data inconsistencies where an uploads row exists
-      // but the file is actually attached to another user's expense.
-      const conflictingExpense = await ctx.db
-        .query('expenses')
-        .withIndex('by_attachment', (q) =>
-          q.eq('attachmentId', args.storageId),
-        )
-        .first()
-
-      if (!conflictingExpense || conflictingExpense.userId === userId) {
-        return await ctx.storage.getUrl(args.storageId)
-      }
+    // Path 1: user owns the upload record (preview before save)
+    const upload = await getUploadRecord(ctx, args.storageId)
+    if (upload?.userId === userId) {
+      return await ctx.storage.getUrl(args.storageId)
     }
 
-    // Check 2: user owns an expense referencing this file
+    // Path 2: user owns an expense referencing this file
     const expense = await ctx.db
       .query('expenses')
       .withIndex('by_user_and_attachment', (q) =>
@@ -164,8 +186,13 @@ export const getUrl = query({
   },
 })
 
+// ── Delete ───────────────────────────────────────────────────────────────
+
 /**
- * Delete a file from storage (verifies ownership via expense).
+ * Delete a file from storage.
+ *
+ * Requires the file to be linked to an expense owned by the current user.
+ * Also removes the corresponding upload record.
  */
 export const deleteFile = mutation({
   args: { storageId: v.id('_storage') },
@@ -175,7 +202,6 @@ export const deleteFile = mutation({
       throw new Error('Not authenticated')
     }
 
-    // Verify the storage ID belongs to an expense owned by the current user
     const expense = await ctx.db
       .query('expenses')
       .withIndex('by_user_and_attachment', (q) =>
@@ -188,116 +214,93 @@ export const deleteFile = mutation({
     }
 
     await ctx.storage.delete(args.storageId)
-
-    // Clean up the upload record if it exists
     await deleteUploadRecord(ctx, args.storageId)
-
     return true
   },
 })
 
+// ── Cleanup cron ────────────────────────────────────────────────────────
+
 /**
- * Clean up orphaned files and upload records older than 24 hours.
+ * Clean up orphaned files and stale upload records.
  *
- * Two passes:
- * 1. **Tracked orphans** — `uploads` records with no matching expense.
- *    Deletes both the storage file and the upload record.
- * 2. **Untracked orphans** — storage files that have neither an `uploads`
- *    record nor an expense reference (e.g. `confirmUpload` failed after
- *    the client uploaded). Deletes the storage file directly.
+ * **Pass 1 — tracked orphans** (upload records older than 24 h):
+ *   - If ANY expense still references the file → remove only the stale
+ *     upload record (the file is in use).
+ *   - Otherwise → delete the storage file and the upload record.
  *
- * Processes up to {@link CLEANUP_BATCH_SIZE} items per pass to stay within
- * Convex mutation execution limits. The daily cron is sufficient for normal
- * volumes; if a backlog builds up it will be drained over successive runs.
+ * **Pass 2 — untracked orphans** (storage files with no upload record):
+ *   Catches files where the client uploaded successfully but
+ *   `confirmUpload` never completed (tab closed, transient error, …).
+ *   - If no expense references the file and it's older than 24 h → delete.
  *
- * Called by the daily cron defined in crons.ts.
+ * Each pass processes up to {@link CLEANUP_BATCH_SIZE} items to stay
+ * within Convex execution limits.  The daily cadence is sufficient for
+ * normal volumes; backlogs drain over successive runs.
  */
 export const cleanupOrphanedUploads = internalMutation({
   args: {},
   handler: async (ctx) => {
     const cutoff = Date.now() - ORPHAN_TTL_MS
-    let deleted = 0
+    let deletedFiles = 0
 
-    // --- Pass 1: tracked orphans (uploads table) --------------------------
-    const oldUploads = await ctx.db
+    // ── Pass 1 ──────────────────────────────────────────────────────
+    const staleUploads = await ctx.db
       .query('uploads')
       .withIndex('by_created_at', (q) => q.lt('createdAt', cutoff))
       .take(CLEANUP_BATCH_SIZE)
 
-    for (const upload of oldUploads) {
-      // Use by_attachment (not by_user_and_attachment) so we check if ANY
-      // expense references this file — not just the uploader's. This prevents
-      // deleting a file that a different user's expense legitimately references
-      // (e.g. if the uploads row has a mismatched userId).
-      const expense = await ctx.db
-        .query('expenses')
-        .withIndex('by_attachment', (q) =>
-          q.eq('attachmentId', upload.storageId),
-        )
-        .first()
+    for (const upload of staleUploads) {
+      const inUse = await isFileReferencedByExpense(ctx, upload.storageId)
 
-      if (expense) {
-        // File is still in use — only clean up the stale upload record
+      if (inUse) {
+        // File is still attached to an expense — only remove the stale
+        // upload record.
         await ctx.db.delete(upload._id)
       } else {
-        // Truly orphaned — delete both the storage file and the record
+        // Truly orphaned — delete storage file + upload record.
         try {
           await ctx.storage.delete(upload.storageId)
         } catch (err) {
           console.warn(
-            `Failed to delete storage file ${upload.storageId}, removing upload record anyway:`,
+            `Cleanup: could not delete storage file ${upload.storageId}:`,
             err,
           )
         }
         await ctx.db.delete(upload._id)
-        deleted++
+        deletedFiles++
       }
     }
 
-    // --- Pass 2: untracked orphans (_storage system table) ----------------
-    // Catches files where the client upload succeeded but confirmUpload
-    // never completed (transient error, tab closed, etc.).
-    const allFiles = await ctx.db.system
+    // ── Pass 2 ──────────────────────────────────────────────────────
+    const storageFiles = await ctx.db.system
       .query('_storage')
       .take(CLEANUP_BATCH_SIZE)
 
-    for (const file of allFiles) {
-      // Only consider files older than the TTL
-      if (file._creationTime > cutoff) {
-        continue
+    for (const file of storageFiles) {
+      if (file._creationTime > cutoff) continue
+
+      // Skip files that have an upload record (handled in pass 1)
+      const upload = await getUploadRecord(ctx, file._id)
+      if (upload) continue
+
+      // Skip files that are referenced by any expense
+      const inUse = await isFileReferencedByExpense(ctx, file._id)
+      if (inUse) continue
+
+      try {
+        await ctx.storage.delete(file._id)
+      } catch (err) {
+        console.warn(
+          `Cleanup: could not delete untracked file ${file._id}:`,
+          err,
+        )
       }
-
-      // Skip if there's a matching upload record (handled in pass 1)
-      const upload = await ctx.db
-        .query('uploads')
-        .withIndex('by_storage_id', (q) => q.eq('storageId', file._id))
-        .first()
-
-      if (upload) {
-        continue
-      }
-
-      // Skip if any expense references this file
-      const expense = await ctx.db
-        .query('expenses')
-        .withIndex('by_attachment', (q) => q.eq('attachmentId', file._id))
-        .first()
-
-      if (!expense) {
-        try {
-          await ctx.storage.delete(file._id)
-        } catch (err) {
-          console.warn(
-            `Failed to delete untracked storage file ${file._id}:`,
-            err,
-          )
-        }
-        deleted++
-      }
+      deletedFiles++
     }
 
-    if (deleted > 0) {
-      console.log(`Cleaned up ${deleted} orphaned file(s)`)
+    if (deletedFiles > 0) {
+      console.log(`Cleanup: deleted ${deletedFiles} orphaned file(s)`)
     }
   },
 })

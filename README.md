@@ -242,13 +242,13 @@ Configure these GitHub Actions secrets:
 File attachments go through a tracked ownership flow:
 
 1. Client uploads file to Convex storage → receives a `storageId`
-2. Client calls `confirmUpload({ storageId })` → records a `(storageId, userId)` mapping in the `uploads` table
-3. `getUrl` verifies the current user owns the upload record or an expense referencing the file
-4. `expenses.create` / `expenses.update` verify the user owns the upload before linking it to an expense
+2. Client calls `confirmUpload({ storageId })` → records a `(storageId, userId)` mapping in the `uploads` table. Rejects if another user already claimed the file (via `uploads` or `expenses`)
+3. `getUrl` grants access if the user owns the upload record (preview) or an expense referencing the file (saved data)
+4. `expenses.create` / `expenses.update` verify the user owns the upload record before linking it to an expense
 5. `deleteFile` verifies ownership via the expenses table before deleting
 
 A daily cron job (`crons.ts`, 3:00 AM UTC) cleans up orphaned files in two passes:
-- **Tracked orphans**: upload records older than 24h with no matching expense
+- **Tracked orphans**: upload records older than 24 h with no matching expense (any user)
 - **Untracked orphans**: storage files with no upload record and no expense reference (e.g. `confirmUpload` failed)
 
 ### Server-side Expense Validation
