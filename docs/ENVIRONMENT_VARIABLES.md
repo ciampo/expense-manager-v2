@@ -8,8 +8,8 @@ This document lists all environment variables used in the Expense Manager projec
 
 | Variable | Location | Purpose |
 |----------|----------|---------|
-| `VITE_CONVEX_URL` | `.env.local`, `.env.test` | Convex backend URL |
-| `CONVEX_DEPLOY_KEY` | `.env.test`, GitHub Secrets | Deploy/run functions on test Convex project |
+| `VITE_CONVEX_URL` | `.env.local`, `.env.e2e` | Convex backend URL |
+| `CONVEX_DEPLOY_KEY` | `.env.e2e`, GitHub Secrets | Deploy/run functions on test Convex project |
 | `CLOUDFLARE_API_TOKEN` | GitHub Secrets | Deploy to Cloudflare Workers |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets | Cloudflare account identifier |
 | `AUTH_RESEND_KEY` | Convex Environment | Email provider for auth |
@@ -39,9 +39,9 @@ CONVEX_DEPLOYMENT=dev:your-project  # Auto-populated by `npx convex dev`
 
 ---
 
-### `.env.test` (E2E Tests)
+### `.env.e2e` (E2E Tests)
 
-Used when running E2E tests. Both values target the **production deployment** of the `expense-manager-test` project.
+Used when running E2E tests (loaded via `--mode e2e`). Both values target the **production deployment** of the `expense-manager-test` project.
 
 ```env
 VITE_CONVEX_URL=https://your-test-project.convex.cloud
@@ -110,7 +110,7 @@ These secrets are configured in your GitHub repository settings.
 2. Select the `expense-manager-test` project
 3. Copy the **production** deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
 
-> This is the same URL as `VITE_CONVEX_URL` in `.env.test`.
+> This is the same URL as `VITE_CONVEX_URL` in `.env.e2e`.
 
 #### `CONVEX_TEST_DEPLOY_KEY`
 1. Go to Convex Dashboard
@@ -118,7 +118,7 @@ These secrets are configured in your GitHub repository settings.
 3. Settings → Deploy Keys → Generate Deploy Key
 4. Copy the key (only shown once)
 
-> This is the same key as `CONVEX_DEPLOY_KEY` in `.env.test`.
+> This is the same key as `CONVEX_DEPLOY_KEY` in `.env.e2e`.
 
 ---
 
@@ -198,7 +198,7 @@ VITE_CONVEX_URL=https://your-project.convex.cloud
 # CONVEX_DEPLOYMENT=dev:your-project
 ```
 
-### `.env.test` Template
+### `.env.e2e` Template
 ```env
 # expense-manager-test project → production deployment URL
 # Get from: https://dashboard.convex.dev/ → expense-manager-test → Production deployment URL
@@ -226,7 +226,7 @@ These files contain secrets and are in `.gitignore`:
 
 - `.env`
 - `.env.local`
-- `.env.test`
+- `.env.e2e`
 - Any `*.local` files
 
 > **Note:** If you create additional env files (e.g., `.env.staging`, `.env.production`), add them to `.gitignore` before use.
@@ -260,7 +260,7 @@ pnpm dev            # Terminal 2
 ### E2E Testing (Local)
 ```bash
 # Required files
-.env.test           → VITE_CONVEX_URL (test)
+.env.e2e            → VITE_CONVEX_URL (test)
                     → CONVEX_DEPLOY_KEY (test project deploy key)
 
 # Run E2E tests (cleanup runs automatically via Playwright globalTeardown)

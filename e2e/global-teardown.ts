@@ -10,19 +10,19 @@ const __dirname = dirname(__filename)
  * Playwright global teardown — runs after all tests finish (pass or fail).
  * Calls the Convex cleanup mutation to remove test data and auth users.
  *
- * Loads CONVEX_DEPLOY_KEY from .env.test (if present) so local E2E runs
+ * Loads CONVEX_DEPLOY_KEY from .env.e2e (if present) so local E2E runs
  * clean up automatically without needing a manual `export`.
  * In CI, the key is injected via GitHub Actions secrets and takes precedence.
  */
 export default function globalTeardown() {
-  // Load .env.test so CONVEX_DEPLOY_KEY is available locally without manual export.
+  // Load .env.e2e so CONVEX_DEPLOY_KEY is available locally without manual export.
   // Existing env vars (e.g. from CI) take precedence.
-  loadEnvFile(resolve(__dirname, '..', '.env.test'))
+  loadEnvFile(resolve(__dirname, '..', '.env.e2e'))
 
   if (!process.env.CONVEX_DEPLOY_KEY) {
     console.warn(
       '[global-teardown] CONVEX_DEPLOY_KEY not set — skipping test data cleanup. ' +
-        'Add it to .env.test or export it to clean up after local E2E runs.'
+        'Add it to .env.e2e or export it to clean up after local E2E runs.'
     )
     return
   }

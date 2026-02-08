@@ -127,7 +127,7 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
 
 1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
 2. Generate a production deploy key: Dashboard → test project → Settings → Deploy Keys
-3. Add both values to `.env.test`:
+3. Add both values to `.env.e2e`:
    ```env
    VITE_CONVEX_URL=https://your-test-project.convex.cloud
    CONVEX_DEPLOY_KEY=your_test_project_deploy_key
@@ -135,7 +135,7 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
    > `VITE_CONVEX_URL` must be the **production deployment** URL (shown after step 4). `CONVEX_DEPLOY_KEY` is the production deploy key from step 2.
 4. Deploy the schema (this creates the production deployment if it doesn't exist):
    ```bash
-   export $(grep CONVEX_DEPLOY_KEY .env.test | xargs)
+   export $(grep CONVEX_DEPLOY_KEY .env.e2e | xargs)
    npx convex deploy
    ```
 5. Configure auth keys for the test project's production deployment:
@@ -173,7 +173,7 @@ The project uses two Convex **projects**, each with its own development and prod
 |----------------|----------------|---------|-------------------|
 | `expense-manager` | development | Local dev (`pnpm dev`) | `.env.local` → `VITE_CONVEX_URL` |
 | `expense-manager` | production | Live app (deployed from `main`) | GitHub secret `CONVEX_PROD_URL` |
-| `expense-manager-test` | production | E2E and visual regression tests | `.env.test` → `VITE_CONVEX_URL`, GitHub secret `CONVEX_TEST_URL` |
+| `expense-manager-test` | production | E2E and visual regression tests | `.env.e2e` → `VITE_CONVEX_URL`, GitHub secret `CONVEX_TEST_URL` |
 
 > **Why production deployments?** Deploy keys (needed for non-interactive CLI commands like seed, cleanup, and `npx convex deploy`) only work with production deployments. The "production" label is Convex terminology — it doesn't mean it's your live app, just the stable, CLI-accessible deployment.
 

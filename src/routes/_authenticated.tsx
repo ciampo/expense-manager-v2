@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router'
 import { useConvexAuth } from 'convex/react'
 import { useAuthActions } from '@convex-dev/auth/react'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,12 +87,13 @@ function AuthenticatedLayout() {
 
             {/* User menu */}
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button variant="ghost" aria-label="User menu" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                </Button>
+              <DropdownMenuTrigger
+                aria-label="User menu"
+                className="relative flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleSignOut}>
