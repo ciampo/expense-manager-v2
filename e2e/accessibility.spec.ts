@@ -137,12 +137,11 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     // Wait for the expense form to render
     await page.getByRole('button', { name: /create expense/i }).waitFor()
 
-    // Exclude rules for known issues in the form's Base UI popover/combobox
-    // triggers that render nested <button> elements and miss aria-expanded/
-    // aria-controls on custom combobox buttons. These need component-level
-    // fixes in the Popover and Combobox wrappers.
-    // TODO: fix nested-interactive in date picker, merchant & category comboboxes
-    // TODO: add aria-expanded + aria-controls to merchant & category combobox triggers
+    // The PopoverTrigger `render` prop fix eliminates the nested-interactive
+    // issue (no more <button> inside <button>). `aria-required-attr` is still
+    // disabled because the Base UI Calendar may flag missing ARIA attributes
+    // on internal controls that we don't own.
+    // TODO: re-evaluate whether aria-required-attr can be re-enabled
     const results = await new AxeBuilder({ page })
       .withTags(WCAG_TAGS)
       .exclude('[data-sonner-toaster]')

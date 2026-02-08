@@ -332,16 +332,18 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       <div className="space-y-2">
         <Label htmlFor="date-picker">Date</Label>
         <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
-          <PopoverTrigger>
-            <Button
-              id="date-picker"
-              type="button"
-              variant="outline"
-              aria-label="Select date"
-              className="w-full justify-start text-left font-normal"
-            >
-              {date ? format(new Date(date), 'PPP', { locale: enUS }) : 'Select date'}
-            </Button>
+          <PopoverTrigger
+            render={
+              <Button
+                id="date-picker"
+                type="button"
+                variant="outline"
+                aria-label="Select date"
+                className="w-full justify-start text-left font-normal"
+              />
+            }
+          >
+            {date ? format(new Date(date), 'PPP', { locale: enUS }) : 'Select date'}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
@@ -363,19 +365,21 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       <div className="space-y-2">
         <Label htmlFor="merchant-combobox">Merchant</Label>
         <Popover open={isMerchantOpen} onOpenChange={setIsMerchantOpen}>
-          <PopoverTrigger>
-            <Button
-              id="merchant-combobox"
-              type="button"
-              variant="outline"
-              role="combobox"
-              aria-label="Select merchant"
-              aria-describedby={errors.merchant ? 'merchant-error' : undefined}
-              aria-invalid={!!errors.merchant}
-              className="w-full justify-start text-left font-normal"
-            >
-              {merchant || 'Select or type...'}
-            </Button>
+          <PopoverTrigger
+            render={
+              <Button
+                id="merchant-combobox"
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-label="Select merchant"
+                aria-describedby={errors.merchant ? 'merchant-error' : undefined}
+                aria-invalid={!!errors.merchant}
+                className="w-full justify-start text-left font-normal"
+              />
+            }
+          >
+            {merchant || 'Select or type...'}
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
@@ -426,26 +430,28 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       <div className="space-y-2">
         <Label htmlFor="category-combobox">Category</Label>
         <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
-          <PopoverTrigger>
-            <Button
-              id="category-combobox"
-              type="button"
-              variant="outline"
-              role="combobox"
-              aria-label="Select category"
-              aria-describedby={errors.category ? 'category-error' : undefined}
-              aria-invalid={!!errors.category}
-              className="w-full justify-start text-left font-normal"
-            >
-              {selectedCategory ? (
-                <>
-                  {selectedCategory.icon && <span className="mr-2">{selectedCategory.icon}</span>}
-                  {selectedCategory.name}
-                </>
-              ) : (
-                'Select category...'
-              )}
-            </Button>
+          <PopoverTrigger
+            render={
+              <Button
+                id="category-combobox"
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-label="Select category"
+                aria-describedby={errors.category ? 'category-error' : undefined}
+                aria-invalid={!!errors.category}
+                className="w-full justify-start text-left font-normal"
+              />
+            }
+          >
+            {selectedCategory ? (
+              <>
+                {selectedCategory.icon && <span className="mr-2">{selectedCategory.icon}</span>}
+                {selectedCategory.name}
+              </>
+            ) : (
+              'Select category...'
+            )}
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
