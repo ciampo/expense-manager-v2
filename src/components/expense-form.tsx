@@ -205,6 +205,10 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     mutationFn: useConvexMutation(api.storage.generateUploadUrl),
   })
 
+  const confirmUpload = useMutation({
+    mutationFn: useConvexMutation(api.storage.confirmUpload),
+  })
+
   const removeAttachment = useMutation({
     mutationFn: useConvexMutation(api.expenses.removeAttachment),
     onSuccess: () => {
@@ -248,6 +252,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       }
 
       const { storageId } = await response.json()
+      // Register ownership so getUrl/expense mutations can verify it
+      await confirmUpload.mutateAsync({ storageId })
       setAttachmentId(storageId)
       toast.success('File uploaded')
     } catch {
@@ -255,7 +261,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     } finally {
       setIsUploading(false)
     }
-  }, [generateUploadUrl])
+  }, [generateUploadUrl, confirmUpload])
 
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {

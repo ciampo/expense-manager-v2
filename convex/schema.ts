@@ -24,4 +24,17 @@ export default defineSchema({
     userId: v.optional(v.id('users')), // null/undefined = predefined, set = user custom
     icon: v.optional(v.string()),
   }).index('by_user', ['userId']),
+
+  /**
+   * Tracks file uploads so we can verify ownership from the moment of upload,
+   * before the file is linked to an expense. Cleaned up by a daily cron that
+   * removes orphaned records older than 24 hours.
+   */
+  uploads: defineTable({
+    storageId: v.id('_storage'),
+    userId: v.id('users'),
+    createdAt: v.number(),
+  })
+    .index('by_storage_id', ['storageId'])
+    .index('by_created_at', ['createdAt']),
 })

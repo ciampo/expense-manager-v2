@@ -127,6 +127,20 @@ export const create = mutation({
 
     validateExpenseFields(args)
 
+    // Verify the user owns the uploaded file
+    if (args.attachmentId) {
+      const upload = await ctx.db
+        .query('uploads')
+        .withIndex('by_storage_id', (q) =>
+          q.eq('storageId', args.attachmentId!),
+        )
+        .first()
+
+      if (!upload || upload.userId !== userId) {
+        throw new Error('Attachment not found or not owned by current user')
+      }
+    }
+
     const expenseId = await ctx.db.insert('expenses', {
       userId,
       date: args.date,
@@ -168,6 +182,20 @@ export const update = mutation({
     }
 
     validateExpenseFields(args)
+
+    // If the attachment is changing, verify the user owns the new upload
+    if (args.attachmentId && args.attachmentId !== existing.attachmentId) {
+      const upload = await ctx.db
+        .query('uploads')
+        .withIndex('by_storage_id', (q) =>
+          q.eq('storageId', args.attachmentId!),
+        )
+        .first()
+
+      if (!upload || upload.userId !== userId) {
+        throw new Error('Attachment not found or not owned by current user')
+      }
+    }
 
     // If attachment changed and old one exists, delete it
     if (existing.attachmentId && existing.attachmentId !== args.attachmentId) {

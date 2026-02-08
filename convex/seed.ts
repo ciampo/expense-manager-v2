@@ -103,6 +103,12 @@ export const cleanup = mutation({
       await ctx.db.delete(expense._id)
     }
 
+    // Delete all upload tracking records
+    const uploads = await ctx.db.query('uploads').collect()
+    for (const upload of uploads) {
+      await ctx.db.delete(upload._id)
+    }
+
     // Delete user-created categories (keep predefined)
     const userCategories = await ctx.db
       .query('categories')
