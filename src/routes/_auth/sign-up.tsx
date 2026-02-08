@@ -59,8 +59,12 @@ function SignUpPage() {
       navigate({ to: '/dashboard' })
     } catch (error) {
       console.error('Sign up error:', error)
-      setErrors({ form: 'Error during registration. Please try again.' })
-      toast.error('Error during registration. Please try again.')
+      const message =
+        error instanceof Error && /already exists/i.test(error.message)
+          ? 'An account with this email already exists. Try signing in instead.'
+          : 'Error during registration. Please try again.'
+      setErrors({ form: message })
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
