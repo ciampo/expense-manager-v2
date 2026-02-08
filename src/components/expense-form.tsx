@@ -116,7 +116,7 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
         >
-          📄 View PDF attachment
+          <span aria-hidden="true">📄</span> View PDF attachment
         </a>
       )}
     </div>
@@ -140,6 +140,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const [attachmentId, setAttachmentId] = useState<Id<'_storage'> | undefined>(expense?.attachmentId)
   const [newCategoryName, setNewCategoryName] = useState('')
   
+  // Validation errors
+  const [errors, setErrors] = useState<{ category?: string; amount?: string; merchant?: string }>({})
+
   // UI state
   const [isDateOpen, setIsDateOpen] = useState(false)
   const [isMerchantOpen, setIsMerchantOpen] = useState(false)
@@ -257,20 +260,26 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
 
+    const newErrors: typeof errors = {}
     if (!categoryId) {
-      toast.error('Select a category')
-      return
+      newErrors.category = 'Select a category'
     }
-
     const amountCents = parseCurrencyToCents(amount)
     if (amountCents <= 0) {
-      toast.error('Enter a valid amount')
-      return
+      newErrors.amount = 'Enter a valid amount'
     }
-
     if (!merchant.trim()) {
-      toast.error('Enter the merchant')
+      newErrors.merchant = 'Enter the merchant'
+    }
+    // The `|| !categoryId` is redundant with the check above but is required
+    // so TypeScript can narrow `categoryId` from `Id | null` to `Id` after
+    // this guard — without it the `data` object below would have a type error.
+    if (Object.keys(newErrors).length > 0 || !categoryId) {
+      setErrors(newErrors)
+      const firstError = Object.values(newErrors)[0]
+      if (firstError) toast.error(firstError)
       return
     }
 
@@ -321,16 +330,19 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
       {/* Date */}
       <div className="space-y-2">
-        <Label>Date</Label>
+        <Label htmlFor="date-picker">Date</Label>
         <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
-          <PopoverTrigger>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full justify-start text-left font-normal"
-            >
-              {date ? format(new Date(date), 'PPP', { locale: enUS }) : 'Select date'}
-            </Button>
+          <PopoverTrigger
+            render={
+              <Button
+                id="date-picker"
+                type="button"
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              />
+            }
+          >
+            {date ? format(new Date(date), 'PPP', { locale: enUS }) : 'Select date'}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
@@ -350,17 +362,22 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Merchant (combobox) */}
       <div className="space-y-2">
-        <Label>Merchant</Label>
+        <Label htmlFor="merchant-combobox">Merchant</Label>
         <Popover open={isMerchantOpen} onOpenChange={setIsMerchantOpen}>
-          <PopoverTrigger>
-            <Button
-              type="button"
-              variant="outline"
-              role="combobox"
-              className="w-full justify-start text-left font-normal"
-            >
-              {merchant || 'Select or type...'}
-            </Button>
+          <PopoverTrigger
+            render={
+              <Button
+                id="merchant-combobox"
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-describedby={errors.merchant ? 'merchant-error' : undefined}
+                aria-invalid={!!errors.merchant}
+                className="w-full justify-start text-left font-normal"
+              />
+            }
+          >
+            {merchant || 'Select or type...'}
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
@@ -400,28 +417,38 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             </Command>
           </PopoverContent>
         </Popover>
+        {errors.merchant && (
+          <p id="merchant-error" role="alert" className="text-sm text-destructive">
+            {errors.merchant}
+          </p>
+        )}
       </div>
 
       {/* Category (combobox) */}
       <div className="space-y-2">
-        <Label>Category</Label>
+        <Label htmlFor="category-combobox">Category</Label>
         <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
-          <PopoverTrigger>
-            <Button
-              type="button"
-              variant="outline"
-              role="combobox"
-              className="w-full justify-start text-left font-normal"
-            >
-              {selectedCategory ? (
-                <>
-                  {selectedCategory.icon && <span className="mr-2">{selectedCategory.icon}</span>}
-                  {selectedCategory.name}
-                </>
-              ) : (
-                'Select category...'
-              )}
-            </Button>
+          <PopoverTrigger
+            render={
+              <Button
+                id="category-combobox"
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-describedby={errors.category ? 'category-error' : undefined}
+                aria-invalid={!!errors.category}
+                className="w-full justify-start text-left font-normal"
+              />
+            }
+          >
+            {selectedCategory ? (
+              <>
+                {selectedCategory.icon && <span className="mr-2">{selectedCategory.icon}</span>}
+                {selectedCategory.name}
+              </>
+            ) : (
+              'Select category...'
+            )}
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
@@ -477,6 +504,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             </Command>
           </PopoverContent>
         </Popover>
+        {errors.category && (
+          <p id="category-error" role="alert" className="text-sm text-destructive">
+            {errors.category}
+          </p>
+        )}
       </div>
 
       {/* Amount */}
@@ -493,6 +525,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             onChange={(e) => setAmount(e.target.value)}
             className="pl-8"
             required
+            aria-describedby={errors.amount ? 'amount-error' : undefined}
+            aria-invalid={!!errors.amount}
           />
         </div>
         {amount && parseCurrencyToCents(amount) > 0 && (
@@ -500,19 +534,26 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             {formatCurrency(parseCurrencyToCents(amount))}
           </p>
         )}
+        {errors.amount && (
+          <p id="amount-error" role="alert" className="text-sm text-destructive">
+            {errors.amount}
+          </p>
+        )}
       </div>
 
       {/* Attachment */}
       <div className="space-y-2">
-        <Label>Attachment (optional)</Label>
+        <Label htmlFor="attachment-input">Attachment (optional)</Label>
         {attachmentId ? (
           <div className="space-y-3 p-3 border rounded-md">
             <AttachmentPreview attachmentId={attachmentId} />
             <AlertDialog open={showDeleteAttachment} onOpenChange={setShowDeleteAttachment}>
-              <AlertDialogTrigger>
-                <Button type="button" variant="ghost" size="sm" className="text-destructive">
-                  Remove attachment
-                </Button>
+              <AlertDialogTrigger
+                render={
+                  <Button type="button" variant="ghost" size="sm" className="text-destructive" />
+                }
+              >
+                Remove attachment
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -535,6 +576,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           </div>
         ) : (
           <Input
+            id="attachment-input"
             type="file"
             accept={ACCEPTED_FILE_TYPES.join(',')}
             onChange={handleFileChange}
@@ -574,10 +616,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
         {mode === 'edit' && expense && (
           <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
-            <AlertDialogTrigger>
-              <Button type="button" variant="destructive" className="ml-auto">
-                Delete
-              </Button>
+            <AlertDialogTrigger
+              render={
+                <Button type="button" variant="destructive" className="ml-auto" />
+              }
+            >
+              Delete
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>

@@ -25,17 +25,24 @@ function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string; form?: string }>({})
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
 
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match')
-      return
+    const newErrors: typeof errors = {}
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Enter a valid email address'
     }
-
     if (password.length < 8) {
-      toast.error('Password must be at least 8 characters')
+      newErrors.password = 'Password must be at least 8 characters'
+    }
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match'
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       return
     }
 
@@ -52,7 +59,12 @@ function SignUpPage() {
       navigate({ to: '/dashboard' })
     } catch (error) {
       console.error('Sign up error:', error)
-      toast.error('Error during registration. Please try again.')
+      const message =
+        error instanceof Error && /already exists/i.test(error.message)
+          ? 'An account with this email already exists. Try signing in instead.'
+          : 'Error during registration. Please try again.'
+      setErrors({ form: message })
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -66,7 +78,7 @@ function SignUpPage() {
           Create a new account to start managing your expenses
         </CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -78,7 +90,14 @@ function SignUpPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
+              aria-describedby={errors.email ? 'email-error' : undefined}
+              aria-invalid={!!errors.email}
             />
+            {errors.email && (
+              <p id="email-error" role="alert" className="text-sm text-destructive">
+                {errors.email}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -91,7 +110,14 @@ function SignUpPage() {
               required
               minLength={8}
               disabled={isLoading}
+              aria-describedby={errors.password ? 'password-error' : undefined}
+              aria-invalid={!!errors.password}
             />
+            {errors.password && (
+              <p id="password-error" role="alert" className="text-sm text-destructive">
+                {errors.password}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm password</Label>
@@ -104,16 +130,28 @@ function SignUpPage() {
               required
               minLength={8}
               disabled={isLoading}
+              aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
+              aria-invalid={!!errors.confirmPassword}
             />
+            {errors.confirmPassword && (
+              <p id="confirm-password-error" role="alert" className="text-sm text-destructive">
+                {errors.confirmPassword}
+              </p>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
+          {errors.form && (
+            <p role="alert" className="text-sm text-destructive text-center">
+              {errors.form}
+            </p>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Signing up...' : 'Sign Up'}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             Already have an account?{' '}
-            <Link to="/sign-in" className="text-primary hover:underline">
+            <Link to="/sign-in" className="text-primary underline hover:text-primary/80">
               Sign In
             </Link>
           </p>

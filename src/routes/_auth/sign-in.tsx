@@ -24,9 +24,11 @@ function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [formError, setFormError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError('')
     setIsLoading(true)
 
     try {
@@ -40,6 +42,7 @@ function SignInPage() {
       navigate({ to: '/dashboard' })
     } catch (error) {
       console.error('Sign in error:', error)
+      setFormError('Invalid email or password')
       toast.error('Invalid email or password')
     } finally {
       setIsLoading(false)
@@ -54,7 +57,7 @@ function SignInPage() {
           Enter your credentials to sign in
         </CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -73,7 +76,7 @@ function SignInPage() {
               <Label htmlFor="password">Password</Label>
               <Link
                 to="/forgot-password"
-                className="text-sm text-muted-foreground hover:text-primary"
+                className="text-sm text-muted-foreground underline hover:text-primary"
               >
                 Forgot password?
               </Link>
@@ -89,12 +92,17 @@ function SignInPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
+          {formError && (
+            <p role="alert" className="text-sm text-destructive text-center">
+              {formError}
+            </p>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             Don&apos;t have an account?{' '}
-            <Link to="/sign-up" className="text-primary hover:underline">
+            <Link to="/sign-up" className="text-primary underline hover:text-primary/80">
               Sign Up
             </Link>
           </p>

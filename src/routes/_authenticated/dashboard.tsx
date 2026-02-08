@@ -175,71 +175,76 @@ function ExpenseTable() {
         </TableHeader>
         <TableBody>
           {expenses.map((expense) => (
-            <TableRow
-              key={expense._id}
-              className="cursor-pointer hover:bg-muted/50"
-            >
+            <TableRow key={expense._id}>
+              <TableCell>{formatDate(expense.date)}</TableCell>
+              <TableCell>{expense.merchant}</TableCell>
               <TableCell>
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {formatDate(expense.date)}
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {expense.merchant}
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {categoryMap.get(expense.categoryId) || 'N/A'}
-                </Link>
+                {categoryMap.get(expense.categoryId) || 'N/A'}
               </TableCell>
               <TableCell className="text-right font-medium">
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {formatCurrency(expense.amount)}
-                </Link>
+                {formatCurrency(expense.amount)}
               </TableCell>
               <TableCell>
-                <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} className="block">
-                  {expense.attachmentId ? '📎' : '-'}
-                </Link>
+                {expense.attachmentId ? (
+                  <>
+                    <span aria-hidden="true">📎</span>
+                    <span className="sr-only">Has attachment</span>
+                  </>
+                ) : (
+                  '-'
+                )}
               </TableCell>
               <TableCell className="text-right">
-                <AlertDialog
-                  open={deletingId === expense._id}
-                  onOpenChange={(open) =>
-                    setDeletingId(open ? expense._id : null)
-                  }
-                >
-                  <AlertDialogTrigger>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={(e) => e.stopPropagation()}
+                <div className="flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    render={
+                      <Link
+                        to="/expenses/$expenseId"
+                        params={{ expenseId: expense._id }}
+                      />
+                    }
+                  >
+                    Edit
+                  </Button>
+                  <AlertDialog
+                    open={deletingId === expense._id}
+                    onOpenChange={(open) =>
+                      setDeletingId(open ? expense._id : null)
+                    }
+                  >
+                    <AlertDialogTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                        />
+                      }
                     >
                       Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. The expense and any
-                        attachment will be permanently deleted.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(expense._id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. The expense and any
+                          attachment will be permanently deleted.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(expense._id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </TableCell>
             </TableRow>
           ))}

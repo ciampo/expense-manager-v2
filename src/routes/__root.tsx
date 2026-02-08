@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import {
@@ -15,7 +16,7 @@ import appCss from '../App.css?url'
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+    <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
       <h1 className="text-6xl font-bold text-foreground">404</h1>
       <p className="mt-4 text-xl text-muted-foreground">Page not found</p>
       <p className="mt-2 text-muted-foreground">
@@ -27,7 +28,7 @@ function NotFoundComponent() {
       >
         Go back home
       </Link>
-    </div>
+    </main>
   )
 }
 
@@ -73,12 +74,25 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  // Signal that React has hydrated the page. E2E tests wait for this
+  // attribute instead of probing React internals (__reactFiber, etc.),
+  // which makes them resilient across React versions.
+  useEffect(() => {
+    document.body.setAttribute('data-hydrated', 'true')
+  }, [])
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-100 focus:p-4 focus:bg-background focus:text-foreground"
+        >
+          Skip to content
+        </a>
         {children}
         <Toaster />
         {import.meta.env.DEV && (

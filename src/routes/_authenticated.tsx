@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router'
 import { useConvexAuth } from 'convex/react'
 import { useAuthActions } from '@convex-dev/auth/react'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +48,7 @@ function AuthenticatedLayout() {
             <Skeleton className="h-8 w-8 rounded-full" />
           </div>
         </header>
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 container mx-auto px-4 py-8">
           <Skeleton className="h-8 w-64 mb-4" />
           <Skeleton className="h-64 w-full" />
         </main>
@@ -72,7 +71,7 @@ function AuthenticatedLayout() {
           </Link>
 
           {/* Navigation */}
-          <nav className="flex items-center gap-6">
+          <nav aria-label="Main" className="flex items-center gap-6">
             <Link
               to="/dashboard"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
@@ -88,12 +87,13 @@ function AuthenticatedLayout() {
 
             {/* User menu */}
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                </Button>
+              <DropdownMenuTrigger
+                aria-label="User menu"
+                className="relative flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleSignOut}>
@@ -106,7 +106,7 @@ function AuthenticatedLayout() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <Outlet />
       </main>
     </div>

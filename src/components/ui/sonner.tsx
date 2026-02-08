@@ -32,6 +32,21 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
+          // Ensure all toast types meet WCAG color-contrast requirements
+          // by using the same high-contrast popover palette instead of
+          // Sonner's default pastel type colors.
+          "--success-bg": "var(--popover)",
+          "--success-text": "var(--popover-foreground)",
+          "--success-border": "var(--border)",
+          "--error-bg": "var(--popover)",
+          "--error-text": "var(--popover-foreground)",
+          "--error-border": "var(--border)",
+          "--warning-bg": "var(--popover)",
+          "--warning-text": "var(--popover-foreground)",
+          "--warning-border": "var(--border)",
+          "--info-bg": "var(--popover)",
+          "--info-text": "var(--popover-foreground)",
+          "--info-border": "var(--border)",
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }

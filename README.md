@@ -58,6 +58,7 @@ A modern expense management application for tracking work-related expenses, buil
    ```bash
    npx @convex-dev/auth
    ```
+   When prompted for the **site URL**, enter `http://localhost:3000`.
    This sets `JWT_PRIVATE_KEY` and `JWKS` on your Convex deployment.
 
 6. Seed the predefined categories (run once, same terminal as step 5):
@@ -122,23 +123,33 @@ pnpm test:unit
 
 ### E2E Tests
 
-E2E tests require a dedicated Convex test project:
+E2E tests run against the **production deployment** of a dedicated Convex test project (separate from your dev project). See [Convex deployments](#convex) below for background on the project/deployment model.
 
-1. Create a test Convex project: `expense-manager-test`
-2. Save the URL in `.env.test` (loaded by the Vite dev server in test mode)
-3. Set the test project's deploy key so Convex CLI commands target the test deployment:
-   ```bash
-   export CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
+2. Generate a production deploy key: Dashboard → test project → Settings → Deploy Keys
+3. Add both values to `.env.e2e`:
+   ```env
+   VITE_CONVEX_URL=https://your-test-project.convex.cloud
+   CONVEX_DEPLOY_KEY=your_test_project_deploy_key
    ```
-4. Deploy the schema: `npx convex deploy`
-5. Seed test data: `pnpm test:e2e:seed`
-6. Run tests:
+   > `VITE_CONVEX_URL` must be the **production deployment** URL (shown after step 4). `CONVEX_DEPLOY_KEY` is the production deploy key from step 2.
+4. Deploy the schema (this creates the production deployment if it doesn't exist):
+   ```bash
+   export $(grep CONVEX_DEPLOY_KEY .env.e2e | xargs)
+   npx convex deploy
+   ```
+5. Configure auth keys for the test project's production deployment:
+   ```bash
+   npx @convex-dev/auth --prod
+   ```
+   When prompted for the **site URL**, enter `http://localhost:3000` (E2E tests run locally).
+6. Seed test data: `pnpm test:e2e:seed`
+7. Run tests:
    ```bash
    pnpm test:e2e
    ```
-7. Clean up test data afterwards: `pnpm test:e2e:cleanup`
 
-> **Note:** `CONVEX_DEPLOY_KEY` must be set (step 3) for the deploy, seed, and cleanup commands to target the test project instead of the development deployment.
+Test data (including auth users) is cleaned up automatically after each run via Playwright's `globalTeardown`.
 
 ### Visual Regression Tests
 
@@ -156,27 +167,38 @@ pnpm test:visual:docker:update
 
 ### Convex
 
-The project uses three separate Convex deployments:
+The project uses two Convex **projects**, each with its own development and production **deployments**:
 
-| Deployment | Purpose | Configured via |
-|------------|---------|----------------|
-| **Development** | Local dev (`pnpm dev`) | `.env.local` |
-| **Test** | E2E and visual regression tests | `.env.test` |
-| **Production** | Live app (deployed from `main`) | GitHub Actions secret |
+| Convex Project | Deployment Used | Purpose | URL configured via |
+|----------------|----------------|---------|-------------------|
+| `expense-manager` | development | Local dev (`pnpm dev`) | `.env.local` → `VITE_CONVEX_URL` |
+| `expense-manager` | production | Live app (deployed from `main`) | GitHub secret `CONVEX_PROD_URL` |
+| `expense-manager-test` | production | E2E and visual regression tests | `.env.e2e` → `VITE_CONVEX_URL`, GitHub secret `CONVEX_TEST_URL` |
+
+> **Why production deployments?** Deploy keys (needed for non-interactive CLI commands like seed, cleanup, and `npx convex deploy`) only work with production deployments. The "production" label is Convex terminology — it doesn't mean it's your live app, just the stable, CLI-accessible deployment.
 
 #### Setting up auth keys
 
-Each Convex deployment requires JWT keys for authentication. Generate and set them with:
+Each deployment that users sign in to requires JWT keys. Generate and set them with:
 
 ```bash
-# For the dev deployment
+# Dev project → development deployment (used by local dev)
+# Site URL when prompted: http://localhost:3000
 npx @convex-dev/auth
 
-# For the production deployment
+# Dev project → production deployment (used by the live app)
+# Site URL when prompted: https://your-production-domain.com
+npx @convex-dev/auth --prod
+
+# Test project → production deployment (used by E2E tests)
+# Requires CONVEX_DEPLOY_KEY to be set — see E2E Tests section above
+# Site URL when prompted: http://localhost:3000
 npx @convex-dev/auth --prod
 ```
 
-This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respective Convex deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
+This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respective deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
+
+> **Site URL:** The `npx @convex-dev/auth` command prompts for the site URL, which is the URL where users access the app. Use `http://localhost:3000` for development and test deployments, and your production domain (e.g., `https://your-app.workers.dev`) for the production deployment.
 
 ### Cloudflare Workers
 
@@ -206,10 +228,10 @@ Configure these GitHub Actions secrets:
 |--------|-------------|
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
-| `CONVEX_PROD_URL` | Convex **production** deployment URL |
-| `CONVEX_DEV_URL` | Convex **development** deployment URL (used for PR previews) |
-| `CONVEX_TEST_URL` | Convex **test** deployment URL (used for E2E and visual tests) |
-| `CONVEX_TEST_DEPLOY_KEY` | Convex deploy key for the test deployment |
+| `CONVEX_PROD_URL` | `expense-manager` project → **production** deployment URL |
+| `CONVEX_DEV_URL` | `expense-manager` project → **development** deployment URL (for PR previews) |
+| `CONVEX_TEST_URL` | `expense-manager-test` project → **production** deployment URL |
+| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key |
 
 ## Known Limitations
 

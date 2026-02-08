@@ -7,7 +7,7 @@ dist-ssr
 count.txt
 .env
 .env.local
-.env.test
+.env.e2e
 .nitro
 .tanstack
 .wrangler
