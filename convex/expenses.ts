@@ -24,8 +24,8 @@ function validateExpenseFields(args: {
   if (!isValidDate(args.date)) {
     throw new Error('Invalid date. Expected a valid YYYY-MM-DD date.')
   }
-  if (args.amount <= 0) {
-    throw new Error('Amount must be greater than zero.')
+  if (!Number.isInteger(args.amount) || args.amount <= 0) {
+    throw new Error('Amount must be a positive integer (cents).')
   }
   const trimmedMerchant = args.merchant.trim()
   if (!trimmedMerchant) {
@@ -134,6 +134,7 @@ export const create = mutation({
       amount: args.amount,
       categoryId: args.categoryId,
       attachmentId: args.attachmentId,
+      // Empty/whitespace-only comments are stored as undefined (absent)
       comment: args.comment?.trim() || undefined,
       createdAt: Date.now(),
     })
@@ -179,6 +180,7 @@ export const update = mutation({
       amount: args.amount,
       categoryId: args.categoryId,
       attachmentId: args.attachmentId,
+      // Empty/whitespace-only comments are stored as undefined (absent)
       comment: args.comment?.trim() || undefined,
     })
 

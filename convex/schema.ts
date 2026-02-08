@@ -16,7 +16,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index('by_user', ['userId'])
-    .index('by_user_and_date', ['userId', 'date']),
+    .index('by_user_and_date', ['userId', 'date'])
+    .index('by_user_and_attachment', ['userId', 'attachmentId']),
 
   categories: defineTable({
     name: v.string(),

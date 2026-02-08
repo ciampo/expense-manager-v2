@@ -31,8 +31,9 @@ export const getUrl = query({
     // Verify the storage ID belongs to an expense owned by the current user
     const expense = await ctx.db
       .query('expenses')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('attachmentId'), args.storageId))
+      .withIndex('by_user_and_attachment', (q) =>
+        q.eq('userId', userId).eq('attachmentId', args.storageId),
+      )
       .first()
 
     if (!expense) {
@@ -57,8 +58,9 @@ export const deleteFile = mutation({
     // Verify the storage ID belongs to an expense owned by the current user
     const expense = await ctx.db
       .query('expenses')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('attachmentId'), args.storageId))
+      .withIndex('by_user_and_attachment', (q) =>
+        q.eq('userId', userId).eq('attachmentId', args.storageId),
+      )
       .first()
 
     if (!expense) {
