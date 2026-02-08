@@ -54,7 +54,14 @@ function loadEnvFile(filePath: string) {
       const eqIndex = trimmed.indexOf('=')
       if (eqIndex === -1) continue
       const key = trimmed.slice(0, eqIndex).trim()
-      const value = trimmed.slice(eqIndex + 1).trim()
+      let value = trimmed.slice(eqIndex + 1).trim()
+      // Strip surrounding quotes (e.g. CONVEX_DEPLOY_KEY="prod:foo|bar")
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1)
+      }
       // Don't override existing env vars (CI secrets take precedence)
       if (!(key in process.env)) {
         process.env[key] = value

@@ -71,7 +71,7 @@ function AuthenticatedLayout() {
           </Link>
 
           {/* Navigation */}
-          <nav className="flex items-center gap-6">
+          <nav aria-label="Main" className="flex items-center gap-6">
             <Link
               to="/dashboard"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"

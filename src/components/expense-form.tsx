@@ -273,6 +273,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     if (!merchant.trim()) {
       newErrors.merchant = 'Enter the merchant'
     }
+    // The `|| !categoryId` is redundant with the check above but is required
+    // so TypeScript can narrow `categoryId` from `Id | null` to `Id` after
+    // this guard — without it the `data` object below would have a type error.
     if (Object.keys(newErrors).length > 0 || !categoryId) {
       setErrors(newErrors)
       const firstError = Object.values(newErrors)[0]

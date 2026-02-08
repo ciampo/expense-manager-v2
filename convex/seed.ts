@@ -114,6 +114,8 @@ export const cleanup = mutation({
 
     // Delete all auth-related records dynamically derived from the
     // @convex-dev/auth schema — stays in sync if the library adds/removes tables.
+    // `as any` is needed because authTables keys come from @convex-dev/auth
+    // and are not included in this project's generated Convex type definitions.
     for (const table of Object.keys(authTables)) {
       const rows = await ctx.db.query(table as any).collect()
       for (const row of rows) {

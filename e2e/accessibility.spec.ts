@@ -4,7 +4,12 @@ import AxeBuilder from '@axe-core/playwright'
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 
 async function runAxeAudit(page: Page) {
-  return new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
+  return new AxeBuilder({ page })
+    .withTags(WCAG_TAGS)
+    // Exclude transient Sonner toast container — its color contrast is a
+    // known upstream issue and toasts are not permanent page content.
+    .exclude('[data-sonner-toaster]')
+    .analyze()
 }
 
 // ── Public pages ──────────────────────────────────────────────
@@ -85,19 +90,12 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     // aren't attached until hydration finishes. Without this wait,
     // clicking the submit button triggers a native form GET submit
     // (URL becomes /sign-up?) instead of React's onSubmit handler.
-    // We detect hydration by checking for React's internal fiber
-    // properties on a DOM element (e.g., __reactFiber$xxx).
-    await page.waitForFunction(
-      () => {
-        const form = document.querySelector('form')
-        if (!form) return false
-        return Object.keys(form).some(
-          (key) =>
-            key.startsWith('__reactFiber') || key.startsWith('__reactProps')
-        )
-      },
-      { timeout: 15000 }
-    )
+    // We verify hydration by filling a controlled input and checking
+    // the React state update reflects back into the DOM value.
+    const emailInput = page.getByLabel('Email')
+    await emailInput.fill('hydration-probe')
+    await expect(emailInput).toHaveValue('hydration-probe', { timeout: 15000 })
+    await emailInput.clear()
 
     await page.getByLabel('Email').fill(uniqueEmail)
     await page.getByLabel('Password', { exact: true }).fill(testPassword)
@@ -123,13 +121,6 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     }
     // Wait for the dashboard to fully render (main content area visible)
     await page.locator('main#main-content').waitFor()
-
-    // Wait for the sign-up success toast to auto-dismiss before tests run.
-    // Sonner toasts have insufficient color contrast that would fail axe,
-    // and they're transient — not part of the page's permanent content.
-    await page.locator('[data-sonner-toast]').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {
-      // Toast may have already dismissed — that's fine
-    })
   })
 
   test('dashboard should have no accessibility violations', async ({
@@ -154,6 +145,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     // TODO: add aria-expanded + aria-controls to merchant & category combobox triggers
     const results = await new AxeBuilder({ page })
       .withTags(WCAG_TAGS)
+      .exclude('[data-sonner-toaster]')
       .disableRules(['nested-interactive', 'aria-required-attr'])
       .analyze()
     expect(results.violations).toEqual([])

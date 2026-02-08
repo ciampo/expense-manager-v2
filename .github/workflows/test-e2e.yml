@@ -27,6 +27,11 @@ jobs:
         run: pnpm test:e2e
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+      - name: Cleanup test data (safety net)
+        if: always()
+        run: pnpm test:e2e:cleanup
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
