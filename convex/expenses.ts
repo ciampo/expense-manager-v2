@@ -2,43 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { auth } from './auth'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
-
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
-
-function isValidDate(dateStr: string): boolean {
-  if (!DATE_REGEX.test(dateStr)) return false
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  )
-}
-
-function validateExpenseFields(args: {
-  date: string
-  merchant: string
-  amount: number
-  comment?: string
-}) {
-  if (!isValidDate(args.date)) {
-    throw new Error('Invalid date. Expected a valid YYYY-MM-DD date.')
-  }
-  if (!Number.isInteger(args.amount) || args.amount <= 0) {
-    throw new Error('Amount must be a positive integer (cents).')
-  }
-  const trimmedMerchant = args.merchant.trim()
-  if (!trimmedMerchant) {
-    throw new Error('Merchant name is required.')
-  }
-  if (trimmedMerchant.length > 200) {
-    throw new Error('Merchant name must be 200 characters or less.')
-  }
-  if (args.comment !== undefined && args.comment.trim().length > 1000) {
-    throw new Error('Comment must be 1000 characters or less.')
-  }
-}
+import { validateExpenseFields } from './validation'
 
 /**
  * List all expenses for the current user, sorted by date (most recent first)
