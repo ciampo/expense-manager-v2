@@ -83,6 +83,10 @@ npx @convex-dev/auth
 npx @convex-dev/auth --prod
 ```
 
+When prompted for the **site URL**, enter:
+- **Development deployment:** `http://localhost:3000`
+- **Production deployment:** your production domain (e.g., `https://your-app.workers.dev`)
+
 This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respective deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
 
 > **Note:** The test project's production deployment also needs auth keys — this is covered in step 1.6 below, after the production deployment has been created.
@@ -99,6 +103,7 @@ export $(grep CONVEX_DEPLOY_KEY .env.test | xargs)
 npx convex deploy
 
 # Configure auth keys for the test project's production deployment
+# Site URL when prompted: http://localhost:3000 (E2E tests run locally)
 npx @convex-dev/auth --prod
 ```
 

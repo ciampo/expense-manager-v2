@@ -58,6 +58,7 @@ A modern expense management application for tracking work-related expenses, buil
    ```bash
    npx @convex-dev/auth
    ```
+   When prompted for the **site URL**, enter `http://localhost:3000`.
    This sets `JWT_PRIVATE_KEY` and `JWKS` on your Convex deployment.
 
 6. Seed the predefined categories (run once, same terminal as step 5):
@@ -141,6 +142,7 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
    ```bash
    npx @convex-dev/auth --prod
    ```
+   When prompted for the **site URL**, enter `http://localhost:3000` (E2E tests run locally).
 6. Seed test data: `pnpm test:e2e:seed`
 7. Run tests:
    ```bash
@@ -181,17 +183,22 @@ Each deployment that users sign in to requires JWT keys. Generate and set them w
 
 ```bash
 # Dev project → development deployment (used by local dev)
+# Site URL when prompted: http://localhost:3000
 npx @convex-dev/auth
 
 # Dev project → production deployment (used by the live app)
+# Site URL when prompted: https://your-production-domain.com
 npx @convex-dev/auth --prod
 
 # Test project → production deployment (used by E2E tests)
 # Requires CONVEX_DEPLOY_KEY to be set — see E2E Tests section above
+# Site URL when prompted: http://localhost:3000
 npx @convex-dev/auth --prod
 ```
 
 This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respective deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
+
+> **Site URL:** The `npx @convex-dev/auth` command prompts for the site URL, which is the URL where users access the app. Use `http://localhost:3000` for development and test deployments, and your production domain (e.g., `https://your-app.workers.dev`) for the production deployment.
 
 ### Cloudflare Workers
 
