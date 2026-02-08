@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import {
@@ -73,6 +74,13 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  // Signal that React has hydrated the page. E2E tests wait for this
+  // attribute instead of probing React internals (__reactFiber, etc.),
+  // which makes them resilient across React versions.
+  useEffect(() => {
+    document.body.setAttribute('data-hydrated', 'true')
+  }, [])
+
   return (
     <html lang="en">
       <head>

@@ -338,7 +338,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 id="date-picker"
                 type="button"
                 variant="outline"
-                aria-label="Select date"
                 className="w-full justify-start text-left font-normal"
               />
             }
@@ -372,7 +371,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 type="button"
                 variant="outline"
                 role="combobox"
-                aria-label="Select merchant"
                 aria-describedby={errors.merchant ? 'merchant-error' : undefined}
                 aria-invalid={!!errors.merchant}
                 className="w-full justify-start text-left font-normal"
@@ -437,7 +435,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 type="button"
                 variant="outline"
                 role="combobox"
-                aria-label="Select category"
                 aria-describedby={errors.category ? 'category-error' : undefined}
                 aria-invalid={!!errors.category}
                 className="w-full justify-start text-left font-normal"

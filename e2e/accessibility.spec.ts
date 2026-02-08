@@ -96,24 +96,11 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     // clicking the submit button triggers a native form GET submit
     // (URL becomes /sign-up?) instead of React's onSubmit handler.
     //
-    // We detect hydration by checking for React's internal fiber
-    // properties (__reactFiber$xxx / __reactProps$xxx) on a DOM element.
-    // These are added during hydration and are the most reliable signal
-    // that React has taken ownership of the server-rendered HTML.
-    // Note: a "controlled input value" probe is NOT sufficient — Playwright's
-    // fill() sets the DOM value directly via keyboard events regardless
-    // of whether React's onChange is attached.
-    await page.waitForFunction(
-      () => {
-        const form = document.querySelector('form')
-        if (!form) return false
-        return Object.keys(form).some(
-          (key) =>
-            key.startsWith('__reactFiber') || key.startsWith('__reactProps')
-        )
-      },
-      { timeout: 15000 }
-    )
+    // The root component sets data-hydrated="true" on <body> inside a
+    // useEffect, which fires only after React has mounted (hydrated).
+    // This is a stable, framework-agnostic signal that doesn't depend
+    // on React internals (__reactFiber, etc.).
+    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 15000 })
 
     await page.getByLabel('Email').fill(uniqueEmail)
     await page.getByLabel('Password', { exact: true }).fill(testPassword)
