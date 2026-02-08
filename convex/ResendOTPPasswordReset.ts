@@ -1,9 +1,12 @@
 import Resend from '@auth/core/providers/resend'
-import { Resend as ResendAPI } from 'resend'
-import { RandomReader, generateRandomString } from '@oslojs/crypto/random'
+import { generateRandomString } from '@oslojs/crypto/random'
 
 /**
  * Resend-based OTP provider for password reset emails.
+ *
+ * Uses the Resend HTTP API directly (via fetch) instead of the `resend`
+ * npm SDK, because Convex functions run in a V8 runtime that does not
+ * support Node.js built-in modules required by the SDK.
  *
  * Requires the AUTH_RESEND_KEY environment variable to be set in Convex:
  *   npx convex env set AUTH_RESEND_KEY <your-resend-api-key>
@@ -17,31 +20,38 @@ export const ResendOTPPasswordReset = Resend({
   apiKey: process.env.AUTH_RESEND_KEY,
 
   async generateVerificationToken() {
-    const random: RandomReader = {
-      read(bytes) {
-        crypto.getRandomValues(bytes)
-      },
-    }
     // 8-digit numeric code
-    return generateRandomString(random, '0123456789', 8)
+    return generateRandomString(
+      { read: (bytes: Uint8Array) => crypto.getRandomValues(bytes) },
+      '0123456789',
+      8,
+    )
   },
 
   async sendVerificationRequest({ identifier: email, provider, token }) {
-    const resend = new ResendAPI(provider.apiKey)
-    const { error } = await resend.emails.send({
-      from: 'Expense Manager <onboarding@resend.dev>',
-      to: [email],
-      subject: 'Reset your Expense Manager password',
-      text: [
-        'You requested a password reset for your Expense Manager account.',
-        '',
-        `Your verification code is: ${token}`,
-        '',
-        'If you did not request this, you can safely ignore this email.',
-      ].join('\n'),
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${provider.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Expense Manager <onboarding@resend.dev>',
+        to: [email],
+        subject: 'Reset your Expense Manager password',
+        text: [
+          'You requested a password reset for your Expense Manager account.',
+          '',
+          `Your verification code is: ${token}`,
+          '',
+          'If you did not request this, you can safely ignore this email.',
+        ].join('\n'),
+      }),
     })
 
-    if (error) {
+    if (!response.ok) {
+      const body = await response.text()
+      console.error('Resend API error:', response.status, body)
       throw new Error('Could not send password reset email')
     }
   },
