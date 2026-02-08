@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { auth } from './auth'
+import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
 
@@ -129,16 +130,7 @@ export const create = mutation({
 
     // Verify the user owns the uploaded file
     if (args.attachmentId) {
-      const upload = await ctx.db
-        .query('uploads')
-        .withIndex('by_storage_id', (q) =>
-          q.eq('storageId', args.attachmentId!),
-        )
-        .first()
-
-      if (!upload || upload.userId !== userId) {
-        throw new Error('Attachment not found or not owned by current user')
-      }
+      await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
     }
 
     const expenseId = await ctx.db.insert('expenses', {
@@ -185,21 +177,13 @@ export const update = mutation({
 
     // If the attachment is changing, verify the user owns the new upload
     if (args.attachmentId && args.attachmentId !== existing.attachmentId) {
-      const upload = await ctx.db
-        .query('uploads')
-        .withIndex('by_storage_id', (q) =>
-          q.eq('storageId', args.attachmentId!),
-        )
-        .first()
-
-      if (!upload || upload.userId !== userId) {
-        throw new Error('Attachment not found or not owned by current user')
-      }
+      await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
     }
 
-    // If attachment changed and old one exists, delete it
+    // If attachment changed and old one exists, delete it and its upload record
     if (existing.attachmentId && existing.attachmentId !== args.attachmentId) {
       await ctx.storage.delete(existing.attachmentId)
+      await deleteUploadRecord(ctx, existing.attachmentId)
     }
 
     await ctx.db.patch(args.id, {
@@ -232,9 +216,10 @@ export const remove = mutation({
       throw new Error('Expense not found')
     }
 
-    // Delete attachment if exists
+    // Delete attachment and its upload record if they exist
     if (expense.attachmentId) {
       await ctx.storage.delete(expense.attachmentId)
+      await deleteUploadRecord(ctx, expense.attachmentId)
     }
 
     await ctx.db.delete(args.id)
@@ -260,6 +245,7 @@ export const removeAttachment = mutation({
 
     if (expense.attachmentId) {
       await ctx.storage.delete(expense.attachmentId)
+      await deleteUploadRecord(ctx, expense.attachmentId)
       await ctx.db.patch(args.id, { attachmentId: undefined })
     }
 

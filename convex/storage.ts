@@ -1,8 +1,51 @@
 import { v } from 'convex/values'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 import { internalMutation, mutation, query } from './_generated/server'
+import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 
 const ORPHAN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+const CLEANUP_BATCH_SIZE = 100
+
+// ---------------------------------------------------------------------------
+// Shared helpers (used by both storage.ts and expenses.ts)
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify that the given `attachmentId` has an `uploads` record owned by `userId`.
+ * Throws if the record is missing or belongs to another user.
+ */
+export async function verifyAttachmentOwnership(
+  ctx: { db: QueryCtx['db'] },
+  attachmentId: Id<'_storage'>,
+  userId: Id<'users'>,
+) {
+  const upload = await ctx.db
+    .query('uploads')
+    .withIndex('by_storage_id', (q) => q.eq('storageId', attachmentId))
+    .first()
+
+  if (!upload || upload.userId !== userId) {
+    throw new Error('Attachment not found or not owned by current user')
+  }
+}
+
+/**
+ * Delete the `uploads` record for a given storageId, if it exists.
+ */
+export async function deleteUploadRecord(
+  ctx: { db: MutationCtx['db'] },
+  storageId: Id<'_storage'>,
+) {
+  const upload = await ctx.db
+    .query('uploads')
+    .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
+    .first()
+
+  if (upload) {
+    await ctx.db.delete(upload._id)
+  }
+}
 
 /**
  * Generate an upload URL for file storage
@@ -125,14 +168,7 @@ export const deleteFile = mutation({
     await ctx.storage.delete(args.storageId)
 
     // Clean up the upload record if it exists
-    const upload = await ctx.db
-      .query('uploads')
-      .withIndex('by_storage_id', (q) => q.eq('storageId', args.storageId))
-      .first()
-
-    if (upload) {
-      await ctx.db.delete(upload._id)
-    }
+    await deleteUploadRecord(ctx, args.storageId)
 
     return true
   },
@@ -142,6 +178,11 @@ export const deleteFile = mutation({
  * Delete orphaned upload records (and their storage files) that are older
  * than 24 hours and not referenced by any expense.
  *
+ * Processes up to {@link CLEANUP_BATCH_SIZE} records per invocation to stay
+ * within Convex mutation execution limits. The daily cron is sufficient for
+ * normal volumes; if a backlog builds up it will be drained over successive
+ * runs.
+ *
  * Called by the daily cron defined in crons.ts.
  */
 export const cleanupOrphanedUploads = internalMutation({
@@ -149,11 +190,11 @@ export const cleanupOrphanedUploads = internalMutation({
   handler: async (ctx) => {
     const cutoff = Date.now() - ORPHAN_TTL_MS
 
-    // Fetch upload records older than the TTL
+    // Fetch a bounded batch of upload records older than the TTL
     const oldUploads = await ctx.db
       .query('uploads')
       .withIndex('by_created_at', (q) => q.lt('createdAt', cutoff))
-      .collect()
+      .take(CLEANUP_BATCH_SIZE)
 
     let deleted = 0
     for (const upload of oldUploads) {
@@ -166,8 +207,18 @@ export const cleanupOrphanedUploads = internalMutation({
         .first()
 
       if (!expense) {
-        // Orphaned: delete the storage file and the upload record
-        await ctx.storage.delete(upload.storageId)
+        // Orphaned: delete the storage file and the upload record.
+        // The storage file may have already been deleted (e.g. by
+        // expenses.remove / removeAttachment), so we catch and log errors
+        // to avoid aborting cleanup for the remaining records.
+        try {
+          await ctx.storage.delete(upload.storageId)
+        } catch (err) {
+          console.warn(
+            `Failed to delete storage file ${upload.storageId}, removing upload record anyway:`,
+            err,
+          )
+        }
         await ctx.db.delete(upload._id)
         deleted++
       }
