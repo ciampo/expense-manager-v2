@@ -258,15 +258,12 @@ export const cleanupOrphanedUploads = internalMutation({
       }
 
       // Skip if any expense references this file
-      // We can't use the composite index without a userId, so we check
-      // all expenses. This is acceptable because pass 2 only runs on
-      // files that have NO upload record, which is an edge case.
-      const expenses = await ctx.db
+      const expense = await ctx.db
         .query('expenses')
-        .filter((q) => q.eq(q.field('attachmentId'), file._id))
+        .withIndex('by_attachment', (q) => q.eq('attachmentId', file._id))
         .first()
 
-      if (!expenses) {
+      if (!expense) {
         try {
           await ctx.storage.delete(file._id)
         } catch (err) {

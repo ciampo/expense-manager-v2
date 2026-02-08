@@ -103,9 +103,16 @@ export const cleanup = mutation({
       await ctx.db.delete(expense._id)
     }
 
-    // Delete all upload tracking records
+    // Delete all upload tracking records and their storage files.
+    // Storage files linked to expenses are already deleted above; this
+    // catches orphaned uploads that were never attached to an expense.
     const uploads = await ctx.db.query('uploads').collect()
     for (const upload of uploads) {
+      try {
+        await ctx.storage.delete(upload.storageId)
+      } catch {
+        // File may have already been deleted above (linked to an expense)
+      }
       await ctx.db.delete(upload._id)
     }
 
