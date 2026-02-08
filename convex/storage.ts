@@ -273,13 +273,15 @@ export const cleanupOrphanedUploads = internalMutation({
     }
 
     // ── Pass 2 ──────────────────────────────────────────────────────
+    // Order oldest-first and pre-filter by cutoff so the batch only
+    // contains files old enough to be candidates.
     const storageFiles = await ctx.db.system
       .query('_storage')
+      .order('asc')
+      .filter((q) => q.lt(q.field('_creationTime'), cutoff))
       .take(CLEANUP_BATCH_SIZE)
 
     for (const file of storageFiles) {
-      if (file._creationTime > cutoff) continue
-
       // Skip files that have an upload record (handled in pass 1)
       const upload = await getUploadRecord(ctx, file._id)
       if (upload) continue
