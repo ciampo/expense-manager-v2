@@ -82,8 +82,20 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     await page.getByLabel('Confirm password').fill(testPassword)
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
-    // Wait for redirect to dashboard after successful sign-up
-    await page.waitForURL('**/dashboard', { timeout: 30000 })
+    // Wait for redirect to dashboard after successful sign-up.
+    // If this times out, the sign-up likely failed — capture the page state for debugging.
+    try {
+      await page.waitForURL('**/dashboard', { timeout: 30000 })
+    } catch {
+      const url = page.url()
+      // Check for visible error messages on the sign-up page
+      const errorText = await page.locator('[role="alert"]').allTextContents()
+      throw new Error(
+        `Sign-up did not redirect to /dashboard. ` +
+          `Stuck on: ${url}. ` +
+          `Visible errors: ${errorText.length ? errorText.join('; ') : 'none'}`
+      )
+    }
     // Wait for the dashboard to fully render (main content area visible)
     await page.locator('main#main-content').waitFor()
   })
