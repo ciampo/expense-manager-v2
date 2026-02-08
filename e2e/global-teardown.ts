@@ -1,6 +1,10 @@
 import { execSync } from 'child_process'
 import { readFileSync } from 'fs'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 /**
  * Playwright global teardown — runs after all tests finish (pass or fail).

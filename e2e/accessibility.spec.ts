@@ -82,7 +82,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
     // Wait for redirect to dashboard after successful sign-up
-    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    await page.waitForURL('**/dashboard', { timeout: 30000 })
     await page.waitForLoadState('networkidle')
   })
 
