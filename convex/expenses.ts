@@ -4,25 +4,37 @@ import { auth } from './auth'
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
 
+function isValidDate(dateStr: string): boolean {
+  if (!DATE_REGEX.test(dateStr)) return false
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  )
+}
+
 function validateExpenseFields(args: {
   date: string
   merchant: string
   amount: number
   comment?: string
 }) {
-  if (!DATE_REGEX.test(args.date)) {
-    throw new Error('Invalid date format. Expected YYYY-MM-DD.')
+  if (!isValidDate(args.date)) {
+    throw new Error('Invalid date. Expected a valid YYYY-MM-DD date.')
   }
   if (args.amount <= 0) {
     throw new Error('Amount must be greater than zero.')
   }
-  if (!args.merchant.trim()) {
+  const trimmedMerchant = args.merchant.trim()
+  if (!trimmedMerchant) {
     throw new Error('Merchant name is required.')
   }
-  if (args.merchant.length > 200) {
+  if (trimmedMerchant.length > 200) {
     throw new Error('Merchant name must be 200 characters or less.')
   }
-  if (args.comment !== undefined && args.comment.length > 1000) {
+  if (args.comment !== undefined && args.comment.trim().length > 1000) {
     throw new Error('Comment must be 1000 characters or less.')
   }
 }

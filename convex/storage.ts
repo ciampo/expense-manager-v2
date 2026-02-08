@@ -18,13 +18,24 @@ export const generateUploadUrl = mutation({
 })
 
 /**
- * Get a download URL for a file (requires authentication)
+ * Get a download URL for a file (verifies ownership)
  */
 export const getUrl = query({
   args: { storageId: v.id('_storage') },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx)
     if (!userId) {
+      return null
+    }
+
+    // Verify the storage ID belongs to an expense owned by the current user
+    const expense = await ctx.db
+      .query('expenses')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) => q.eq(q.field('attachmentId'), args.storageId))
+      .first()
+
+    if (!expense) {
       return null
     }
 
