@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
@@ -97,7 +97,6 @@ function TableSkeleton() {
 
 function ExpenseTable() {
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
   const { data: expenses } = useSuspenseQuery(convexQuery(api.expenses.list, {}))
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
   
@@ -176,26 +175,8 @@ function ExpenseTable() {
         </TableHeader>
         <TableBody>
           {expenses.map((expense) => (
-            <TableRow
-              key={expense._id}
-              className="cursor-pointer hover:bg-muted/50"
-              onClick={() =>
-                navigate({
-                  to: '/expenses/$expenseId',
-                  params: { expenseId: expense._id },
-                })
-              }
-            >
-              <TableCell>
-                <Link
-                  to="/expenses/$expenseId"
-                  params={{ expenseId: expense._id }}
-                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {formatDate(expense.date)}
-                </Link>
-              </TableCell>
+            <TableRow key={expense._id}>
+              <TableCell>{formatDate(expense.date)}</TableCell>
               <TableCell>{expense.merchant}</TableCell>
               <TableCell>
                 {categoryMap.get(expense.categoryId) || 'N/A'}
@@ -214,43 +195,56 @@ function ExpenseTable() {
                 )}
               </TableCell>
               <TableCell className="text-right">
-                <AlertDialog
-                  open={deletingId === expense._id}
-                  onOpenChange={(open) =>
-                    setDeletingId(open ? expense._id : null)
-                  }
-                >
-                  <AlertDialogTrigger
+                <div className="flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     render={
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={(e) => e.stopPropagation()}
+                      <Link
+                        to="/expenses/$expenseId"
+                        params={{ expenseId: expense._id }}
                       />
                     }
                   >
-                    Delete
-                  </AlertDialogTrigger>
-                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. The expense and any
-                        attachment will be permanently deleted.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(expense._id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                    Edit
+                  </Button>
+                  <AlertDialog
+                    open={deletingId === expense._id}
+                    onOpenChange={(open) =>
+                      setDeletingId(open ? expense._id : null)
+                    }
+                  >
+                    <AlertDialogTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                        />
+                      }
+                    >
+                      Delete
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. The expense and any
+                          attachment will be permanently deleted.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(expense._id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </TableCell>
             </TableRow>
           ))}
