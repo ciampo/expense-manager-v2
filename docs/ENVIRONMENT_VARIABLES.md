@@ -18,9 +18,9 @@ This document lists all environment variables used in the Expense Manager projec
 
 ## Local Environment Files
 
-### `.env.local` (Development Convex)
+### `.env.local` (Development)
 
-Used during local development. Points to your **development** Convex project.
+Used during local development. Points to the **development deployment** of the `expense-manager` project.
 
 ```env
 VITE_CONVEX_URL=https://your-dev-project.convex.cloud
@@ -29,19 +29,19 @@ CONVEX_DEPLOYMENT=dev:your-project  # Auto-populated by `npx convex dev`
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_CONVEX_URL` | Yes | Development Convex deployment URL |
+| `VITE_CONVEX_URL` | Yes | `expense-manager` project → **development** deployment URL |
 | `CONVEX_DEPLOYMENT` | Auto | Set automatically by `npx convex dev` -- do not edit manually |
 
 **How to get it:**
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
-2. Select your development project
-3. Copy the "Deployment URL" from the project overview
+2. Select the `expense-manager` project
+3. Copy the **development** deployment URL
 
 ---
 
-### `.env.test` (Test Convex)
+### `.env.test` (E2E Tests)
 
-Used when running E2E tests locally (`pnpm dev:e2e`). Points to your **test** Convex project and provides the deploy key for seeding/cleanup.
+Used when running E2E tests. Both values target the **production deployment** of the `expense-manager-test` project.
 
 ```env
 VITE_CONVEX_URL=https://your-test-project.convex.cloud
@@ -50,14 +50,16 @@ CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_CONVEX_URL` | Yes | Test Convex deployment URL |
-| `CONVEX_DEPLOY_KEY` | Yes | Production deploy key for the test Convex project (used by seed, cleanup, and deploy commands) |
+| `VITE_CONVEX_URL` | Yes | `expense-manager-test` project → **production** deployment URL |
+| `CONVEX_DEPLOY_KEY` | Yes | `expense-manager-test` project → **production** deploy key (used by seed, cleanup, and deploy commands) |
 
 **How to get the values:**
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
-2. Select your test project (`expense-manager-test`)
-3. Copy the "Deployment URL" for `VITE_CONVEX_URL`
+2. Select the `expense-manager-test` project
+3. Copy the **production** deployment URL for `VITE_CONVEX_URL`
 4. Go to Settings → Deploy Keys → Generate Deploy Key for `CONVEX_DEPLOY_KEY`
+
+> **Why production?** Deploy keys only work with production deployments. The E2E seed, cleanup, and `npx convex deploy` commands all require a deploy key for non-interactive access. The app under test (`VITE_CONVEX_URL`) must point to the same deployment that these commands target.
 
 ---
 
@@ -73,10 +75,10 @@ These secrets are configured in your GitHub repository settings.
 |-------------|-------------|--------|
 | `CLOUDFLARE_API_TOKEN` | API token for Cloudflare Workers deployment | Cloudflare Dashboard |
 | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account identifier | Cloudflare Dashboard |
-| `CONVEX_PROD_URL` | Production Convex deployment URL | Convex Dashboard |
-| `CONVEX_DEV_URL` | Development Convex deployment URL (for PR previews) | Convex Dashboard |
-| `CONVEX_TEST_URL` | Test Convex project deployment URL | Convex Dashboard |
-| `CONVEX_TEST_DEPLOY_KEY` | Deploy key for test Convex project | Convex Dashboard |
+| `CONVEX_PROD_URL` | `expense-manager` → **production** deployment URL | Convex Dashboard |
+| `CONVEX_DEV_URL` | `expense-manager` → **development** deployment URL (for PR previews) | Convex Dashboard |
+| `CONVEX_TEST_URL` | `expense-manager-test` → **production** deployment URL | Convex Dashboard |
+| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` → **production** deploy key | Convex Dashboard |
 
 ### How to Get Each Value
 
@@ -93,24 +95,30 @@ These secrets are configured in your GitHub repository settings.
 
 #### `CONVEX_PROD_URL`
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
-2. Select your **production** project
-3. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+2. Select the `expense-manager` project
+3. Copy the **production** deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
 
 #### `CONVEX_DEV_URL`
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
-2. Select your **development** project
-3. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+2. Select the `expense-manager` project
+3. Copy the **development** deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+
+> This is the same URL as `VITE_CONVEX_URL` in `.env.local`. It's used by the PR preview workflow so preview deployments connect to the development backend.
 
 #### `CONVEX_TEST_URL`
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
-2. Select the **test** project
-3. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+2. Select the `expense-manager-test` project
+3. Copy the **production** deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+
+> This is the same URL as `VITE_CONVEX_URL` in `.env.test`.
 
 #### `CONVEX_TEST_DEPLOY_KEY`
 1. Go to Convex Dashboard
-2. Select the **test** project
+2. Select the `expense-manager-test` project
 3. Settings → Deploy Keys → Generate Deploy Key
 4. Copy the key (only shown once)
+
+> This is the same key as `CONVEX_DEPLOY_KEY` in `.env.test`.
 
 ---
 
@@ -192,12 +200,12 @@ VITE_CONVEX_URL=https://your-project.convex.cloud
 
 ### `.env.test` Template
 ```env
-# Convex Test URL (for E2E tests)
-# Get from: https://dashboard.convex.dev/ → Test Project → Deployment URL
+# expense-manager-test project → production deployment URL
+# Get from: https://dashboard.convex.dev/ → expense-manager-test → Production deployment URL
 VITE_CONVEX_URL=https://your-test-project.convex.cloud
 
-# Convex production deploy key for the test project (used by E2E test seed/cleanup)
-# Get from: Convex Dashboard → Test Project → Settings → Deploy Keys
+# expense-manager-test project → production deploy key (used by E2E test seed/cleanup)
+# Get from: Convex Dashboard → expense-manager-test → Settings → Deploy Keys
 CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 ```
 

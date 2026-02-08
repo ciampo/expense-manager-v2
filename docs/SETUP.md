@@ -15,12 +15,14 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 ## 1. Convex Setup
 
+> **Convex project vs deployment:** Each Convex *project* has two *deployments*: **development** (used by `npx convex dev`, interactive) and **production** (used by `npx convex deploy` and deploy keys, non-interactive). Each deployment has its own URL and database. See the [Convex docs](https://docs.convex.dev/production) for details.
+
 ### 1.1 Create Development Project
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Click "New Project"
 3. Name it: `expense-manager`
-4. Copy the deployment URL (format: `https://xxx-xxx-xxx.convex.cloud`)
+4. Copy the **development** deployment URL (format: `https://xxx-xxx-xxx.convex.cloud`)
 5. Save it to `.env.local` in the project root:
    ```
    VITE_CONVEX_URL=https://your-project.convex.cloud
@@ -30,9 +32,12 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 1. In Convex Dashboard, click "New Project"
 2. Name it: `expense-manager-test`
-3. Copy the deployment URL
+
+> At this point the test project only has a development deployment. Step 1.6 (`npx convex deploy`) will create the production deployment.
 
 ### 1.3 Generate Deploy Key for Test Project
+
+Deploy keys provide non-interactive access to a project's **production** deployment. They are required for CLI commands like `convex deploy`, `convex run ... --prod`, and are used by E2E test seed/cleanup scripts.
 
 1. In Convex Dashboard, select the **test** project
 2. Go to Settings → Deploy Keys
@@ -40,9 +45,9 @@ This guide covers all the manual configuration steps required to set up the Expe
 4. Copy and save the key securely (it's only shown once)
 5. This key will be added to GitHub secrets later **and** to `.env.test`
 
-Save both values to `.env.test` in the project root:
+Save the deploy key to `.env.test` in the project root (the production deployment URL will be added after step 1.6):
 ```env
-VITE_CONVEX_URL=https://your-test-project.convex.cloud
+VITE_CONVEX_URL=https://placeholder-will-update-after-deploy.convex.cloud
 CONVEX_DEPLOY_KEY=your_test_project_deploy_key
 ```
 
@@ -68,30 +73,42 @@ This will:
 
 ### 1.5 Configure Authentication Keys
 
-Each Convex deployment requires JWT keys for `@convex-dev/auth`. In a **separate terminal** (while `convex dev` is still running), generate and set them with:
+Each Convex deployment that users sign in to requires JWT keys for `@convex-dev/auth`. In a **separate terminal** (while `convex dev` is still running), generate and set them with:
 
 ```bash
-# For the development deployment (linked via npx convex dev)
+# Dev project → development deployment (used by local dev)
 npx @convex-dev/auth
+
+# Dev project → production deployment (used by the live app)
+npx @convex-dev/auth --prod
 ```
 
-This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on your Convex deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
+This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respective deployment. You can verify them in the [Convex Dashboard](https://dashboard.convex.dev/) under **Settings > Environment Variables**.
 
-> **Note:** For the production deployment, run `npx @convex-dev/auth --prod` instead.
+> **Note:** The test project's production deployment also needs auth keys — this is covered in step 1.6 below, after the production deployment has been created.
 
-### 1.6 Deploy Schema to Test Project
+### 1.6 Deploy Schema and Auth Keys to Test Project
 
-The test project needs the same schema deployed. Source `CONVEX_DEPLOY_KEY` from `.env.test` (configured in step 1.3) to tell the Convex CLI which deployment to target:
+The test project needs the same schema deployed to its **production** deployment. This step creates the production deployment if it doesn't exist yet.
 
 ```bash
 # Load the deploy key from .env.test
 export $(grep CONVEX_DEPLOY_KEY .env.test | xargs)
 
-# Deploy schema to the test project
+# Deploy schema — creates the production deployment on first run
 npx convex deploy
+
+# Configure auth keys for the test project's production deployment
+npx @convex-dev/auth --prod
 ```
 
-> **Important:** All `convex` commands in this terminal session will target the test deployment as long as `CONVEX_DEPLOY_KEY` is set. To switch back to the development project, run `unset CONVEX_DEPLOY_KEY`.
+After deploying, go to the Convex Dashboard → test project and copy the **production** deployment URL. Update `VITE_CONVEX_URL` in `.env.test`:
+```env
+VITE_CONVEX_URL=https://your-test-project-prod-url.convex.cloud
+CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+```
+
+> **Important:** All `convex` commands in this terminal session will target the test project's production deployment as long as `CONVEX_DEPLOY_KEY` is set. To switch back to the development project, run `unset CONVEX_DEPLOY_KEY`.
 
 ### 1.7 Seed Initial Data
 
@@ -185,10 +202,10 @@ Click "New repository secret" for each:
 |-------------|-------------|
 | `CLOUDFLARE_API_TOKEN` | Your Cloudflare API token |
 | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
-| `CONVEX_PROD_URL` | Production Convex deployment URL (used by `deploy.yml`) |
-| `CONVEX_DEV_URL` | Development Convex deployment URL (used by `preview.yml` for PR previews) |
-| `CONVEX_TEST_URL` | Test Convex project URL (`https://xxx.convex.cloud`) |
-| `CONVEX_TEST_DEPLOY_KEY` | Test Convex project deploy key |
+| `CONVEX_PROD_URL` | `expense-manager` project → **production** deployment URL (used by `deploy.yml`) |
+| `CONVEX_DEV_URL` | `expense-manager` project → **development** deployment URL (used by `preview.yml` for PR previews) |
+| `CONVEX_TEST_URL` | `expense-manager-test` project → **production** deployment URL (same as `VITE_CONVEX_URL` in `.env.test`) |
+| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key (same as `CONVEX_DEPLOY_KEY` in `.env.test`) |
 
 ### 3.4 Configure Branch Protection Rules
 
