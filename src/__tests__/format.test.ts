@@ -77,14 +77,15 @@ describe('getTodayISO', () => {
   })
 
   it('returns local date, not UTC date', () => {
-    const result = getTodayISO()
-    const now = new Date()
-    const localYear = now.getFullYear()
-    const localMonth = String(now.getMonth() + 1).padStart(2, '0')
-    const localDay = String(now.getDate()).padStart(2, '0')
-    const expectedLocal = `${localYear}-${localMonth}-${localDay}`
+    // Pin time to avoid flakiness if the date rolls over at midnight
+    // between getTodayISO() and the reference Date construction.
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 5, 15, 23, 59, 50)) // Jun 15 2026, 23:59:50 local
 
-    expect(result).toBe(expectedLocal)
+    const result = getTodayISO()
+    expect(result).toBe('2026-06-15')
+
+    vi.useRealTimers()
   })
 })
 
