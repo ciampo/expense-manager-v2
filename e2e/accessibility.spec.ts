@@ -124,8 +124,9 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
           `Page content: ${bodyText.slice(0, 500)}`
       )
     }
-    // Wait for the dashboard to fully render (main content area visible)
-    await page.locator('main#main-content').waitFor()
+    // Wait for the authenticated layout to fully render (nav is only in the
+    // real layout, not in the pendingComponent skeleton).
+    await page.locator('header nav').waitFor({ timeout: 10000 })
   })
 
   test('dashboard should have no accessibility violations', async ({
@@ -150,8 +151,9 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     page,
   }) => {
     await page.goto('/reports')
-    // Wait for the reports page to render
-    await page.locator('main#main-content').waitFor()
+    // Wait for the authenticated layout to fully render (nav is only in the
+    // real layout, not in the pendingComponent skeleton).
+    await page.locator('header nav').waitFor({ timeout: 10000 })
 
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])

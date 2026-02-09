@@ -57,9 +57,10 @@ test.describe('Auth Guards — authenticated redirects', () => {
     await page.getByLabel('Confirm password').fill(testPassword)
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
-    // Wait for redirect to dashboard after successful sign-up
+    // Wait for redirect to dashboard after successful sign-up.
+    // Wait for the nav (only in the real layout, not the pendingComponent skeleton).
     await page.waitForURL('**/dashboard', { timeout: 30000 })
-    await page.locator('main#main-content').waitFor()
+    await page.locator('header nav').waitFor({ timeout: 10000 })
 
     // Now try to navigate to an auth page — should redirect back to dashboard
     await page.goto('/sign-in')
@@ -84,7 +85,7 @@ test.describe('Auth Guards — authenticated redirects', () => {
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
     await page.waitForURL('**/dashboard', { timeout: 30000 })
-    await page.locator('main#main-content').waitFor()
+    await page.locator('header nav').waitFor({ timeout: 10000 })
 
     // Navigate to sign-up — should redirect back to dashboard
     await page.goto('/sign-up')
