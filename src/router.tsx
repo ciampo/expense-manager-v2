@@ -4,7 +4,6 @@ import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
 import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { useConvexAuth } from 'convex/react'
-import { useEffect } from 'react'
 
 import { routeTree } from './routeTree.gen'
 import { createAuthStore } from '@/lib/auth-store'
@@ -13,17 +12,25 @@ import type { AuthStore } from '@/lib/auth-store'
 /**
  * React component that bridges Convex auth state into the auth store.
  * Rendered inside the Wrap component so it has access to ConvexAuthProvider.
+ *
+ * Updates happen eagerly during render (not in useEffect) so that any
+ * navigation triggered synchronously after signIn/signOut (e.g.
+ * `navigate({ to: '/dashboard' })`) sees the current auth state in
+ * beforeLoad. useEffect would fire after paint — too late for route guards.
+ *
+ * This is safe because:
+ * - The store is a plain object outside React's state management
+ * - Setting the same values multiple times is idempotent
+ * - beforeLoad reads the store outside the React render cycle
  */
 function AuthBridge({ authStore }: { authStore: AuthStore }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
 
-  useEffect(() => {
-    // Order matters: isAuthenticated must be set before isLoading, because
-    // the isLoading setter resolves the waitForAuth() promise which reads
-    // _isAuthenticated at resolution time.
-    authStore.isAuthenticated = isAuthenticated
-    authStore.isLoading = isLoading
-  }, [isAuthenticated, isLoading, authStore])
+  // Order matters: isAuthenticated must be set before isLoading, because
+  // the isLoading setter resolves the waitForAuth() promise which reads
+  // _isAuthenticated at resolution time.
+  authStore.isAuthenticated = isAuthenticated
+  authStore.isLoading = isLoading
 
   return null
 }

@@ -1,7 +1,8 @@
 /**
  * Simple auth state bridge that allows non-React code (like beforeLoad)
- * to access the Convex auth state. Updated from inside the React tree
- * via the AuthBridge component in router.tsx.
+ * to access the Convex auth state. Updated eagerly during render by the
+ * AuthBridge component in router.tsx (not via useEffect, to avoid stale
+ * state when navigate() is called synchronously after auth changes).
  */
 export interface AuthStore {
   isAuthenticated: boolean
