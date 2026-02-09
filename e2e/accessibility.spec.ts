@@ -78,9 +78,6 @@ test.describe('Accessibility Audit — Public Pages', () => {
 test.describe('Accessibility Audit — Authenticated Pages', () => {
   const testPassword = 'TestPassword123!'
 
-  // Authenticated tests need more time: sign-up + page render + axe audit
-  test.setTimeout(60000)
-
   // Sign up a fresh user before each test. Each test gets its own
   // browser context (no shared session), so we need a unique email
   // per test to avoid "email already taken" errors.
@@ -100,7 +97,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     // useEffect, which fires only after React has mounted (hydrated).
     // This is a stable, framework-agnostic signal that doesn't depend
     // on React internals (__reactFiber, etc.).
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 15000 })
+    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
 
     await page.getByLabel('Email').fill(uniqueEmail)
     await page.getByLabel('Password', { exact: true }).fill(testPassword)
@@ -108,10 +105,10 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
     // Wait for redirect to dashboard after successful sign-up.
-    // Use a shorter timeout than the test timeout so we have time
-    // to capture diagnostics if sign-up fails.
+    // Explicit 15s timeout: this involves a backend call (Convex signIn)
+    // which is the slowest step. Capture diagnostics if it fails.
     try {
-      await page.waitForURL('**/dashboard', { timeout: 30000 })
+      await page.waitForURL('**/dashboard', { timeout: 15000 })
     } catch {
       const url = page.url()
       const bodyText = await page
@@ -126,7 +123,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     }
     // Wait for the authenticated layout to fully render (nav is only in the
     // real layout, not in the pendingComponent skeleton).
-    await page.locator('header nav').waitFor({ timeout: 10000 })
+    await page.locator('header nav').waitFor()
   })
 
   test('dashboard should have no accessibility violations', async ({
@@ -153,7 +150,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     await page.goto('/reports')
     // Wait for the authenticated layout to fully render (nav is only in the
     // real layout, not in the pendingComponent skeleton).
-    await page.locator('header nav').waitFor({ timeout: 10000 })
+    await page.locator('header nav').waitFor()
 
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])

@@ -8,7 +8,7 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
     await page.goto('/dashboard')
 
     // Should redirect to sign-in without ever rendering dashboard content
-    await page.waitForURL('/sign-in', { timeout: 10000 })
+    await page.waitForURL('/sign-in')
 
     // The dashboard heading should never have been in the DOM
     await expect(page.getByRole('heading', { name: 'Dashboard' })).not.toBeVisible()
@@ -22,7 +22,7 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
   }) => {
     await page.goto('/reports')
 
-    await page.waitForURL('/sign-in', { timeout: 10000 })
+    await page.waitForURL('/sign-in')
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible()
   })
 
@@ -31,16 +31,13 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
   }) => {
     await page.goto('/expenses/new')
 
-    await page.waitForURL('/sign-in', { timeout: 10000 })
+    await page.waitForURL('/sign-in')
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible()
   })
 })
 
 test.describe('Auth Guards — authenticated redirects', () => {
   const testPassword = 'TestPass123!'
-
-  // Authenticated tests need more time: sign-up + navigation + redirect
-  test.setTimeout(60000)
 
   test('authenticated user navigating to /sign-in should redirect to /dashboard', async ({
     page,
@@ -50,21 +47,20 @@ test.describe('Auth Guards — authenticated redirects', () => {
 
     await page.goto('/sign-up')
     await page.getByRole('heading', { name: /sign up/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 15000 })
+    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
 
     await page.getByLabel('Email').fill(uniqueEmail)
     await page.getByLabel('Password', { exact: true }).fill(testPassword)
     await page.getByLabel('Confirm password').fill(testPassword)
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
-    // Wait for redirect to dashboard after successful sign-up.
-    // Wait for the nav (only in the real layout, not the pendingComponent skeleton).
-    await page.waitForURL('**/dashboard', { timeout: 30000 })
-    await page.locator('header nav').waitFor({ timeout: 10000 })
+    // Wait for sign-up (backend call) + redirect to dashboard.
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    await page.locator('header nav').waitFor()
 
     // Now try to navigate to an auth page — should redirect back to dashboard
     await page.goto('/sign-in')
-    await page.waitForURL('**/dashboard', { timeout: 10000 })
+    await page.waitForURL('**/dashboard')
 
     // Dashboard should be visible, sign-in form should not
     await expect(page.getByRole('heading', { name: 'Sign In' })).not.toBeVisible()
@@ -77,19 +73,19 @@ test.describe('Auth Guards — authenticated redirects', () => {
 
     await page.goto('/sign-up')
     await page.getByRole('heading', { name: /sign up/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 15000 })
+    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
 
     await page.getByLabel('Email').fill(uniqueEmail)
     await page.getByLabel('Password', { exact: true }).fill(testPassword)
     await page.getByLabel('Confirm password').fill(testPassword)
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
-    await page.waitForURL('**/dashboard', { timeout: 30000 })
-    await page.locator('header nav').waitFor({ timeout: 10000 })
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    await page.locator('header nav').waitFor()
 
     // Navigate to sign-up — should redirect back to dashboard
     await page.goto('/sign-up')
-    await page.waitForURL('**/dashboard', { timeout: 10000 })
+    await page.waitForURL('**/dashboard')
 
     await expect(page.getByRole('heading', { name: 'Sign Up' })).not.toBeVisible()
   })
