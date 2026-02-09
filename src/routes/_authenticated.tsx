@@ -1,13 +1,23 @@
 import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Menu01Icon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_authenticated')({
@@ -39,12 +49,18 @@ function AuthenticatedSkeleton() {
           <Skeleton className="h-64 w-full" />
         </div>
       </main>
+      <footer className="border-t py-6">
+        <div className="container mx-auto px-4 text-center">
+          <Skeleton className="h-4 w-48 mx-auto" />
+        </div>
+      </footer>
     </div>
   )
 }
 
 function AuthenticatedLayout() {
   const { signOut } = useAuthActions()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleSignOut = async () => {
     try {
@@ -69,8 +85,8 @@ function AuthenticatedLayout() {
             Expense Manager
           </Link>
 
-          {/* Navigation */}
-          <nav aria-label="Main" className="flex items-center gap-6">
+          {/* Desktop Navigation */}
+          <nav aria-label="Main" className="hidden md:flex items-center gap-6">
             <Link
               to="/dashboard"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
@@ -101,6 +117,52 @@ function AuthenticatedLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
+
+          {/* Mobile hamburger menu */}
+          <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <DialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Open menu"
+                  className="md:hidden"
+                />
+              }
+            >
+              <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} />
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-xs">
+              <DialogTitle>Menu</DialogTitle>
+              <nav aria-label="Main" className="flex flex-col gap-4 mt-2">
+                <Link
+                  to="/dashboard"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/reports"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Reports
+                </Link>
+                <hr className="border-t" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    handleSignOut()
+                  }}
+                  className="text-sm font-medium text-destructive hover:text-destructive/80 transition-colors text-left"
+                >
+                  Logout
+                </button>
+              </nav>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
@@ -108,6 +170,13 @@ function AuthenticatedLayout() {
       <main id="main-content" tabIndex={-1} className="flex-1">
         <Outlet />
       </main>
+
+      {/* Footer */}
+      <footer className="border-t py-6">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} Expense Manager
+        </div>
+      </footer>
     </div>
   )
 }
