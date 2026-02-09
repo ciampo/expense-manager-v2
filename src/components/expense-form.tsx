@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSuspenseQuery, useQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { api } from '../../convex/_generated/api'
@@ -125,7 +125,6 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
 
 export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   
   // Fetch data
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
@@ -155,7 +154,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const createExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.create),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
       toast.success('Expense created')
       navigate({ to: '/dashboard' })
     },
@@ -167,7 +165,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const updateExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.update),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
       toast.success('Expense updated')
       navigate({ to: '/dashboard' })
     },
@@ -179,7 +176,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const deleteExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.remove),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: convexQuery(api.expenses.list, {}).queryKey })
       toast.success('Expense deleted')
       navigate({ to: '/dashboard' })
     },
@@ -191,7 +187,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const createCategory = useMutation({
     mutationFn: useConvexMutation(api.categories.create),
     onSuccess: (newId: Id<'categories'>) => {
-      queryClient.invalidateQueries({ queryKey: convexQuery(api.categories.list, {}).queryKey })
       setCategoryId(newId)
       setNewCategoryName('')
       toast.success('Category created')
