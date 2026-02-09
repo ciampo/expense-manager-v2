@@ -8,7 +8,7 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
     await page.goto('/dashboard')
 
     // Should redirect to sign-in without ever rendering dashboard content
-    await page.waitForURL('/sign-in')
+    await page.waitForURL('**/sign-in')
 
     // The dashboard heading should never have been in the DOM
     await expect(page.getByRole('heading', { name: 'Dashboard' })).not.toBeVisible()
@@ -22,7 +22,7 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
   }) => {
     await page.goto('/reports')
 
-    await page.waitForURL('/sign-in')
+    await page.waitForURL('**/sign-in')
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible()
   })
 
@@ -31,7 +31,7 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
   }) => {
     await page.goto('/expenses/new')
 
-    await page.waitForURL('/sign-in')
+    await page.waitForURL('**/sign-in')
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible()
   })
 })
