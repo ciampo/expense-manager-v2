@@ -1,14 +1,24 @@
 /**
  * Simple auth state bridge that allows non-React code (like beforeLoad)
  * to access the Convex auth state. Updated eagerly during render by the
- * AuthBridge component in router.tsx (not via useEffect, to avoid stale
- * state when navigate() is called synchronously after auth changes).
+ * AuthBridge component in router.tsx.
+ *
+ * The `invalidateRouter` callback is set by `getRouter()` after the router
+ * is created, and called by AuthBridge (via useEffect) when auth state
+ * settles — this triggers TanStack Router to re-evaluate its beforeLoad
+ * guards, producing automatic redirects (e.g. auth pages → /dashboard
+ * after sign-in, authenticated pages → /sign-in after sign-out).
  */
 export interface AuthStore {
   isAuthenticated: boolean
   isLoading: boolean
   /** Returns a promise that resolves once auth state is no longer loading */
   waitForAuth: () => Promise<{ isAuthenticated: boolean }>
+  /**
+   * Callback to tell the router to re-evaluate route guards.
+   * Set by getRouter() after the router instance is created.
+   */
+  invalidateRouter: (() => void) | null
 }
 
 export function createAuthStore(): AuthStore {
@@ -23,6 +33,7 @@ export function createAuthStore(): AuthStore {
   })
 
   return {
+    invalidateRouter: null,
     get isAuthenticated() {
       return _isAuthenticated
     },

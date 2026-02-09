@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import {
   DropdownMenu,
@@ -45,13 +45,15 @@ function AuthenticatedSkeleton() {
 
 function AuthenticatedLayout() {
   const { signOut } = useAuthActions()
-  const navigate = useNavigate()
 
   const handleSignOut = async () => {
     try {
       await signOut()
       toast.success('Logged out successfully')
-      navigate({ to: '/' })
+      // No explicit navigate() needed: AuthBridge detects the auth state
+      // change and calls router.invalidate(), which re-runs _authenticated's
+      // beforeLoad — that guard sees isAuthenticated: false and redirects
+      // to /sign-in automatically.
     } catch {
       toast.error('Error during logout')
     }

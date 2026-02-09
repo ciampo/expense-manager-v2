@@ -62,9 +62,9 @@ function ReportsPage() {
 
       {/* Month selector */}
       <div className="mb-8">
-        <label className="text-sm font-medium mb-2 block">Select month</label>
+        <label id="reports-month-label" className="text-sm font-medium mb-2 block">Select month</label>
         <Select value={selectedMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
-          <SelectTrigger className="w-64">
+          <SelectTrigger className="w-64" aria-labelledby="reports-month-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,6 @@ export const Route = createFileRoute('/_auth/sign-in')({
 
 function SignInPage() {
   const { signIn } = useAuthActions()
-  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,7 +38,10 @@ function SignInPage() {
 
       await signIn('password', formData)
       toast.success('Signed in successfully')
-      navigate({ to: '/dashboard' })
+      // No explicit navigate() needed: AuthBridge detects the auth state
+      // change and calls router.invalidate(), which re-runs _auth's
+      // beforeLoad — that guard sees isAuthenticated: true and redirects
+      // to /dashboard automatically.
     } catch (error) {
       console.error('Sign in error:', error)
       setFormError('Invalid email or password')
