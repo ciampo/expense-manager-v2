@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   formatCurrency,
   formatDate,
@@ -74,5 +74,32 @@ describe('getTodayISO', () => {
   it('returns ISO date string format', () => {
     const result = getTodayISO()
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('returns local date, not UTC date', () => {
+    // Pin time to avoid flakiness if the date rolls over at midnight
+    // between getTodayISO() and the reference Date construction.
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 5, 15, 23, 59, 50)) // Jun 15 2026, 23:59:50 local
+
+    const result = getTodayISO()
+    expect(result).toBe('2026-06-15')
+
+    vi.useRealTimers()
+  })
+})
+
+describe('formatDate timezone stability', () => {
+  it('formats 2024-03-15 consistently regardless of timezone interpretation', () => {
+    const result = formatDate('2024-03-15')
+    // Must contain "15" as the day -- if parsed as UTC midnight, negative
+    // UTC offsets would shift to March 14
+    expect(result).toContain('15')
+  })
+
+  it('formats 2024-01-01 as January 1, not December 31', () => {
+    const result = formatDate('2024-01-01')
+    // new Date('2024-01-01') is UTC midnight; in UTC-5 that's Dec 31 23:00
+    expect(result).toContain('1/1/2024')
   })
 })

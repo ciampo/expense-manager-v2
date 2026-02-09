@@ -8,11 +8,43 @@ export const formatCurrency = (cents: number): string =>
   )
 
 /**
+ * Parse a YYYY-MM-DD string as a **local** date.
+ * new Date('YYYY-MM-DD') is parsed as UTC midnight, which can shift
+ * to the previous day in negative UTC offset timezones.
+ *
+ * Validates both the format and that the components form a real calendar
+ * date (e.g. rejects 2024-02-30 instead of silently normalizing to March 1).
+ */
+function parseLocalDate(isoDate: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate)
+  if (!match) {
+    return new Date(NaN)
+  }
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+
+  const date = new Date(year, month - 1, day)
+
+  // Verify that Date didn't normalize an invalid date (e.g. 2024-02-30 → 2024-03-01)
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() + 1 !== month ||
+    date.getDate() !== day
+  ) {
+    return new Date(NaN)
+  }
+
+  return date
+}
+
+/**
  * Format ISO date string for display using English locale (MM/DD/YYYY)
  * @param isoDate - ISO date string (YYYY-MM-DD)
  */
 export const formatDate = (isoDate: string): string =>
-  new Intl.DateTimeFormat('en-US').format(new Date(isoDate))
+  new Intl.DateTimeFormat('en-US').format(parseLocalDate(isoDate))
 
 /**
  * Format date for display with day of week
@@ -24,7 +56,7 @@ export const formatDateLong = (isoDate: string): string =>
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(new Date(isoDate))
+  }).format(parseLocalDate(isoDate))
 
 /**
  * Parse EUR input to cents
@@ -49,10 +81,13 @@ export const centsToInputValue = (cents: number): string => {
 }
 
 /**
- * Get current date as ISO string (YYYY-MM-DD)
+ * Get current date as ISO string (YYYY-MM-DD) using **local** time.
+ * Using toISOString() would return UTC which can differ from local date
+ * in negative UTC offset timezones.
  */
 export const getTodayISO = (): string => {
-  return new Date().toISOString().split('T')[0]
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 /**
