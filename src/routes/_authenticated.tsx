@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Menu01Icon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_authenticated')({
@@ -47,6 +49,11 @@ function AuthenticatedSkeleton() {
           <Skeleton className="h-64 w-full" />
         </div>
       </main>
+      <footer className="border-t py-6">
+        <div className="container mx-auto px-4 text-center">
+          <Skeleton className="h-4 w-48 mx-auto" />
+        </div>
+      </footer>
     </div>
   )
 }
@@ -123,25 +130,11 @@ function AuthenticatedLayout() {
                 />
               }
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="4" x2="20" y1="12" y2="12" />
-                <line x1="4" x2="20" y1="6" y2="6" />
-                <line x1="4" x2="20" y1="18" y2="18" />
-              </svg>
+              <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} />
             </DialogTrigger>
             <DialogContent className="sm:max-w-xs">
               <DialogTitle>Menu</DialogTitle>
-              <nav className="flex flex-col gap-4 mt-2">
+              <nav aria-label="Main" className="flex flex-col gap-4 mt-2">
                 <Link
                   to="/dashboard"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
@@ -158,6 +151,7 @@ function AuthenticatedLayout() {
                 </Link>
                 <hr className="border-t" />
                 <button
+                  type="button"
                   onClick={() => {
                     setMobileMenuOpen(false)
                     handleSignOut()
