@@ -78,6 +78,10 @@ test.describe('Accessibility Audit — Public Pages', () => {
 test.describe('Accessibility Audit — Authenticated Pages', () => {
   const testPassword = 'TestPassword123!'
 
+  // Each test signs up a fresh user + renders a page + runs an axe audit,
+  // which can exceed Playwright's default 30s on slower CI runners.
+  test.setTimeout(45000)
+
   // Sign up a fresh user before each test. Each test gets its own
   // browser context (no shared session), so we need a unique email
   // per test to avoid "email already taken" errors.

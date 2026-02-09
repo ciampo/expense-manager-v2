@@ -7,10 +7,10 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
     // Navigate directly to a protected route
     await page.goto('/dashboard')
 
-    // Should redirect to sign-in without ever rendering dashboard content
+    // Should redirect to sign-in and not leave dashboard content visible
     await page.waitForURL('**/sign-in')
 
-    // The dashboard heading should never have been in the DOM
+    // After redirect, dashboard heading should not be visible
     await expect(page.getByRole('heading', { name: 'Dashboard' })).not.toBeVisible()
 
     // Sign-in form should be visible

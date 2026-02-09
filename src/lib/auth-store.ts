@@ -12,7 +12,15 @@
 export interface AuthStore {
   isAuthenticated: boolean
   isLoading: boolean
-  /** Returns a promise that resolves once auth state is no longer loading */
+  /**
+   * Returns a promise that resolves once the initial auth check completes
+   * (first isLoading true→false transition). After that first resolution,
+   * returns a fresh resolved promise with the current isAuthenticated value.
+   *
+   * This is single-shot by design: useConvexAuth() only enters the loading
+   * state once (during the initial auth check), so there is no second
+   * loading phase to wait for.
+   */
   waitForAuth: () => Promise<{ isAuthenticated: boolean }>
   /**
    * Callback to tell the router to re-evaluate route guards.
