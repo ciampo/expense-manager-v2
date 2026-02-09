@@ -1,27 +1,43 @@
-import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router'
-import { useConvexAuth } from 'convex/react'
-import { useEffect } from 'react'
+import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/_auth')({
+  // Auth state is client-side only (Convex), so beforeLoad must not run during SSR
+  // — it awaits a promise that depends on React effects which don't fire on the server.
+  ssr: false,
+  beforeLoad: async ({ context }) => {
+    const { isAuthenticated } = await context.authStore.waitForAuth()
+    if (isAuthenticated) {
+      throw redirect({ to: '/dashboard' })
+    }
+  },
+  pendingComponent: AuthSkeleton,
   component: AuthLayout,
 })
 
+function AuthSkeleton() {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b">
+        <div className="container mx-auto px-4 py-4">
+          <Skeleton className="h-6 w-40" />
+        </div>
+      </header>
+      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Skeleton className="h-[400px] w-full rounded-lg" />
+        </div>
+      </main>
+      <footer className="border-t py-6">
+        <div className="container mx-auto px-4 text-center">
+          <Skeleton className="h-4 w-48 mx-auto" />
+        </div>
+      </footer>
+    </div>
+  )
+}
+
 function AuthLayout() {
-  const { isAuthenticated, isLoading } = useConvexAuth()
-  const navigate = useNavigate()
-
-  // If already authenticated, redirect to dashboard
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate({ to: '/dashboard' })
-    }
-  }, [isLoading, isAuthenticated, navigate])
-
-  // Hide content while redirect is in progress to avoid flashing the form
-  if (!isLoading && isAuthenticated) {
-    return null
-  }
-
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}

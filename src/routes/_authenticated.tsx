@@ -1,5 +1,4 @@
-import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router'
-import { useConvexAuth } from 'convex/react'
+import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import {
   DropdownMenu,
@@ -10,54 +9,54 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { useEffect } from 'react'
 
 export const Route = createFileRoute('/_authenticated')({
+  // Auth state is client-side only (Convex), so beforeLoad must not run during SSR
+  // — it awaits a promise that depends on React effects which don't fire on the server.
+  ssr: false,
+  beforeLoad: async ({ context }) => {
+    const { isAuthenticated } = await context.authStore.waitForAuth()
+    if (!isAuthenticated) {
+      throw redirect({ to: '/sign-in' })
+    }
+  },
+  pendingComponent: AuthenticatedSkeleton,
   component: AuthenticatedLayout,
 })
 
+function AuthenticatedSkeleton() {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+      </header>
+      <main id="main-content" tabIndex={-1} className="flex-1">
+        <div className="container mx-auto px-4 py-8">
+          <Skeleton className="h-8 w-64 mb-4" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </main>
+    </div>
+  )
+}
+
 function AuthenticatedLayout() {
-  const { isAuthenticated, isLoading } = useConvexAuth()
   const { signOut } = useAuthActions()
-  const navigate = useNavigate()
 
   const handleSignOut = async () => {
     try {
       await signOut()
       toast.success('Logged out successfully')
-      navigate({ to: '/' })
+      // No explicit navigate() needed: AuthBridge detects the auth state
+      // change and calls router.invalidate(), which re-runs _authenticated's
+      // beforeLoad — that guard sees isAuthenticated: false and redirects
+      // to /sign-in automatically.
     } catch {
       toast.error('Error during logout')
     }
-  }
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate({ to: '/sign-in' })
-    }
-  }, [isLoading, isAuthenticated, navigate])
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <header className="border-b">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </div>
-        </header>
-        <main id="main-content" tabIndex={-1} className="flex-1 container mx-auto px-4 py-8">
-          <Skeleton className="h-8 w-64 mb-4" />
-          <Skeleton className="h-64 w-full" />
-        </main>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return null
   }
 
   return (

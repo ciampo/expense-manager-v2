@@ -11,6 +11,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from '@/components/ui/sonner'
+import type { AuthStore } from '@/lib/auth-store'
 
 import appCss from '../App.css?url'
 
@@ -34,6 +35,7 @@ function NotFoundComponent() {
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
+  authStore: AuthStore
 }>()({
   notFoundComponent: NotFoundComponent,
   head: () => ({
