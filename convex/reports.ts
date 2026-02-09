@@ -33,8 +33,12 @@ export const monthlyData = query({
     const categoryIds = [...new Set(expenses.map((e) => e.categoryId))]
     // Fetch only the categories referenced by these expenses
     const categories = await Promise.all(categoryIds.map((id) => ctx.db.get(id)))
+    // Defense-in-depth: only allow predefined categories (no userId) or
+    // categories owned by the current user. Treat others as missing/Unknown.
     const categoryMap = new Map(
-      categories.filter(Boolean).map((c) => [c!._id, c!])
+      categories
+        .filter((c) => c && (c.userId === undefined || c.userId === userId))
+        .map((c) => [c!._id, c!])
     )
 
     // Calculate totals by category

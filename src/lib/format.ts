@@ -11,10 +11,32 @@ export const formatCurrency = (cents: number): string =>
  * Parse a YYYY-MM-DD string as a **local** date.
  * new Date('YYYY-MM-DD') is parsed as UTC midnight, which can shift
  * to the previous day in negative UTC offset timezones.
+ *
+ * Validates both the format and that the components form a real calendar
+ * date (e.g. rejects 2024-02-30 instead of silently normalizing to March 1).
  */
 function parseLocalDate(isoDate: string): Date {
-  const [year, month, day] = isoDate.split('-').map(Number)
-  return new Date(year, month - 1, day)
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate)
+  if (!match) {
+    return new Date(NaN)
+  }
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+
+  const date = new Date(year, month - 1, day)
+
+  // Verify that Date didn't normalize an invalid date (e.g. 2024-02-30 → 2024-03-01)
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() + 1 !== month ||
+    date.getDate() !== day
+  ) {
+    return new Date(NaN)
+  }
+
+  return date
 }
 
 /**
