@@ -11,6 +11,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_authenticated')({
+  // Auth state is client-side only (Convex), so beforeLoad must not run during SSR
+  // — it awaits a promise that depends on React effects which don't fire on the server.
+  ssr: false,
   beforeLoad: async ({ context }) => {
     const { isAuthenticated } = await context.authStore.waitForAuth()
     if (!isAuthenticated) {
@@ -30,9 +33,11 @@ function AuthenticatedSkeleton() {
           <Skeleton className="h-8 w-8 rounded-full" />
         </div>
       </header>
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <Skeleton className="h-8 w-64 mb-4" />
-        <Skeleton className="h-64 w-full" />
+      <main id="main-content" tabIndex={-1} className="flex-1">
+        <div className="container mx-auto px-4 py-8">
+          <Skeleton className="h-8 w-64 mb-4" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </main>
     </div>
   )

@@ -18,6 +18,9 @@ function AuthBridge({ authStore }: { authStore: AuthStore }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
 
   useEffect(() => {
+    // Order matters: isAuthenticated must be set before isLoading, because
+    // the isLoading setter resolves the waitForAuth() promise which reads
+    // _isAuthenticated at resolution time.
     authStore.isAuthenticated = isAuthenticated
     authStore.isLoading = isLoading
   }, [isAuthenticated, isLoading, authStore])

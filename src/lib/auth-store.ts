@@ -14,6 +14,9 @@ export function createAuthStore(): AuthStore {
   let _isAuthenticated = false
   let _isLoading = true
   let _resolveAuth: ((value: { isAuthenticated: boolean }) => void) | null = null
+  // Single-shot promise: resolves once on the first isLoading true→false transition.
+  // After that, waitForAuth() returns a fresh resolved promise with the current state.
+  // This is safe because useConvexAuth() only enters loading once (initial auth check).
   const _authPromise = new Promise<{ isAuthenticated: boolean }>((resolve) => {
     _resolveAuth = resolve
   })

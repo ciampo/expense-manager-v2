@@ -2,6 +2,9 @@ import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/_auth')({
+  // Auth state is client-side only (Convex), so beforeLoad must not run during SSR
+  // — it awaits a promise that depends on React effects which don't fire on the server.
+  ssr: false,
   beforeLoad: async ({ context }) => {
     const { isAuthenticated } = await context.authStore.waitForAuth()
     if (isAuthenticated) {
@@ -20,7 +23,7 @@ function AuthSkeleton() {
           <Skeleton className="h-6 w-40" />
         </div>
       </header>
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Skeleton className="h-[400px] w-full rounded-lg" />
         </div>
