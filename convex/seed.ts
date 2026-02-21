@@ -98,7 +98,11 @@ export const cleanup = mutation({
     const expenses = await ctx.db.query('expenses').collect()
     for (const expense of expenses) {
       if (expense.attachmentId) {
-        await ctx.storage.delete(expense.attachmentId)
+        try {
+          await ctx.storage.delete(expense.attachmentId)
+        } catch {
+          // File may have already been deleted
+        }
       }
       await ctx.db.delete(expense._id)
     }
