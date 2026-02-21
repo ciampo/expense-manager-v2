@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { toast } from 'sonner'
-import { Suspense, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
@@ -141,8 +141,10 @@ function ExpenseTable() {
     deleteExpense.mutate({ id })
   }
 
-  // Create a map of category IDs to names
-  const categoryMap = new Map(categories?.map((c) => [c._id, c.name]) || [])
+  const categoryMap = useMemo(
+    () => new Map(categories?.map((c) => [c._id, c.name]) || []),
+    [categories]
+  )
 
   if (!expenses || expenses.length === 0) {
     return (
