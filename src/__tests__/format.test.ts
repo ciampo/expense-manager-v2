@@ -128,7 +128,7 @@ describe('parseLocalDate', () => {
     expect(parseLocalDate('2024-00-15').getTime()).toBeNaN()
   })
 
-  it('does not shift dates in negative UTC offset timezones', () => {
+  it('does not shift dates in non-UTC timezones', () => {
     const date = parseLocalDate('2024-01-01')
     expect(date.getFullYear()).toBe(2024)
     expect(date.getMonth()).toBe(0)

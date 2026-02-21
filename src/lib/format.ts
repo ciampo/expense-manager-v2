@@ -9,8 +9,8 @@ export const formatCurrency = (cents: number): string =>
 
 /**
  * Parse a YYYY-MM-DD string as a **local** date.
- * new Date('YYYY-MM-DD') is parsed as UTC midnight, which can shift
- * to the previous day in negative UTC offset timezones.
+ * new Date('YYYY-MM-DD') is parsed as UTC midnight, which can produce a
+ * different calendar date than the user's local date in non-UTC timezones.
  *
  * Validates both the format and that the components form a real calendar
  * date (e.g. rejects 2024-02-30 instead of silently normalizing to March 1).
@@ -82,8 +82,8 @@ export const centsToInputValue = (cents: number): string => {
 
 /**
  * Format a Date object to a YYYY-MM-DD string using **local** date components.
- * Avoids toISOString() which returns UTC and can shift the date in negative
- * UTC offset timezones.
+ * Avoids toISOString(), which returns UTC and can produce a different calendar
+ * date than the user's local date in non-UTC timezones.
  */
 export function toISODateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
