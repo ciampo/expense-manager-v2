@@ -1,4 +1,4 @@
-import { mutation, query } from './_generated/server'
+import { internalMutation, internalQuery } from './_generated/server'
 import { authTables } from '@convex-dev/auth/server'
 
 // Predefined categories for work expenses
@@ -11,7 +11,7 @@ const PREDEFINED_CATEGORIES = [
 /**
  * Seed the predefined categories if they don't exist
  */
-export const seedCategories = mutation({
+export const seedCategories = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Check if predefined categories already exist
@@ -40,7 +40,7 @@ export const seedCategories = mutation({
 /**
  * Check if categories are seeded
  */
-export const checkSeeded = query({
+export const checkSeeded = internalQuery({
   args: {},
   handler: async (ctx) => {
     const categories = await ctx.db
@@ -63,7 +63,7 @@ export const checkSeeded = query({
  * Seed data for E2E tests
  * Creates predefined categories if they don't exist
  */
-export const e2e = mutation({
+export const e2e = internalMutation({
   args: {},
   handler: async (ctx) => {
     // First, seed the predefined categories
@@ -91,7 +91,7 @@ export const e2e = mutation({
  * Removes expenses, user-created categories, and all auth-related records.
  * Predefined categories are preserved so the next seed is a no-op.
  */
-export const cleanup = mutation({
+export const cleanup = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Delete all expenses (and their attachments)
