@@ -92,6 +92,7 @@ function SignUpPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
+              autoComplete="email"
               aria-describedby={errors.email ? 'email-error' : undefined}
               aria-invalid={!!errors.email}
             />
@@ -112,6 +113,7 @@ function SignUpPage() {
               required
               minLength={8}
               disabled={isLoading}
+              autoComplete="new-password"
               aria-describedby={errors.password ? 'password-error' : undefined}
               aria-invalid={!!errors.password}
             />
@@ -132,6 +134,7 @@ function SignUpPage() {
               required
               minLength={8}
               disabled={isLoading}
+              autoComplete="new-password"
               aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
               aria-invalid={!!errors.confirmPassword}
             />

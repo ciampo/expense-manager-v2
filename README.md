@@ -272,7 +272,7 @@ All expense mutations (`create`, `update`) validate fields server-side:
 ## Known Limitations
 
 - **No SSR data prefetching**: All data is fetched client-side via Convex real-time subscriptions. TanStack Router `loader` functions are not used.
-- **No dark mode toggle**: The app uses a light theme only. The `next-themes` dependency is present but not wired up with a `ThemeProvider`.
+- **No dark mode toggle**: The app uses a light theme only.
 - **No pagination**: All expenses are loaded at once. For large datasets, this may impact performance.
 - **Client-only file type validation**: Attachment MIME type checks happen only on the client. Convex does not support server-side MIME type validation on upload. File ownership is verified server-side (see [Backend Security](#backend-security--validation)).
 - **Local timezone dates**: Dates are stored as `YYYY-MM-DD` strings using the user's local timezone. No server-side timezone normalization is performed.

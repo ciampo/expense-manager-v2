@@ -133,7 +133,9 @@ function ForgotPasswordPage() {
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
                 disabled={isLoading}
+                autoComplete="email"
                 aria-describedby={errors.email ? 'email-error' : undefined}
                 aria-invalid={!!errors.email}
               />
@@ -173,6 +175,7 @@ function ForgotPasswordPage() {
                 placeholder="8-digit code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
+                required
                 disabled={isLoading}
                 autoComplete="one-time-code"
                 aria-describedby={errors.code ? 'code-error' : undefined}
@@ -192,7 +195,10 @@ function ForgotPasswordPage() {
                 placeholder="Minimum 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
                 disabled={isLoading}
+                autoComplete="new-password"
                 aria-describedby={errors.password ? 'password-error' : undefined}
                 aria-invalid={!!errors.password}
               />
@@ -210,7 +216,10 @@ function ForgotPasswordPage() {
                 placeholder="Repeat the password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
                 disabled={isLoading}
+                autoComplete="new-password"
                 aria-describedby={
                   errors.confirmPassword ? 'confirm-password-error' : undefined
                 }
