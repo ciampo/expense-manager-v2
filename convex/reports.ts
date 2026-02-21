@@ -3,6 +3,41 @@ import { query } from './_generated/server'
 import { auth } from './auth'
 
 /**
+ * Get the distinct months for which the user has expense data.
+ * Returns an array of { year, month } objects sorted newest first.
+ */
+export const availableMonths = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) {
+      return []
+    }
+
+    const expenses = await ctx.db
+      .query('expenses')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+
+    const monthSet = new Set<string>()
+    for (const expense of expenses) {
+      const [year, month] = expense.date.split('-')
+      monthSet.add(`${year}-${month}`)
+    }
+
+    return Array.from(monthSet)
+      .map((key) => {
+        const [year, month] = key.split('-').map(Number)
+        return { year, month }
+      })
+      .sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year
+        return b.month - a.month
+      })
+  },
+})
+
+/**
  * Get expenses for a specific month
  */
 export const monthlyData = query({
