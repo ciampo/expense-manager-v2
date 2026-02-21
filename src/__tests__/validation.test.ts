@@ -253,6 +253,27 @@ describe('validateCategoryFields', () => {
     })
   })
 
+  it('normalizes empty string icon to undefined', () => {
+    expect(validateCategoryFields({ name: 'Food', icon: '' })).toEqual({
+      name: 'Food',
+      icon: undefined,
+    })
+  })
+
+  it('normalizes whitespace-only icon to undefined', () => {
+    expect(validateCategoryFields({ name: 'Food', icon: '   ' })).toEqual({
+      name: 'Food',
+      icon: undefined,
+    })
+  })
+
+  it('trims whitespace around icon', () => {
+    expect(validateCategoryFields({ name: 'Food', icon: ' 🍕 ' })).toEqual({
+      name: 'Food',
+      icon: '🍕',
+    })
+  })
+
   it('accepts a simple emoji icon', () => {
     expect(validateCategoryFields({ name: 'Food', icon: '🍽️' })).toEqual({
       name: 'Food',

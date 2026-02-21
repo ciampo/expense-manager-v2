@@ -89,13 +89,17 @@ export function validateCategoryFields(args: {
     throw new Error('Category name must be at most 100 characters.')
   }
 
-  let icon = args.icon
-  if (icon !== undefined) {
-    if (icon.length > 100) {
+  let icon: string | undefined
+  if (args.icon !== undefined) {
+    if (args.icon.length > 100) {
       throw new Error('Category icon must be at most 10 characters.')
     }
-    if (graphemeCount(icon) > 10) {
-      throw new Error('Category icon must be at most 10 characters.')
+    const trimmedIcon = args.icon.trim()
+    if (trimmedIcon) {
+      if (graphemeCount(trimmedIcon) > 10) {
+        throw new Error('Category icon must be at most 10 characters.')
+      }
+      icon = trimmedIcon
     }
   }
 
