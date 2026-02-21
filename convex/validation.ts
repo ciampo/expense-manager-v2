@@ -1,5 +1,5 @@
 /**
- * Pure validation functions for expense data.
+ * Pure validation functions for expense and category data.
  *
  * These are intentionally free of Convex imports so they can be unit-tested
  * directly with Vitest.
@@ -53,4 +53,51 @@ export function validateExpenseFields(args: {
   if (args.comment !== undefined && args.comment.trim().length > 1000) {
     throw new Error('Comment must be 1000 characters or less.')
   }
+}
+
+// ---------------------------------------------------------------------------
+// Category validation
+// ---------------------------------------------------------------------------
+
+function graphemeCount(str: string): number {
+  return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(str)].length
+}
+
+/**
+ * Validate category fields and return cleaned values.
+ *
+ * Rules:
+ * - `name` must be non-empty after trimming, max 100 characters
+ * - `icon` (optional) max 10 grapheme clusters (counted via Intl.Segmenter
+ *   so that multi-code-unit emoji are measured as visible characters)
+ *
+ * Pre-trim hard caps reject obviously oversized payloads before any string
+ * traversal (e.g. trim / grapheme segmentation) to limit CPU/memory cost.
+ */
+export function validateCategoryFields(args: {
+  name: string
+  icon?: string
+}): { name: string; icon: string | undefined } {
+  if (args.name.length > 1000) {
+    throw new Error('Category name must be at most 100 characters.')
+  }
+  const trimmedName = args.name.trim()
+  if (trimmedName.length === 0) {
+    throw new Error('Category name is required.')
+  }
+  if (trimmedName.length > 100) {
+    throw new Error('Category name must be at most 100 characters.')
+  }
+
+  let icon = args.icon
+  if (icon !== undefined) {
+    if (icon.length > 100) {
+      throw new Error('Category icon must be at most 10 characters.')
+    }
+    if (graphemeCount(icon) > 10) {
+      throw new Error('Category icon must be at most 10 characters.')
+    }
+  }
+
+  return { name: trimmedName, icon }
 }
