@@ -59,8 +59,16 @@ export function validateExpenseFields(args: {
 // Category validation
 // ---------------------------------------------------------------------------
 
+const GRAPHEME_SEGMENTER = new Intl.Segmenter(undefined, {
+  granularity: 'grapheme',
+})
+
 function graphemeCount(str: string): number {
-  return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(str)].length
+  let count = 0
+  for (const _ of GRAPHEME_SEGMENTER.segment(str)) {
+    count++
+  }
+  return count
 }
 
 /**
