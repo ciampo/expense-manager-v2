@@ -1,6 +1,27 @@
 import { v } from 'convex/values'
+import type { QueryCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
+import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
+
+/**
+ * Verify that a category is accessible to the given user.
+ * A category is accessible if it is predefined (no userId) or owned by the user.
+ * Throws if the category doesn't exist or belongs to another user.
+ */
+export async function verifyCategoryAccess(
+  ctx: { db: QueryCtx['db'] },
+  categoryId: Id<'categories'>,
+  userId: Id<'users'>,
+) {
+  const category = await ctx.db.get(categoryId)
+  if (!category) {
+    throw new Error('Category not found')
+  }
+  if (category.userId !== undefined && category.userId !== userId) {
+    throw new Error('Category not found')
+  }
+}
 
 /**
  * List all categories (predefined + user's custom)

@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { auth } from './auth'
+import { verifyCategoryAccess } from './categories'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
 import { validateExpenseFields } from './validation'
 
@@ -97,6 +98,7 @@ export const create = mutation({
     }
 
     validateExpenseFields(args)
+    await verifyCategoryAccess(ctx, args.categoryId, userId)
 
     // Verify the user owns the uploaded file
     if (args.attachmentId) {
@@ -144,6 +146,7 @@ export const update = mutation({
     }
 
     validateExpenseFields(args)
+    await verifyCategoryAccess(ctx, args.categoryId, userId)
 
     // If the attachment is changing, verify the user owns the new upload
     if (args.attachmentId && args.attachmentId !== existing.attachmentId) {
