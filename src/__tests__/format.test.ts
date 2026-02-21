@@ -5,6 +5,8 @@ import {
   parseCurrencyToCents,
   centsToInputValue,
   getTodayISO,
+  toISODateString,
+  parseLocalDate,
 } from '@/lib/format'
 
 describe('formatCurrency', () => {
@@ -86,6 +88,51 @@ describe('getTodayISO', () => {
     expect(result).toBe('2026-06-15')
 
     vi.useRealTimers()
+  })
+})
+
+describe('toISODateString', () => {
+  it('formats a Date to YYYY-MM-DD using local components', () => {
+    expect(toISODateString(new Date(2024, 0, 5))).toBe('2024-01-05')
+    expect(toISODateString(new Date(2024, 11, 25))).toBe('2024-12-25')
+  })
+
+  it('zero-pads single-digit months and days', () => {
+    expect(toISODateString(new Date(2024, 2, 3))).toBe('2024-03-03')
+  })
+
+  it('roundtrips with parseLocalDate', () => {
+    const iso = '2026-06-15'
+    const parsed = parseLocalDate(iso)
+    expect(toISODateString(parsed)).toBe(iso)
+  })
+})
+
+describe('parseLocalDate', () => {
+  it('parses YYYY-MM-DD as local midnight', () => {
+    const date = parseLocalDate('2024-03-15')
+    expect(date.getFullYear()).toBe(2024)
+    expect(date.getMonth()).toBe(2)
+    expect(date.getDate()).toBe(15)
+  })
+
+  it('returns Invalid Date for malformed input', () => {
+    expect(parseLocalDate('not-a-date').getTime()).toBeNaN()
+    expect(parseLocalDate('2024/03/15').getTime()).toBeNaN()
+    expect(parseLocalDate('').getTime()).toBeNaN()
+  })
+
+  it('returns Invalid Date for impossible calendar dates', () => {
+    expect(parseLocalDate('2024-02-30').getTime()).toBeNaN()
+    expect(parseLocalDate('2024-13-01').getTime()).toBeNaN()
+    expect(parseLocalDate('2024-00-15').getTime()).toBeNaN()
+  })
+
+  it('does not shift dates in non-UTC timezones', () => {
+    const date = parseLocalDate('2024-01-01')
+    expect(date.getFullYear()).toBe(2024)
+    expect(date.getMonth()).toBe(0)
+    expect(date.getDate()).toBe(1)
   })
 })
 

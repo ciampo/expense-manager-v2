@@ -40,7 +40,14 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@/components/ui/input-group'
-import { formatCurrency, parseCurrencyToCents, centsToInputValue, getTodayISO } from '@/lib/format'
+import {
+  formatCurrency,
+  parseCurrencyToCents,
+  centsToInputValue,
+  getTodayISO,
+  parseLocalDate,
+  toISODateString,
+} from '@/lib/format'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
@@ -333,6 +340,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   // Find selected category name
   const selectedCategory = categories?.find((c) => c._id === categoryId)
 
+  const selectedDate = date ? parseLocalDate(date) : undefined
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
       {/* Date */}
@@ -349,15 +358,15 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               />
             }
           >
-            {date ? format(new Date(date), 'PPP', { locale: enUS }) : 'Select date'}
+            {selectedDate ? format(selectedDate, 'PPP', { locale: enUS }) : 'Select date'}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={date ? new Date(date) : undefined}
+              selected={selectedDate}
               onSelect={(d) => {
                 if (d) {
-                  setDate(d.toISOString().split('T')[0])
+                  setDate(toISODateString(d))
                   setIsDateOpen(false)
                 }
               }}

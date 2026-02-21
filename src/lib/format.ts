@@ -9,13 +9,13 @@ export const formatCurrency = (cents: number): string =>
 
 /**
  * Parse a YYYY-MM-DD string as a **local** date.
- * new Date('YYYY-MM-DD') is parsed as UTC midnight, which can shift
- * to the previous day in negative UTC offset timezones.
+ * new Date('YYYY-MM-DD') is parsed as UTC midnight, which can produce a
+ * different calendar date than the user's local date in non-UTC timezones.
  *
  * Validates both the format and that the components form a real calendar
  * date (e.g. rejects 2024-02-30 instead of silently normalizing to March 1).
  */
-function parseLocalDate(isoDate: string): Date {
+export function parseLocalDate(isoDate: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate)
   if (!match) {
     return new Date(NaN)
@@ -81,14 +81,18 @@ export const centsToInputValue = (cents: number): string => {
 }
 
 /**
- * Get current date as ISO string (YYYY-MM-DD) using **local** time.
- * Using toISOString() would return UTC which can differ from local date
- * in negative UTC offset timezones.
+ * Format a Date object to a YYYY-MM-DD string using **local** date components.
+ * Avoids toISOString(), which returns UTC and can produce a different calendar
+ * date than the user's local date in non-UTC timezones.
  */
-export const getTodayISO = (): string => {
-  const d = new Date()
+export function toISODateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+
+/**
+ * Get current date as ISO string (YYYY-MM-DD) using **local** time.
+ */
+export const getTodayISO = (): string => toISODateString(new Date())
 
 /**
  * Get month name in English
