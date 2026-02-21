@@ -438,6 +438,16 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
+                {merchant && !merchants?.some(m => m.toLowerCase() === merchant.toLowerCase()) && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup>
+                      <CommandItem onSelect={() => setIsMerchantOpen(false)}>
+                        + Use &quot;{merchant}&quot;
+                      </CommandItem>
+                    </CommandGroup>
+                  </>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
@@ -483,19 +493,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 onValueChange={setNewCategoryName}
               />
               <CommandList>
-                <CommandEmpty>
-                  {newCategoryName && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={handleCreateCategory}
-                      disabled={createCategory.isPending}
-                    >
-                      + Create &quot;{newCategoryName}&quot;
-                    </Button>
-                  )}
-                </CommandEmpty>
+                <CommandEmpty>No categories found</CommandEmpty>
                 <CommandGroup heading="Categories">
                   {categories?.map((category) => (
                     <CommandItem
