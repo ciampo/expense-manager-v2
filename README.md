@@ -135,7 +135,7 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
 
 1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
 2. Generate a production deploy key: Dashboard → test project → Settings → Deploy Keys
-3. Add both values to `.env.e2e`:
+3. Add both values to `.env.e2e` (see `.env.e2e.example` for reference):
    ```env
    VITE_CONVEX_URL=https://your-test-project.convex.cloud
    CONVEX_DEPLOY_KEY=your_test_project_deploy_key
@@ -143,7 +143,8 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
    > `VITE_CONVEX_URL` must be the **production deployment** URL (shown after step 4). `CONVEX_DEPLOY_KEY` is the production deploy key from step 2.
 4. Deploy the schema (this creates the production deployment if it doesn't exist):
    ```bash
-   export $(grep CONVEX_DEPLOY_KEY .env.e2e | xargs)
+   # Load the deploy key from .env.e2e
+   export $(grep -v '^#' .env.e2e | grep CONVEX_DEPLOY_KEY | xargs)
    npx convex deploy
    ```
 5. Configure auth keys for the test project's production deployment:
@@ -241,6 +242,24 @@ Configure these GitHub Actions secrets:
 | `CONVEX_DEV_URL`         | `expense-manager` project → **development** deployment URL (for PR previews) |
 | `CONVEX_TEST_URL`        | `expense-manager-test` project → **production** deployment URL               |
 | `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key                   |
+
+#### Convex Backend Deployment
+
+Convex backend functions and schema are **not** automatically deployed by the CI/CD pipeline. When you change files in the `convex/` directory, you must deploy them manually:
+
+```bash
+# Deploy to the production Convex deployment
+npx convex deploy
+```
+
+This requires a `CONVEX_DEPLOY_KEY` environment variable set for the production project. You can export it from `.env.local` or set it in your shell:
+
+```bash
+export CONVEX_DEPLOY_KEY=your_production_deploy_key
+npx convex deploy
+```
+
+> **Note:** During local development, `npx convex dev` automatically syncs changes to the development deployment. Manual deployment is only needed for the production deployment.
 
 ## Backend Security & Validation
 
