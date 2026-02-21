@@ -6,6 +6,7 @@ import {
   centsToInputValue,
   getTodayISO,
   toISODateString,
+  parseLocalDate,
 } from '@/lib/format'
 
 describe('formatCurrency', () => {
@@ -101,9 +102,37 @@ describe('toISODateString', () => {
   })
 
   it('roundtrips with parseLocalDate', () => {
-    const original = '2026-06-15'
-    const date = new Date(2026, 5, 15)
-    expect(toISODateString(date)).toBe(original)
+    const iso = '2026-06-15'
+    const parsed = parseLocalDate(iso)
+    expect(toISODateString(parsed)).toBe(iso)
+  })
+})
+
+describe('parseLocalDate', () => {
+  it('parses YYYY-MM-DD as local midnight', () => {
+    const date = parseLocalDate('2024-03-15')
+    expect(date.getFullYear()).toBe(2024)
+    expect(date.getMonth()).toBe(2)
+    expect(date.getDate()).toBe(15)
+  })
+
+  it('returns Invalid Date for malformed input', () => {
+    expect(parseLocalDate('not-a-date').getTime()).toBeNaN()
+    expect(parseLocalDate('2024/03/15').getTime()).toBeNaN()
+    expect(parseLocalDate('').getTime()).toBeNaN()
+  })
+
+  it('returns Invalid Date for impossible calendar dates', () => {
+    expect(parseLocalDate('2024-02-30').getTime()).toBeNaN()
+    expect(parseLocalDate('2024-13-01').getTime()).toBeNaN()
+    expect(parseLocalDate('2024-00-15').getTime()).toBeNaN()
+  })
+
+  it('does not shift dates in negative UTC offset timezones', () => {
+    const date = parseLocalDate('2024-01-01')
+    expect(date.getFullYear()).toBe(2024)
+    expect(date.getMonth()).toBe(0)
+    expect(date.getDate()).toBe(1)
   })
 })
 
