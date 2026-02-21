@@ -71,8 +71,7 @@ function SignInPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
-              aria-describedby={formError ? 'signin-error' : undefined}
-              aria-invalid={!!formError}
+              autoComplete="email"
             />
           </div>
           <div className="space-y-2">
@@ -92,14 +91,13 @@ function SignInPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
-              aria-describedby={formError ? 'signin-error' : undefined}
-              aria-invalid={!!formError}
+              autoComplete="current-password"
             />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           {formError && (
-            <p id="signin-error" role="alert" className="text-sm text-destructive text-center">
+            <p role="alert" className="text-sm text-destructive text-center">
               {formError}
             </p>
           )}
