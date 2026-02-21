@@ -15,6 +15,33 @@ import type { AuthStore } from '@/lib/auth-store'
 
 import appCss from '../App.css?url'
 
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+      <h1 className="text-6xl font-bold text-foreground">Error</h1>
+      <p className="mt-4 text-xl text-muted-foreground">Something went wrong</p>
+      <p className="mt-2 text-sm text-muted-foreground max-w-md">
+        {error.message || 'An unexpected error occurred.'}
+      </p>
+      <div className="mt-6 flex gap-4">
+        <button
+          type="button"
+          onClick={reset}
+          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          Try again
+        </button>
+        <Link
+          to="/"
+          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          Go back home
+        </Link>
+      </div>
+    </main>
+  )
+}
+
 function NotFoundComponent() {
   return (
     <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
@@ -37,6 +64,7 @@ export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
   authStore: AuthStore
 }>()({
+  errorComponent: ErrorComponent,
   notFoundComponent: NotFoundComponent,
   head: () => ({
     meta: [
