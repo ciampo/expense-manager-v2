@@ -134,6 +134,7 @@ function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
+                autoComplete="email"
                 aria-describedby={errors.email ? 'email-error' : undefined}
                 aria-invalid={!!errors.email}
               />
@@ -193,6 +194,7 @@ function ForgotPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
+                autoComplete="new-password"
                 aria-describedby={errors.password ? 'password-error' : undefined}
                 aria-invalid={!!errors.password}
               />
@@ -211,6 +213,7 @@ function ForgotPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isLoading}
+                autoComplete="new-password"
                 aria-describedby={
                   errors.confirmPassword ? 'confirm-password-error' : undefined
                 }
