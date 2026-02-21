@@ -75,11 +75,22 @@ export const create = mutation({
       throw new Error('Not authenticated')
     }
 
+    const trimmedName = args.name.trim()
+    if (trimmedName.length === 0) {
+      throw new Error('Category name is required')
+    }
+    if (trimmedName.length > 100) {
+      throw new Error('Category name must be at most 100 characters')
+    }
+    if (args.icon !== undefined && args.icon.length > 10) {
+      throw new Error('Category icon must be at most 10 characters')
+    }
+
     // Check if category with same name already exists for this user
     const existing = await ctx.db
       .query('categories')
       .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('name'), args.name))
+      .filter((q) => q.eq(q.field('name'), trimmedName))
       .first()
 
     if (existing) {
@@ -92,7 +103,7 @@ export const create = mutation({
       .filter((q) =>
         q.and(
           q.eq(q.field('userId'), undefined),
-          q.eq(q.field('name'), args.name)
+          q.eq(q.field('name'), trimmedName)
         )
       )
       .first()
@@ -102,7 +113,7 @@ export const create = mutation({
     }
 
     const categoryId = await ctx.db.insert('categories', {
-      name: args.name,
+      name: trimmedName,
       userId,
       icon: args.icon,
     })
