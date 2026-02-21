@@ -3,6 +3,9 @@
  *
  * These are intentionally free of Convex imports so they can be unit-tested
  * directly with Vitest.
+ *
+ * Client-side Zod equivalents live in `src/lib/schemas.ts`.
+ * Keep both files in sync when rules change.
  */
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
