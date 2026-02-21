@@ -15,7 +15,7 @@ export const formatCurrency = (cents: number): string =>
  * Validates both the format and that the components form a real calendar
  * date (e.g. rejects 2024-02-30 instead of silently normalizing to March 1).
  */
-function parseLocalDate(isoDate: string): Date {
+export function parseLocalDate(isoDate: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate)
   if (!match) {
     return new Date(NaN)
