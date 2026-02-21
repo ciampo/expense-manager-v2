@@ -5,6 +5,7 @@ import {
   parseCurrencyToCents,
   centsToInputValue,
   getTodayISO,
+  toISODateString,
 } from '@/lib/format'
 
 describe('formatCurrency', () => {
@@ -86,6 +87,23 @@ describe('getTodayISO', () => {
     expect(result).toBe('2026-06-15')
 
     vi.useRealTimers()
+  })
+})
+
+describe('toISODateString', () => {
+  it('formats a Date to YYYY-MM-DD using local components', () => {
+    expect(toISODateString(new Date(2024, 0, 5))).toBe('2024-01-05')
+    expect(toISODateString(new Date(2024, 11, 25))).toBe('2024-12-25')
+  })
+
+  it('zero-pads single-digit months and days', () => {
+    expect(toISODateString(new Date(2024, 2, 3))).toBe('2024-03-03')
+  })
+
+  it('roundtrips with parseLocalDate', () => {
+    const original = '2026-06-15'
+    const date = new Date(2026, 5, 15)
+    expect(toISODateString(date)).toBe(original)
   })
 })
 

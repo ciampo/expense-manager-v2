@@ -40,7 +40,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@/components/ui/input-group'
-import { formatCurrency, parseCurrencyToCents, centsToInputValue, getTodayISO, parseLocalDate } from '@/lib/format'
+import { formatCurrency, parseCurrencyToCents, centsToInputValue, getTodayISO, parseLocalDate, toISODateString } from '@/lib/format'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
@@ -357,8 +357,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               selected={date ? parseLocalDate(date) : undefined}
               onSelect={(d) => {
                 if (d) {
-                  const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-                  setDate(iso)
+                  setDate(toISODateString(d))
                   setIsDateOpen(false)
                 }
               }}

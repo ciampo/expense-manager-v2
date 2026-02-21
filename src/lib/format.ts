@@ -81,14 +81,18 @@ export const centsToInputValue = (cents: number): string => {
 }
 
 /**
- * Get current date as ISO string (YYYY-MM-DD) using **local** time.
- * Using toISOString() would return UTC which can differ from local date
- * in negative UTC offset timezones.
+ * Format a Date object to a YYYY-MM-DD string using **local** date components.
+ * Avoids toISOString() which returns UTC and can shift the date in negative
+ * UTC offset timezones.
  */
-export const getTodayISO = (): string => {
-  const d = new Date()
+export function toISODateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+
+/**
+ * Get current date as ISO string (YYYY-MM-DD) using **local** time.
+ */
+export const getTodayISO = (): string => toISODateString(new Date())
 
 /**
  * Get month name in English
