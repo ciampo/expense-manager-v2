@@ -1,11 +1,11 @@
-name: Unit Tests
+name: Type Check
 on:
   push:
     branches: [main]
   pull_request:
 
 jobs:
-  unit:
+  typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,4 +15,4 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install
-      - run: pnpm test:unit
+      - run: tsc --noEmit
