@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { isValidDate, validateExpenseFields } from '../../convex/validation'
+import {
+  isValidDate,
+  validateExpenseFields,
+  validateCategoryFields,
+} from '../../convex/validation'
 
 // ---------------------------------------------------------------------------
 // isValidDate
@@ -181,5 +185,131 @@ describe('validateExpenseFields', () => {
     expect(() =>
       validateExpenseFields({ ...valid, comment: padded }),
     ).toThrow('1000 characters')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// validateCategoryFields
+// ---------------------------------------------------------------------------
+
+describe('validateCategoryFields', () => {
+  // -- name -----------------------------------------------------------------
+
+  it('accepts a valid name and returns trimmed value', () => {
+    expect(validateCategoryFields({ name: 'Food' })).toEqual({
+      name: 'Food',
+      icon: undefined,
+    })
+  })
+
+  it('trims whitespace from name', () => {
+    expect(validateCategoryFields({ name: '  Food  ' })).toEqual({
+      name: 'Food',
+      icon: undefined,
+    })
+  })
+
+  it('rejects empty name', () => {
+    expect(() => validateCategoryFields({ name: '' })).toThrow('required')
+  })
+
+  it('rejects whitespace-only name', () => {
+    expect(() => validateCategoryFields({ name: '   ' })).toThrow('required')
+  })
+
+  it('accepts name at exactly 100 characters', () => {
+    expect(validateCategoryFields({ name: 'A'.repeat(100) })).toEqual({
+      name: 'A'.repeat(100),
+      icon: undefined,
+    })
+  })
+
+  it('rejects name over 100 characters after trim', () => {
+    expect(() => validateCategoryFields({ name: 'A'.repeat(101) })).toThrow(
+      '100 characters',
+    )
+  })
+
+  it('checks length on trimmed name', () => {
+    const padded = '  ' + 'A'.repeat(100) + '  '
+    expect(validateCategoryFields({ name: padded })).toEqual({
+      name: 'A'.repeat(100),
+      icon: undefined,
+    })
+  })
+
+  it('rejects very large name via pre-trim hard cap', () => {
+    expect(() =>
+      validateCategoryFields({ name: 'A'.repeat(1001) }),
+    ).toThrow('100 characters')
+  })
+
+  // -- icon -----------------------------------------------------------------
+
+  it('accepts undefined icon', () => {
+    expect(validateCategoryFields({ name: 'Food' })).toEqual({
+      name: 'Food',
+      icon: undefined,
+    })
+  })
+
+  it('normalizes empty string icon to undefined', () => {
+    expect(validateCategoryFields({ name: 'Food', icon: '' })).toEqual({
+      name: 'Food',
+      icon: undefined,
+    })
+  })
+
+  it('normalizes whitespace-only icon to undefined', () => {
+    expect(validateCategoryFields({ name: 'Food', icon: '   ' })).toEqual({
+      name: 'Food',
+      icon: undefined,
+    })
+  })
+
+  it('trims whitespace around icon', () => {
+    expect(validateCategoryFields({ name: 'Food', icon: ' 🍕 ' })).toEqual({
+      name: 'Food',
+      icon: '🍕',
+    })
+  })
+
+  it('accepts a simple emoji icon', () => {
+    expect(validateCategoryFields({ name: 'Food', icon: '🍽️' })).toEqual({
+      name: 'Food',
+      icon: '🍽️',
+    })
+  })
+
+  it('accepts complex multi-code-unit emoji as a single grapheme', () => {
+    expect(
+      validateCategoryFields({ name: 'Family', icon: '👨‍👩‍👧‍👦' }),
+    ).toEqual({
+      name: 'Family',
+      icon: '👨‍👩‍👧‍👦',
+    })
+  })
+
+  it('accepts icon with up to 10 grapheme clusters', () => {
+    const tenEmojis = '😀😁😂🤣😃😄😅😆😉😊'
+    expect(
+      validateCategoryFields({ name: 'Emoji', icon: tenEmojis }),
+    ).toEqual({
+      name: 'Emoji',
+      icon: tenEmojis,
+    })
+  })
+
+  it('rejects icon with more than 10 grapheme clusters', () => {
+    const elevenEmojis = '😀😁😂🤣😃😄😅😆😉😊😋'
+    expect(() =>
+      validateCategoryFields({ name: 'Emoji', icon: elevenEmojis }),
+    ).toThrow('10 characters')
+  })
+
+  it('rejects very large icon via pre-trim hard cap', () => {
+    expect(() =>
+      validateCategoryFields({ name: 'Food', icon: 'x'.repeat(101) }),
+    ).toThrow('10 characters')
   })
 })

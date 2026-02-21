@@ -3,6 +3,7 @@ import type { QueryCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
+import { validateCategoryFields } from './validation'
 
 /**
  * Verify that a category is accessible to the given user.
@@ -96,11 +97,13 @@ export const create = mutation({
       throw new Error('Not authenticated')
     }
 
+    const { name, icon } = validateCategoryFields(args)
+
     // Check if category with same name already exists for this user
     const existing = await ctx.db
       .query('categories')
       .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('name'), args.name))
+      .filter((q) => q.eq(q.field('name'), name))
       .first()
 
     if (existing) {
@@ -113,7 +116,7 @@ export const create = mutation({
       .filter((q) =>
         q.and(
           q.eq(q.field('userId'), undefined),
-          q.eq(q.field('name'), args.name)
+          q.eq(q.field('name'), name)
         )
       )
       .first()
@@ -123,9 +126,9 @@ export const create = mutation({
     }
 
     const categoryId = await ctx.db.insert('categories', {
-      name: args.name,
+      name,
       userId,
-      icon: args.icon,
+      icon,
     })
 
     return categoryId
