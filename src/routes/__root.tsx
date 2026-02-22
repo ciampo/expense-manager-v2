@@ -7,8 +7,8 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  type ErrorComponentProps,
 } from '@tanstack/react-router'
-import type { ErrorComponentProps } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Button } from '@/components/ui/button'
@@ -50,7 +50,7 @@ function NotFoundComponent() {
     >
       <h1 className="text-6xl font-bold text-foreground">404</h1>
       <p className="mt-4 text-xl text-muted-foreground">Page not found</p>
-      <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
         The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
       <div className="mt-6">
