@@ -294,8 +294,8 @@ describe('categoryIconSchema', () => {
 
   // ---- Grapheme-vs-code-unit regression tests ----
   // JS string .length counts UTF-16 code units, not visible characters.
-  // The schema must use Intl.Segmenter grapheme counting to match the
-  // server-side validation in convex/validation.ts. The cases below would
+  // The schema uses Intl.Segmenter grapheme counting so that complex
+  // emoji are measured as visible characters. The cases below would
   // fail if the schema naïvely used z.string().max(10).
 
   it('accepts a ZWJ family emoji (1 grapheme, 11 code units)', () => {
