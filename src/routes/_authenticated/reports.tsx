@@ -28,7 +28,7 @@ export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
 })
 
-const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
+const SUBTYPE_EXTENSIONS: Record<string, string> = {
   jpeg: '.jpg',
   jpg: '.jpg',
   png: '.png',
@@ -38,21 +38,33 @@ const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
 }
 
 function extensionFromContentType(contentType: string): string {
-  const lower = contentType.toLowerCase()
-  for (const [key, ext] of Object.entries(CONTENT_TYPE_EXTENSIONS)) {
-    if (lower.includes(key)) return ext
+  // "image/jpeg; charset=binary" → "image/jpeg" → "jpeg"
+  const [typeAndSubtype] = contentType.toLowerCase().split(';', 1)
+  const subtype = typeAndSubtype.trim().split('/')[1]?.trim()
+  if (subtype) {
+    const ext = SUBTYPE_EXTENSIONS[subtype]
+    if (ext) return ext
   }
   return '.bin'
 }
 
 /**
  * Like Promise.allSettled, but limits concurrency to `limit` tasks at a time.
+ * Returns an empty array when there are no tasks. Warns and returns an empty
+ * array if `limit` is non-positive (caller bug).
  */
 async function promiseAllSettledPooled<T>(
   tasks: (() => Promise<T>)[],
   limit: number
 ): Promise<PromiseSettledResult<T>[]> {
-  if (limit <= 0 || tasks.length === 0) return []
+  if (tasks.length === 0) return []
+  if (limit <= 0) {
+    console.warn('promiseAllSettledPooled called with non-positive limit', {
+      limit,
+      taskCount: tasks.length,
+    })
+    return []
+  }
 
   const results: PromiseSettledResult<T>[] = new Array(tasks.length)
   let nextIndex = 0
@@ -247,7 +259,8 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       const filenameCount: Record<string, number> = {}
 
       const withUrl = attachments.filter(
-        (a): a is typeof a & { url: string } => typeof a.url === 'string'
+        (a): a is typeof a & { url: string } =>
+          typeof a.url === 'string' && a.url.length > 0
       )
 
       const downloadResults = await promiseAllSettledPooled(
