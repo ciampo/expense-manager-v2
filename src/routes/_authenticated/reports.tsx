@@ -20,7 +20,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, getMonthName } from '@/lib/format'
 import { toast } from 'sonner'
-import { Suspense, useMemo, useState } from 'react'
+import { Suspense, useState } from 'react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 
@@ -46,7 +46,7 @@ function getAvailableMonths() {
 }
 
 function ReportsPage() {
-  const availableMonths = useMemo(() => getAvailableMonths(), [])
+  const availableMonths = getAvailableMonths()
   const [selectedMonth, setSelectedMonth] = useState(
     `${availableMonths[0].year}-${availableMonths[0].month}`
   )
