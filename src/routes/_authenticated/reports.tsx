@@ -250,6 +250,9 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       const downloadResults = await promiseAllSettledPooled(
         withUrl.map((attachment) => async () => {
           const response = await fetch(attachment.url)
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status} for ${attachment.url}`)
+          }
           const blob = await response.blob()
           return {
             attachment,
