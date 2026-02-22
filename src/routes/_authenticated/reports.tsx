@@ -38,8 +38,9 @@ const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
 }
 
 function extensionFromContentType(contentType: string): string {
+  const lower = contentType.toLowerCase()
   for (const [key, ext] of Object.entries(CONTENT_TYPE_EXTENSIONS)) {
-    if (contentType.includes(key)) return ext
+    if (lower.includes(key)) return ext
   }
   return '.bin'
 }
@@ -51,6 +52,8 @@ async function promiseAllSettledPooled<T>(
   tasks: (() => Promise<T>)[],
   limit: number
 ): Promise<PromiseSettledResult<T>[]> {
+  if (limit <= 0 || tasks.length === 0) return []
+
   const results: PromiseSettledResult<T>[] = new Array(tasks.length)
   let nextIndex = 0
 
@@ -251,7 +254,9 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         withUrl.map((attachment) => async () => {
           const response = await fetch(attachment.url)
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status} for ${attachment.url}`)
+            throw new Error(
+              `HTTP ${response.status} downloading attachment for ${attachment.date}-${attachment.merchant}`
+            )
           }
           const blob = await response.blob()
           return {
