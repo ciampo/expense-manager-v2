@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, getMonthName } from '@/lib/format'
+import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 import { toast } from 'sonner'
 import { Suspense, useState } from 'react'
 import JSZip from 'jszip'
@@ -27,65 +28,6 @@ import { saveAs } from 'file-saver'
 export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
 })
-
-// Maps MIME subtypes to file extensions. 'jpg' is non-standard but used by
-// some servers in the wild (the standard subtype is 'jpeg').
-const SUBTYPE_EXTENSIONS: Record<string, string> = {
-  jpeg: '.jpg',
-  jpg: '.jpg',
-  png: '.png',
-  gif: '.gif',
-  webp: '.webp',
-  pdf: '.pdf',
-}
-
-function extensionFromContentType(contentType: string): string {
-  // "image/jpeg; charset=binary" → "image/jpeg" → "jpeg"
-  const [typeAndSubtype] = contentType.toLowerCase().split(';', 1)
-  const subtype = typeAndSubtype.trim().split('/')[1]?.trim()
-  if (subtype) {
-    const ext = SUBTYPE_EXTENSIONS[subtype]
-    if (ext) return ext
-  }
-  return '.bin'
-}
-
-/**
- * Like Promise.allSettled, but limits concurrency to `limit` tasks at a time.
- * Returns an empty array when there are no tasks. Warns and returns an empty
- * array if `limit` is non-positive (caller bug).
- */
-async function promiseAllSettledPooled<T>(
-  tasks: (() => Promise<T>)[],
-  limit: number
-): Promise<PromiseSettledResult<T>[]> {
-  if (tasks.length === 0) return []
-  if (limit <= 0) {
-    console.warn('promiseAllSettledPooled called with non-positive limit', {
-      limit,
-      taskCount: tasks.length,
-    })
-    return []
-  }
-
-  const results: PromiseSettledResult<T>[] = new Array(tasks.length)
-  let nextIndex = 0
-
-  async function worker() {
-    while (nextIndex < tasks.length) {
-      const i = nextIndex++
-      try {
-        results[i] = { status: 'fulfilled', value: await tasks[i]() }
-      } catch (reason) {
-        results[i] = { status: 'rejected', reason }
-      }
-    }
-  }
-
-  const workerCount = Math.min(limit, tasks.length)
-  await Promise.all(Array.from({ length: workerCount }, () => worker()))
-  return results
-}
 
 // Get available months (current and last 12 months)
 function getAvailableMonths() {
