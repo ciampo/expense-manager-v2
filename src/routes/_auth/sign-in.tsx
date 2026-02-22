@@ -3,6 +3,7 @@ import { useAuthActions } from '@convex-dev/auth/react'
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
+import { emailSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/_auth/sign-in')({
 })
 
 const signInSchema = z.object({
-  email: z.string().min(1, { message: 'Email is required.' }).email({ message: 'Enter a valid email address.' }),
+  email: emailSchema,
   password: z.string().min(1, { message: 'Password is required.' }),
 })
 
@@ -95,7 +96,10 @@ function SignInPage() {
                 />
                 {field.state.meta.errors.length > 0 && (
                   <p id="email-error" role="alert" className="text-sm text-destructive">
-                    {field.state.meta.errors.map((e) => e?.message).join(', ')}
+                    {field.state.meta.errors
+                      .map((e) => e?.message)
+                      .filter(Boolean)
+                      .join(', ')}
                   </p>
                 )}
               </div>
@@ -129,7 +133,10 @@ function SignInPage() {
                 />
                 {field.state.meta.errors.length > 0 && (
                   <p id="password-error" role="alert" className="text-sm text-destructive">
-                    {field.state.meta.errors.map((e) => e?.message).join(', ')}
+                    {field.state.meta.errors
+                      .map((e) => e?.message)
+                      .filter(Boolean)
+                      .join(', ')}
                   </p>
                 )}
               </div>
