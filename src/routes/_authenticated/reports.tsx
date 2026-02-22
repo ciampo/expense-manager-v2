@@ -263,19 +263,27 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
           typeof a.url === 'string' && a.url.length > 0
       )
 
+      const DOWNLOAD_TIMEOUT_MS = 30_000
+
       const downloadResults = await promiseAllSettledPooled(
         withUrl.map((attachment) => async () => {
-          const response = await fetch(attachment.url)
-          if (!response.ok) {
-            throw new Error(
-              `HTTP ${response.status} downloading attachment for ${attachment.date}-${attachment.merchant}`
-            )
-          }
-          const blob = await response.blob()
-          return {
-            attachment,
-            blob,
-            contentType: response.headers.get('content-type') || 'application/octet-stream',
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS)
+          try {
+            const response = await fetch(attachment.url, { signal: controller.signal })
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status} downloading attachment for ${attachment.date}-${attachment.merchant}`
+              )
+            }
+            const blob = await response.blob()
+            return {
+              attachment,
+              blob,
+              contentType: response.headers.get('content-type') || 'application/octet-stream',
+            }
+          } finally {
+            clearTimeout(timeoutId)
           }
         }),
         5
