@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { emailSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import {
   Card,
   CardContent,
@@ -76,79 +76,63 @@ function SignInPage() {
       >
         <CardContent className="space-y-4">
           <form.Field name="email">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  required
-                  disabled={form.state.isSubmitting}
-                  autoComplete="email"
-                  aria-invalid={field.state.meta.errors.length > 0}
-                  aria-describedby={
-                    field.state.meta.errors.length ? 'email-error' : undefined
-                  }
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p id="email-error" role="alert" className="text-sm text-destructive">
-                    {field.state.meta.errors
-                      .map((e) => e?.message)
-                      .filter(Boolean)
-                      .join(', ')}
-                  </p>
-                )}
-              </div>
-            )}
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="email"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'email-error' : undefined}
+                  />
+                  <FieldError id="email-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
           </form.Field>
           <form.Field name="password">
-            {(field) => (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-muted-foreground underline hover:text-primary"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  required
-                  disabled={form.state.isSubmitting}
-                  autoComplete="current-password"
-                  aria-invalid={field.state.meta.errors.length > 0}
-                  aria-describedby={
-                    field.state.meta.errors.length ? 'password-error' : undefined
-                  }
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p id="password-error" role="alert" className="text-sm text-destructive">
-                    {field.state.meta.errors
-                      .map((e) => e?.message)
-                      .filter(Boolean)
-                      .join(', ')}
-                  </p>
-                )}
-              </div>
-            )}
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <div className="flex items-center justify-between">
+                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-muted-foreground underline hover:text-primary"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="current-password"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'password-error' : undefined}
+                  />
+                  <FieldError id="password-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
           </form.Field>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          {serverError && (
-            <p role="alert" className="text-sm text-destructive text-center">
-              {serverError}
-            </p>
-          )}
+          <FieldError errors={serverError ? [{ message: serverError }] : undefined} className="text-center" />
           <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
             {form.state.isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>
