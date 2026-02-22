@@ -8,35 +8,34 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
+import type { ErrorComponentProps } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import type { AuthStore } from '@/lib/auth-store'
 
 import appCss from '../App.css?url'
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
-    <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center"
+    >
       <h1 className="text-6xl font-bold text-foreground">Error</h1>
-      <p className="mt-4 text-xl text-muted-foreground">Something went wrong</p>
-      <p className="mt-2 text-sm text-muted-foreground max-w-md">
+      <p className="mt-4 text-xl text-muted-foreground">
+        Something went wrong
+      </p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
         {error.message || 'An unexpected error occurred.'}
       </p>
       <div className="mt-6 flex gap-4">
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          Try again
-        </button>
-        <Link
-          to="/"
-          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
+        <Button onClick={reset}>Try again</Button>
+        <Button variant="outline" render={<Link to="/" />}>
           Go back home
-        </Link>
+        </Button>
       </div>
     </main>
   )
@@ -44,18 +43,19 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 function NotFoundComponent() {
   return (
-    <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center"
+    >
       <h1 className="text-6xl font-bold text-foreground">404</h1>
       <p className="mt-4 text-xl text-muted-foreground">Page not found</p>
-      <p className="mt-2 text-muted-foreground">
-        The page you're looking for doesn't exist or has been moved.
+      <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+        The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
-      <Link
-        to="/"
-        className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        Go back home
-      </Link>
+      <div className="mt-6">
+        <Button render={<Link to="/" />}>Go back home</Button>
+      </div>
     </main>
   )
 }
