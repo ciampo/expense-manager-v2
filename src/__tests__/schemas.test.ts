@@ -241,26 +241,53 @@ describe('categoryIconSchema', () => {
     expectSuccess(categoryIconSchema, '🍕')
   })
 
-  it('accepts a complex multi-code-unit emoji as a single grapheme', () => {
-    expectSuccess(categoryIconSchema, '👨‍👩‍👧‍👦')
-  })
-
-  it('accepts exactly 10 grapheme clusters', () => {
-    const tenEmojis = '😀😁😂🤣😃😄😅😆😉😊'
-    expectSuccess(categoryIconSchema, tenEmojis)
-  })
-
-  it('rejects more than 10 grapheme clusters', () => {
-    const elevenEmojis = '😀😁😂🤣😃😄😅😆😉😊😋'
-    expectFailure(categoryIconSchema, elevenEmojis)
-  })
-
   it('accepts ASCII string at exactly 10 characters', () => {
     expectSuccess(categoryIconSchema, 'A'.repeat(10))
   })
 
   it('rejects ASCII string over 10 characters', () => {
     expectFailure(categoryIconSchema, 'A'.repeat(11))
+  })
+
+  // ---- Grapheme-vs-code-unit regression tests ----
+  // JS string .length counts UTF-16 code units, not visible characters.
+  // The schema must use Intl.Segmenter grapheme counting to match the
+  // server-side validation in convex/validation.ts. The cases below would
+  // fail if the schema naïvely used z.string().max(10).
+
+  it('accepts a ZWJ family emoji (1 grapheme, 11 code units)', () => {
+    const family = '👨‍👩‍👧‍👦'
+    expect(family.length).toBe(11)
+    expectSuccess(categoryIconSchema, family)
+  })
+
+  it('accepts a flag emoji (1 grapheme, 4 code units)', () => {
+    const flag = '🇺🇸'
+    expect(flag.length).toBe(4)
+    expectSuccess(categoryIconSchema, flag)
+  })
+
+  it('accepts 10 surrogate-pair emoji (10 graphemes, 20 code units)', () => {
+    const tenEmoji = '😀😁😂🤣😃😄😅😆😉😊'
+    expect(tenEmoji.length).toBe(20)
+    expectSuccess(categoryIconSchema, tenEmoji)
+  })
+
+  it('rejects 11 surrogate-pair emoji (11 graphemes)', () => {
+    const elevenEmoji = '😀😁😂🤣😃😄😅😆😉😊😋'
+    expectFailure(categoryIconSchema, elevenEmoji)
+  })
+
+  it('accepts a keycap sequence (1 grapheme, 3 code units)', () => {
+    const keycap = '#️⃣'
+    expect(keycap.length).toBe(3)
+    expectSuccess(categoryIconSchema, keycap)
+  })
+
+  it('accepts mixed ASCII and emoji counted by graphemes (10 graphemes, 15 code units)', () => {
+    const mixed = 'A😀B😁C😂D😃E😄'
+    expect(mixed.length).toBe(15)
+    expectSuccess(categoryIconSchema, mixed)
   })
 })
 
