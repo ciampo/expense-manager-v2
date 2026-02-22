@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, getMonthName } from '@/lib/format'
+import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 import { toast } from 'sonner'
 import { Suspense, useState } from 'react'
 import JSZip from 'jszip'
@@ -199,57 +200,80 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
       toast.info('Downloading attachments...')
 
-      // Track successful downloads and handle filename collisions
-      let successfulDownloads = 0
       const filenameCount: Record<string, number> = {}
 
-      // Download each attachment and add to zip
-      for (const attachment of attachments) {
-        if (attachment.url) {
+      const withUrl = attachments.filter(
+        (a): a is typeof a & { url: string } =>
+          typeof a.url === 'string' && a.url.length > 0
+      )
+
+      const DOWNLOAD_TIMEOUT_MS = 30_000
+
+      const downloadResults = await promiseAllSettledPooled(
+        withUrl.map((attachment) => async () => {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS)
           try {
-            const response = await fetch(attachment.url)
+            const response = await fetch(attachment.url, { signal: controller.signal })
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status} downloading attachment for ${attachment.date}-${attachment.merchant}`
+              )
+            }
             const blob = await response.blob()
-
-            // Get file extension from content type
-            const contentType = response.headers.get('content-type') || 'application/octet-stream'
-            let extension = '.bin'
-            if (contentType.includes('jpeg') || contentType.includes('jpg')) extension = '.jpg'
-            else if (contentType.includes('png')) extension = '.png'
-            else if (contentType.includes('gif')) extension = '.gif'
-            else if (contentType.includes('webp')) extension = '.webp'
-            else if (contentType.includes('pdf')) extension = '.pdf'
-
-            // Create base filename: date-merchant
-            const baseFilename = `${attachment.date}-${attachment.merchant.replace(/[^a-zA-Z0-9]/g, '_')}`
-
-            // Handle filename collisions by adding index suffix
-            const countKey = baseFilename + extension
-            const count = filenameCount[countKey] || 0
-            filenameCount[countKey] = count + 1
-            const filename = count > 0
-              ? `${baseFilename}-${count}${extension}`
-              : `${baseFilename}${extension}`
-
-            zip.file(filename, blob)
-            successfulDownloads++
-          } catch (error) {
-            console.error('Failed to download attachment:', error)
+            return {
+              attachment,
+              blob,
+              contentType: response.headers.get('content-type') || 'application/octet-stream',
+            }
+          } finally {
+            clearTimeout(timeoutId)
           }
+        }),
+        5
+      )
+
+      let successfulDownloads = 0
+      let failedDownloads = 0
+
+      for (const result of downloadResults) {
+        if (result.status === 'rejected') {
+          failedDownloads++
+          console.error('Failed to download attachment:', result.reason)
+          continue
         }
+
+        const { attachment, blob, contentType } = result.value
+
+        const extension = extensionFromContentType(contentType)
+        const baseFilename = `${attachment.date}-${attachment.merchant.replace(/[^a-zA-Z0-9]+/g, '_')}`
+
+        const countKey = baseFilename + extension
+        const count = filenameCount[countKey] || 0
+        filenameCount[countKey] = count + 1
+        const filename = count > 0
+          ? `${baseFilename}-${count}${extension}`
+          : `${baseFilename}${extension}`
+
+        zip.file(filename, blob)
+        successfulDownloads++
       }
 
-      // Only generate ZIP if at least one file was successfully added
       if (successfulDownloads === 0) {
         toast.error('Unable to download attachments')
         return
       }
 
-      // Generate and download zip
       const content = await zip.generateAsync({ type: 'blob' })
       const monthName = getMonthName(month, year).replace(' ', '-')
       saveAs(content, `attachments-${monthName}.zip`)
 
-      toast.success(`ZIP downloaded (${successfulDownloads} file)`)
+      const fileLabel = successfulDownloads === 1 ? 'file' : 'files'
+      if (failedDownloads > 0) {
+        toast.warning(`ZIP downloaded (${successfulDownloads} ${fileLabel}, ${failedDownloads} failed)`)
+      } else {
+        toast.success(`ZIP downloaded (${successfulDownloads} ${fileLabel})`)
+      }
     } catch {
       toast.error('Error generating ZIP')
     } finally {
