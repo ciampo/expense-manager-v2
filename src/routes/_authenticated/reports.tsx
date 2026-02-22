@@ -28,8 +28,11 @@ export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
 })
 
+// Maps MIME subtypes to file extensions. 'jpg' is non-standard but used by
+// some servers in the wild (the standard subtype is 'jpeg').
 const SUBTYPE_EXTENSIONS: Record<string, string> = {
   jpeg: '.jpg',
+  jpg: '.jpg',
   png: '.png',
   gif: '.gif',
   webp: '.webp',
