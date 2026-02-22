@@ -30,7 +30,6 @@ export const Route = createFileRoute('/_authenticated/reports')({
 
 const SUBTYPE_EXTENSIONS: Record<string, string> = {
   jpeg: '.jpg',
-  jpg: '.jpg',
   png: '.png',
   gif: '.gif',
   webp: '.webp',
@@ -302,7 +301,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         const { attachment, blob, contentType } = result.value
 
         const extension = extensionFromContentType(contentType)
-        const baseFilename = `${attachment.date}-${attachment.merchant.replace(/[^a-zA-Z0-9]/g, '_')}`
+        const baseFilename = `${attachment.date}-${attachment.merchant.replace(/[^a-zA-Z0-9]+/g, '_')}`
 
         const countKey = baseFilename + extension
         const count = filenameCount[countKey] || 0
