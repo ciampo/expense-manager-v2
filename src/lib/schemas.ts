@@ -60,9 +60,23 @@ export const categoryNameSchema = z
     }),
   )
 
+const GRAPHEME_SEGMENTER = new Intl.Segmenter(undefined, {
+  granularity: 'grapheme',
+})
+
+function graphemeCount(str: string): number {
+  let count = 0
+  for (const _ of GRAPHEME_SEGMENTER.segment(str)) {
+    count++
+  }
+  return count
+}
+
 export const categoryIconSchema = z
   .string()
-  .max(10, { message: 'Category icon must be 10 characters or less.' })
+  .refine((s) => graphemeCount(s) <= 10, {
+    message: 'Category icon must be 10 characters or less.',
+  })
   .optional()
 
 export const emailSchema = z

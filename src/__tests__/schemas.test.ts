@@ -237,15 +237,29 @@ describe('categoryIconSchema', () => {
     expectSuccess(categoryIconSchema, undefined)
   })
 
-  it('accepts a short string', () => {
+  it('accepts a simple emoji', () => {
     expectSuccess(categoryIconSchema, '🍕')
   })
 
-  it('accepts string at exactly 10 characters', () => {
+  it('accepts a complex multi-code-unit emoji as a single grapheme', () => {
+    expectSuccess(categoryIconSchema, '👨‍👩‍👧‍👦')
+  })
+
+  it('accepts exactly 10 grapheme clusters', () => {
+    const tenEmojis = '😀😁😂🤣😃😄😅😆😉😊'
+    expectSuccess(categoryIconSchema, tenEmojis)
+  })
+
+  it('rejects more than 10 grapheme clusters', () => {
+    const elevenEmojis = '😀😁😂🤣😃😄😅😆😉😊😋'
+    expectFailure(categoryIconSchema, elevenEmojis)
+  })
+
+  it('accepts ASCII string at exactly 10 characters', () => {
     expectSuccess(categoryIconSchema, 'A'.repeat(10))
   })
 
-  it('rejects string over 10 characters', () => {
+  it('rejects ASCII string over 10 characters', () => {
     expectFailure(categoryIconSchema, 'A'.repeat(11))
   })
 })
