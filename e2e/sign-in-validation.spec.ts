@@ -19,7 +19,7 @@ test.describe('Sign-in form validation', () => {
 
   test('shows invalid-email error for malformed email', async ({ page }) => {
     await page.getByLabel('Email').fill('not-an-email')
-    await page.getByLabel('Password').fill('anything')
+    await page.getByLabel('Password', { exact: true }).fill('anything')
     await page.getByRole('button', { name: 'Sign In' }).click()
 
     await expect(page.getByText('Enter a valid email address.')).toBeVisible()
@@ -48,14 +48,14 @@ test.describe('Sign-in form validation', () => {
     await page.getByRole('button', { name: 'Sign In' }).click()
 
     await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true')
-    await expect(page.getByLabel('Password')).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('aria-invalid', 'true')
   })
 
   test('invalid fields reference their error via aria-describedby', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign In' }).click()
 
     await expect(page.getByLabel('Email')).toHaveAttribute('aria-describedby', 'email-error')
-    await expect(page.getByLabel('Password')).toHaveAttribute('aria-describedby', 'password-error')
+    await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('aria-describedby', 'password-error')
   })
 
   test('sign-in page with validation errors has no a11y violations', async ({ page }) => {
