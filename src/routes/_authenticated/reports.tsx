@@ -28,6 +28,48 @@ export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
 })
 
+const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
+  jpeg: '.jpg',
+  jpg: '.jpg',
+  png: '.png',
+  gif: '.gif',
+  webp: '.webp',
+  pdf: '.pdf',
+}
+
+function extensionFromContentType(contentType: string): string {
+  for (const [key, ext] of Object.entries(CONTENT_TYPE_EXTENSIONS)) {
+    if (contentType.includes(key)) return ext
+  }
+  return '.bin'
+}
+
+/**
+ * Like Promise.allSettled, but limits concurrency to `limit` tasks at a time.
+ */
+async function promiseAllSettledPooled<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < tasks.length) {
+      const i = nextIndex++
+      try {
+        results[i] = { status: 'fulfilled', value: await tasks[i]() }
+      } catch (reason) {
+        results[i] = { status: 'rejected', reason }
+      }
+    }
+  }
+
+  const workerCount = Math.min(limit, tasks.length)
+  await Promise.all(Array.from({ length: workerCount }, () => worker()))
+  return results
+}
+
 // Get available months (current and last 12 months)
 function getAvailableMonths() {
   const months = []
@@ -199,32 +241,38 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
       toast.info('Downloading attachments...')
 
-      // Track successful downloads and handle filename collisions
-      let successfulDownloads = 0
       const filenameCount: Record<string, number> = {}
 
-      // Download all attachments in parallel
-      const downloadResults = await Promise.allSettled(
-        attachments
-          .filter((a) => a.url)
-          .map(async (attachment) => {
-            const response = await fetch(attachment.url!)
-            const blob = await response.blob()
-            return { attachment, blob, contentType: response.headers.get('content-type') || 'application/octet-stream' }
-          })
+      const withUrl = attachments.filter(
+        (a): a is typeof a & { url: string } => typeof a.url === 'string'
       )
 
+      const downloadResults = await promiseAllSettledPooled(
+        withUrl.map((attachment) => async () => {
+          const response = await fetch(attachment.url)
+          const blob = await response.blob()
+          return {
+            attachment,
+            blob,
+            contentType: response.headers.get('content-type') || 'application/octet-stream',
+          }
+        }),
+        5
+      )
+
+      let successfulDownloads = 0
+      let failedDownloads = 0
+
       for (const result of downloadResults) {
-        if (result.status !== 'fulfilled') continue
+        if (result.status === 'rejected') {
+          failedDownloads++
+          console.error('Failed to download attachment:', result.reason)
+          continue
+        }
+
         const { attachment, blob, contentType } = result.value
 
-        let extension = '.bin'
-        if (contentType.includes('jpeg') || contentType.includes('jpg')) extension = '.jpg'
-        else if (contentType.includes('png')) extension = '.png'
-        else if (contentType.includes('gif')) extension = '.gif'
-        else if (contentType.includes('webp')) extension = '.webp'
-        else if (contentType.includes('pdf')) extension = '.pdf'
-
+        const extension = extensionFromContentType(contentType)
         const baseFilename = `${attachment.date}-${attachment.merchant.replace(/[^a-zA-Z0-9]/g, '_')}`
 
         const countKey = baseFilename + extension
@@ -238,18 +286,21 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         successfulDownloads++
       }
 
-      // Only generate ZIP if at least one file was successfully added
       if (successfulDownloads === 0) {
         toast.error('Unable to download attachments')
         return
       }
 
-      // Generate and download zip
       const content = await zip.generateAsync({ type: 'blob' })
       const monthName = getMonthName(month, year).replace(' ', '-')
       saveAs(content, `attachments-${monthName}.zip`)
 
-      toast.success(`ZIP downloaded (${successfulDownloads} file)`)
+      const fileLabel = successfulDownloads === 1 ? 'file' : 'files'
+      if (failedDownloads > 0) {
+        toast.warning(`ZIP downloaded (${successfulDownloads} ${fileLabel}, ${failedDownloads} failed)`)
+      } else {
+        toast.success(`ZIP downloaded (${successfulDownloads} ${fileLabel})`)
+      }
     } catch {
       toast.error('Error generating ZIP')
     } finally {
