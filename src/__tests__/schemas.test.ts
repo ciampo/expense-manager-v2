@@ -85,6 +85,15 @@ describe('expenseAmountSchema', () => {
     expectFailure(expenseAmountSchema, 0.99)
   })
 
+  it('rejects NaN', () => {
+    expectFailure(expenseAmountSchema, NaN)
+  })
+
+  it('rejects Infinity', () => {
+    expectFailure(expenseAmountSchema, Infinity)
+    expectFailure(expenseAmountSchema, -Infinity)
+  })
+
   it('provides specific error messages', () => {
     expect(getErrorMessages(expenseAmountSchema, 0)).toEqual(
       expect.arrayContaining([expect.stringContaining('positive')]),
@@ -92,6 +101,7 @@ describe('expenseAmountSchema', () => {
     expect(getErrorMessages(expenseAmountSchema, 1.5)).toEqual(
       expect.arrayContaining([expect.stringContaining('whole number')]),
     )
+    expect(getErrorMessages(expenseAmountSchema, Infinity).length).toBeGreaterThan(0)
   })
 })
 
@@ -145,9 +155,14 @@ describe('expenseCommentSchema', () => {
     expect(result.data).toBe('Quick note')
   })
 
-  it('accepts an empty string (trims to empty)', () => {
+  it('normalizes empty string to undefined', () => {
     const result = expectSuccess(expenseCommentSchema, '')
-    expect(result.data).toBe('')
+    expect(result.data).toBeUndefined()
+  })
+
+  it('normalizes whitespace-only string to undefined', () => {
+    const result = expectSuccess(expenseCommentSchema, '   ')
+    expect(result.data).toBeUndefined()
   })
 
   it('accepts comment at exactly 1000 characters', () => {
@@ -226,6 +241,15 @@ describe('categoryNameSchema', () => {
   it('rejects name over 100 characters', () => {
     expectFailure(categoryNameSchema, 'A'.repeat(101))
   })
+
+  it('accepts padded name within 100-char limit after trim', () => {
+    const result = expectSuccess(categoryNameSchema, '  ' + 'A'.repeat(100) + '  ')
+    expect(result.data).toBe('A'.repeat(100))
+  })
+
+  it('rejects very large name via pre-trim hard cap', () => {
+    expectFailure(categoryNameSchema, 'A'.repeat(1001))
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -235,6 +259,21 @@ describe('categoryNameSchema', () => {
 describe('categoryIconSchema', () => {
   it('accepts undefined (optional)', () => {
     expectSuccess(categoryIconSchema, undefined)
+  })
+
+  it('normalizes empty string to undefined', () => {
+    const result = expectSuccess(categoryIconSchema, '')
+    expect(result.data).toBeUndefined()
+  })
+
+  it('normalizes whitespace-only string to undefined', () => {
+    const result = expectSuccess(categoryIconSchema, '   ')
+    expect(result.data).toBeUndefined()
+  })
+
+  it('trims whitespace around icon', () => {
+    const result = expectSuccess(categoryIconSchema, ' 🍕 ')
+    expect(result.data).toBe('🍕')
   })
 
   it('accepts a simple emoji', () => {
@@ -247,6 +286,10 @@ describe('categoryIconSchema', () => {
 
   it('rejects ASCII string over 10 characters', () => {
     expectFailure(categoryIconSchema, 'A'.repeat(11))
+  })
+
+  it('rejects very large icon via pre-trim hard cap', () => {
+    expectFailure(categoryIconSchema, 'x'.repeat(101))
   })
 
   // ---- Grapheme-vs-code-unit regression tests ----

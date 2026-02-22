@@ -77,31 +77,31 @@ describe('validateExpenseFields', () => {
   it('rejects zero amount', () => {
     expect(() =>
       validateExpenseFields({ ...valid, amount: 0 }),
-    ).toThrow('positive integer')
+    ).toThrow('positive')
   })
 
   it('rejects negative amount', () => {
     expect(() =>
       validateExpenseFields({ ...valid, amount: -100 }),
-    ).toThrow('positive integer')
+    ).toThrow('positive')
   })
 
   it('rejects non-integer amount', () => {
     expect(() =>
       validateExpenseFields({ ...valid, amount: 12.34 }),
-    ).toThrow('positive integer')
+    ).toThrow('whole number')
   })
 
   it('rejects NaN amount', () => {
     expect(() =>
       validateExpenseFields({ ...valid, amount: NaN }),
-    ).toThrow('positive integer')
+    ).toThrow()
   })
 
   it('rejects Infinity amount', () => {
     expect(() =>
       validateExpenseFields({ ...valid, amount: Infinity }),
-    ).toThrow('positive integer')
+    ).toThrow()
   })
 
   // -- merchant -------------------------------------------------------------
@@ -185,6 +185,28 @@ describe('validateExpenseFields', () => {
     expect(() =>
       validateExpenseFields({ ...valid, comment: padded }),
     ).toThrow('1000 characters')
+  })
+
+  // -- return values ----------------------------------------------------------
+
+  it('returns trimmed merchant and normalized comment', () => {
+    const result = validateExpenseFields({
+      ...valid,
+      merchant: '  Coffee Shop  ',
+      comment: '  Quick note  ',
+    })
+    expect(result.merchant).toBe('Coffee Shop')
+    expect(result.comment).toBe('Quick note')
+  })
+
+  it('normalizes empty comment to undefined', () => {
+    const result = validateExpenseFields({ ...valid, comment: '' })
+    expect(result.comment).toBeUndefined()
+  })
+
+  it('normalizes whitespace-only comment to undefined', () => {
+    const result = validateExpenseFields({ ...valid, comment: '   ' })
+    expect(result.comment).toBeUndefined()
   })
 })
 
