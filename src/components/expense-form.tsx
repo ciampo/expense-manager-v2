@@ -73,7 +73,7 @@ interface ExpenseFormProps {
 
 export function ExpenseFormSkeleton() {
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="max-w-2xl space-y-6">
       <div className="space-y-2">
         <Skeleton className="h-4 w-16" />
         <Skeleton className="h-10 w-full" />
@@ -110,7 +110,7 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
   }
 
   if (!url) {
-    return <p className="text-sm text-muted-foreground">Attachment not available</p>
+    return <p className="text-muted-foreground text-sm">Attachment not available</p>
   }
 
   return (
@@ -129,7 +129,7 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+          className="text-primary inline-flex items-center gap-2 text-sm hover:underline"
         >
           <span aria-hidden="true">📄</span> View PDF attachment
         </a>
@@ -352,7 +352,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const selectedDate = date ? parseLocalDate(date) : undefined
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       {/* Date */}
       <div className="space-y-2">
         <Label htmlFor="date-picker">Date</Label>
@@ -443,7 +443,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           </PopoverContent>
         </Popover>
         {errors.merchant && (
-          <p id="merchant-error" role="alert" className="text-sm text-destructive">
+          <p id="merchant-error" role="alert" className="text-destructive text-sm">
             {errors.merchant}
           </p>
         )}
@@ -510,7 +510,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                       {category.icon && <span className="mr-2">{category.icon}</span>}
                       {category.name}
                       {category.isPredefined && (
-                        <span className="ml-auto text-xs text-muted-foreground">predefined</span>
+                        <span className="text-muted-foreground ml-auto text-xs">predefined</span>
                       )}
                     </CommandItem>
                   ))}
@@ -533,7 +533,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           </PopoverContent>
         </Popover>
         {errors.category && (
-          <p id="category-error" role="alert" className="text-sm text-destructive">
+          <p id="category-error" role="alert" className="text-destructive text-sm">
             {errors.category}
           </p>
         )}
@@ -559,12 +559,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           />
         </InputGroup>
         {amount && parseCurrencyToCents(amount) > 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {formatCurrency(parseCurrencyToCents(amount))}
           </p>
         )}
         {errors.amount && (
-          <p id="amount-error" role="alert" className="text-sm text-destructive">
+          <p id="amount-error" role="alert" className="text-destructive text-sm">
             {errors.amount}
           </p>
         )}
@@ -574,7 +574,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       <div className="space-y-2">
         <Label htmlFor="attachment-input">Attachment (optional)</Label>
         {attachmentId ? (
-          <div className="space-y-3 p-3 border rounded-md">
+          <div className="space-y-3 rounded-md border p-3">
             <AttachmentPreview attachmentId={attachmentId} />
             <AlertDialog open={showDeleteAttachment} onOpenChange={setShowDeleteAttachment}>
               <AlertDialogTrigger
@@ -612,8 +612,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             disabled={isUploading}
           />
         )}
-        {isUploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
-        <p className="text-xs text-muted-foreground">Images or PDF, maximum 10MB</p>
+        {isUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
+        <p className="text-muted-foreground text-xs">Images or PDF, maximum 10MB</p>
       </div>
 
       {/* Comment */}

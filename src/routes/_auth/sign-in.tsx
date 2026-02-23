@@ -108,7 +108,7 @@ function SignInPage() {
                     <FieldLabel htmlFor="password">Password</FieldLabel>
                     <Link
                       to="/forgot-password"
-                      className="text-sm text-muted-foreground underline hover:text-primary"
+                      className="text-muted-foreground hover:text-primary text-sm underline"
                     >
                       Forgot password?
                     </Link>
@@ -139,9 +139,9 @@ function SignInPage() {
           <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
             {form.state.isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>
-          <p className="text-sm text-muted-foreground text-center">
+          <p className="text-muted-foreground text-center text-sm">
             Don&apos;t have an account?{' '}
-            <Link to="/sign-up" className="text-primary underline hover:text-primary/80">
+            <Link to="/sign-up" className="text-primary hover:text-primary/80 underline">
               Sign Up
             </Link>
           </p>

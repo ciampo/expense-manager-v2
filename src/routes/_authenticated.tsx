@@ -31,22 +31,22 @@ export const Route = createFileRoute('/_authenticated')({
 
 function AuthenticatedSkeleton() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-8 w-8 rounded-full" />
         </div>
       </header>
       <main id="main-content" tabIndex={-1} className="flex-1">
         <div className="container mx-auto px-4 py-8">
-          <Skeleton className="h-8 w-64 mb-4" />
+          <Skeleton className="mb-4 h-8 w-64" />
           <Skeleton className="h-64 w-full" />
         </div>
       </main>
       <footer className="border-t py-6">
         <div className="container mx-auto px-4 text-center">
-          <Skeleton className="h-4 w-48 mx-auto" />
+          <Skeleton className="mx-auto h-4 w-48" />
         </div>
       </footer>
     </div>
@@ -71,26 +71,26 @@ function AuthenticatedLayout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="border-b sticky top-0 bg-background z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="bg-background sticky top-0 z-50 border-b">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4">
           {/* Logo */}
           <Link to="/dashboard" className="text-xl font-bold">
             Expense Manager
           </Link>
 
           {/* Desktop Navigation */}
-          <nav aria-label="Main" className="hidden md:flex items-center gap-6">
+          <nav aria-label="Main" className="hidden items-center gap-6 md:flex">
             <Link
               to="/dashboard"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+              className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
             >
               Dashboard
             </Link>
             <Link
               to="/reports"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+              className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
             >
               Reports
             </Link>
@@ -99,7 +99,7 @@ function AuthenticatedLayout() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label="User menu"
-                className="relative flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="hover:bg-muted focus-visible:ring-ring relative flex h-8 w-8 items-center justify-center rounded-full focus-visible:ring-2 focus-visible:outline-none"
               >
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>U</AvatarFallback>
@@ -127,17 +127,17 @@ function AuthenticatedLayout() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-xs">
               <DialogTitle>Menu</DialogTitle>
-              <nav aria-label="Main" className="flex flex-col gap-4 mt-2">
+              <nav aria-label="Main" className="mt-2 flex flex-col gap-4">
                 <Link
                   to="/dashboard"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+                  className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/reports"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+                  className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Reports
@@ -149,7 +149,7 @@ function AuthenticatedLayout() {
                     setMobileMenuOpen(false)
                     handleSignOut()
                   }}
-                  className="text-sm font-medium text-destructive hover:text-destructive/80 transition-colors text-left"
+                  className="text-destructive hover:text-destructive/80 text-left text-sm font-medium transition-colors"
                 >
                   Logout
                 </button>
@@ -166,7 +166,7 @@ function AuthenticatedLayout() {
 
       {/* Footer */}
       <footer className="border-t py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground container mx-auto px-4 text-center text-sm">
           © {new Date().getFullYear()} Expense Manager
         </div>
       </footer>

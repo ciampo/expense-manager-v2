@@ -35,7 +35,7 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 function DashboardPage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Manage your expenses</p>
@@ -77,13 +77,13 @@ function TableSkeleton() {
                 <Skeleton className="h-4 w-28" />
               </TableCell>
               <TableCell>
-                <Skeleton className="h-4 w-20 ml-auto" />
+                <Skeleton className="ml-auto h-4 w-20" />
               </TableCell>
               <TableCell>
                 <Skeleton className="h-4 w-8" />
               </TableCell>
               <TableCell>
-                <Skeleton className="h-8 w-20 ml-auto" />
+                <Skeleton className="ml-auto h-8 w-20" />
               </TableCell>
             </TableRow>
           ))}

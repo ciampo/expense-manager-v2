@@ -100,7 +100,7 @@ function SignUpPage() {
               aria-invalid={!!errors.email}
             />
             {errors.email && (
-              <p id="email-error" role="alert" className="text-sm text-destructive">
+              <p id="email-error" role="alert" className="text-destructive text-sm">
                 {errors.email}
               </p>
             )}
@@ -121,7 +121,7 @@ function SignUpPage() {
               aria-invalid={!!errors.password}
             />
             {errors.password && (
-              <p id="password-error" role="alert" className="text-sm text-destructive">
+              <p id="password-error" role="alert" className="text-destructive text-sm">
                 {errors.password}
               </p>
             )}
@@ -142,7 +142,7 @@ function SignUpPage() {
               aria-invalid={!!errors.confirmPassword}
             />
             {errors.confirmPassword && (
-              <p id="confirm-password-error" role="alert" className="text-sm text-destructive">
+              <p id="confirm-password-error" role="alert" className="text-destructive text-sm">
                 {errors.confirmPassword}
               </p>
             )}
@@ -150,16 +150,16 @@ function SignUpPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           {errors.form && (
-            <p role="alert" className="text-sm text-destructive text-center">
+            <p role="alert" className="text-destructive text-center text-sm">
               {errors.form}
             </p>
           )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Signing up...' : 'Sign Up'}
           </Button>
-          <p className="text-sm text-muted-foreground text-center">
+          <p className="text-muted-foreground text-center text-sm">
             Already have an account?{' '}
-            <Link to="/sign-in" className="text-primary underline hover:text-primary/80">
+            <Link to="/sign-in" className="text-primary hover:text-primary/80 underline">
               Sign In
             </Link>
           </p>

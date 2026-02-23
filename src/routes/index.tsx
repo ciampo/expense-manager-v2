@@ -8,10 +8,10 @@ export const Route = createFileRoute('/')({
 
 function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <h1 className="text-xl font-bold">Expense Manager</h1>
           <nav aria-label="Main">
             <div className="flex gap-2">
@@ -25,17 +25,17 @@ function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center">
         <div className="container mx-auto px-4 py-16">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl mb-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl">
               Manage your work expenses
             </h2>
-            <p className="text-xl text-muted-foreground mb-8">
+            <p className="text-muted-foreground mb-8 text-xl">
               Easily track coworking, lunch, and business dinner expenses. Generate monthly reports
               and download receipts in one click.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex justify-center gap-4">
               <Button size="lg" render={<Link to="/sign-up" />}>
                 Start for free
               </Button>
@@ -46,7 +46,7 @@ function LandingPage() {
           </div>
 
           {/* Features */}
-          <div className="grid md:grid-cols-3 gap-6 mt-16 max-w-4xl mx-auto">
+          <div className="mx-auto mt-16 grid max-w-4xl gap-6 md:grid-cols-3">
             <Card>
               <CardHeader>
                 <CardTitle>
@@ -55,7 +55,7 @@ function LandingPage() {
                 <CardDescription>View all your expenses in a single organized view</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Interactive table with filters and sorting by date, amount, and category.
                 </p>
               </CardContent>
@@ -69,7 +69,7 @@ function LandingPage() {
                 <CardDescription>Upload receipts and invoices for each expense</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Support for images and PDFs up to 10MB. Bulk download in ZIP format.
                 </p>
               </CardContent>
@@ -83,7 +83,7 @@ function LandingPage() {
                 <CardDescription>Generate monthly reports ready for accounting</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   CSV export grouped by day and category. Download monthly attachments.
                 </p>
               </CardContent>
@@ -94,7 +94,7 @@ function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground container mx-auto px-4 text-center text-sm">
           © {new Date().getFullYear()} Expense Manager. All rights reserved.
         </div>
       </footer>

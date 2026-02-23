@@ -57,7 +57,7 @@ function ReportsPage() {
 
       {/* Month selector */}
       <div className="mb-8">
-        <label id="reports-month-label" className="text-sm font-medium mb-2 block">
+        <label id="reports-month-label" className="mb-2 block text-sm font-medium">
           Select month
         </label>
         <Select value={selectedMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
@@ -84,7 +84,7 @@ function ReportsPage() {
 function ReportSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid gap-4 md:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
             <CardHeader>
@@ -280,7 +280,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
   return (
     <div className="space-y-6">
       {/* Summary cards */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total expenses</CardDescription>
@@ -324,7 +324,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
                 <div key={category.name} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{category.name}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {category.count} {category.count === 1 ? 'expense' : 'expenses'}
                     </p>
                   </div>

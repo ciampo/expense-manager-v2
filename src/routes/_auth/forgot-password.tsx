@@ -138,7 +138,7 @@ function ForgotPasswordPage() {
                 aria-invalid={!!errors.email}
               />
               {errors.email && (
-                <p id="email-error" role="alert" className="text-sm text-destructive">
+                <p id="email-error" role="alert" className="text-destructive text-sm">
                   {errors.email}
                 </p>
               )}
@@ -146,14 +146,14 @@ function ForgotPasswordPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             {errors.form && (
-              <p role="alert" className="text-sm text-destructive text-center">
+              <p role="alert" className="text-destructive text-center text-sm">
                 {errors.form}
               </p>
             )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Sending...' : 'Send verification code'}
             </Button>
-            <Link to="/sign-in" className="text-sm text-primary underline hover:text-primary/80">
+            <Link to="/sign-in" className="text-primary hover:text-primary/80 text-sm underline">
               Back to sign in
             </Link>
           </CardFooter>
@@ -177,7 +177,7 @@ function ForgotPasswordPage() {
                 aria-invalid={!!errors.code}
               />
               {errors.code && (
-                <p id="code-error" role="alert" className="text-sm text-destructive">
+                <p id="code-error" role="alert" className="text-destructive text-sm">
                   {errors.code}
                 </p>
               )}
@@ -198,7 +198,7 @@ function ForgotPasswordPage() {
                 aria-invalid={!!errors.password}
               />
               {errors.password && (
-                <p id="password-error" role="alert" className="text-sm text-destructive">
+                <p id="password-error" role="alert" className="text-destructive text-sm">
                   {errors.password}
                 </p>
               )}
@@ -219,7 +219,7 @@ function ForgotPasswordPage() {
                 aria-invalid={!!errors.confirmPassword}
               />
               {errors.confirmPassword && (
-                <p id="confirm-password-error" role="alert" className="text-sm text-destructive">
+                <p id="confirm-password-error" role="alert" className="text-destructive text-sm">
                   {errors.confirmPassword}
                 </p>
               )}
@@ -227,7 +227,7 @@ function ForgotPasswordPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             {errors.form && (
-              <p role="alert" className="text-sm text-destructive text-center">
+              <p role="alert" className="text-destructive text-center text-sm">
                 {errors.form}
               </p>
             )}
@@ -243,7 +243,7 @@ function ForgotPasswordPage() {
                 setConfirmPassword('')
                 setErrors({})
               }}
-              className="text-sm text-primary underline hover:text-primary/80"
+              className="text-primary hover:text-primary/80 text-sm underline"
             >
               Use a different email
             </button>

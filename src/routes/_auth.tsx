@@ -17,20 +17,20 @@ export const Route = createFileRoute('/_auth')({
 
 function AuthSkeleton() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
           <Skeleton className="h-6 w-40" />
         </div>
       </header>
-      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center p-4">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Skeleton className="h-[400px] w-full rounded-lg" />
         </div>
       </main>
       <footer className="border-t py-6">
         <div className="container mx-auto px-4 text-center">
-          <Skeleton className="h-4 w-48 mx-auto" />
+          <Skeleton className="mx-auto h-4 w-48" />
         </div>
       </footer>
     </div>
@@ -39,7 +39,7 @@ function AuthSkeleton() {
 
 function AuthLayout() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
@@ -50,7 +50,7 @@ function AuthLayout() {
       </header>
 
       {/* Main content */}
-      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center p-4">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Outlet />
         </div>
@@ -58,7 +58,7 @@ function AuthLayout() {
 
       {/* Footer */}
       <footer className="border-t py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground container mx-auto px-4 text-center text-sm">
           © {new Date().getFullYear()} Expense Manager
         </div>
       </footer>
