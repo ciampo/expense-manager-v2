@@ -7,6 +7,10 @@ on:
 env:
   VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   visual:
     runs-on: ubuntu-latest
