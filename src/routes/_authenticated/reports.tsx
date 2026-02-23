@@ -10,13 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, getMonthName } from '@/lib/format'
 import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
@@ -49,7 +43,7 @@ function getAvailableMonths() {
 function ReportsPage() {
   const availableMonths = getAvailableMonths()
   const [selectedMonth, setSelectedMonth] = useState(
-    `${availableMonths[0].year}-${availableMonths[0].month}`
+    `${availableMonths[0].year}-${availableMonths[0].month}`,
   )
 
   const [year, month] = selectedMonth.split('-').map(Number)
@@ -63,7 +57,9 @@ function ReportsPage() {
 
       {/* Month selector */}
       <div className="mb-8">
-        <label id="reports-month-label" className="text-sm font-medium mb-2 block">Select month</label>
+        <label id="reports-month-label" className="text-sm font-medium mb-2 block">
+          Select month
+        </label>
         <Select value={selectedMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
           <SelectTrigger className="w-64" aria-labelledby="reports-month-label">
             <SelectValue />
@@ -114,11 +110,9 @@ function ReportSkeleton() {
 }
 
 function MonthlyReport({ year, month }: { year: number; month: number }) {
-  const { data } = useSuspenseQuery(
-    convexQuery(api.reports.monthlyData, { year, month })
-  )
+  const { data } = useSuspenseQuery(convexQuery(api.reports.monthlyData, { year, month }))
   const { data: attachments } = useSuspenseQuery(
-    convexQuery(api.reports.monthlyAttachments, { year, month })
+    convexQuery(api.reports.monthlyAttachments, { year, month }),
   )
 
   const [isDownloadingCsv, setIsDownloadingCsv] = useState(false)
@@ -203,8 +197,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       const filenameCount: Record<string, number> = {}
 
       const withUrl = attachments.filter(
-        (a): a is typeof a & { url: string } =>
-          typeof a.url === 'string' && a.url.length > 0
+        (a): a is typeof a & { url: string } => typeof a.url === 'string' && a.url.length > 0,
       )
 
       const DOWNLOAD_TIMEOUT_MS = 30_000
@@ -217,7 +210,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
             const response = await fetch(attachment.url, { signal: controller.signal })
             if (!response.ok) {
               throw new Error(
-                `HTTP ${response.status} downloading attachment for ${attachment.date}-${attachment.merchant}`
+                `HTTP ${response.status} downloading attachment for ${attachment.date}-${attachment.merchant}`,
               )
             }
             const blob = await response.blob()
@@ -230,7 +223,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
             clearTimeout(timeoutId)
           }
         }),
-        5
+        5,
       )
 
       let successfulDownloads = 0
@@ -251,9 +244,8 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         const countKey = baseFilename + extension
         const count = filenameCount[countKey] || 0
         filenameCount[countKey] = count + 1
-        const filename = count > 0
-          ? `${baseFilename}-${count}${extension}`
-          : `${baseFilename}${extension}`
+        const filename =
+          count > 0 ? `${baseFilename}-${count}${extension}` : `${baseFilename}${extension}`
 
         zip.file(filename, blob)
         successfulDownloads++
@@ -270,7 +262,9 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
       const fileLabel = successfulDownloads === 1 ? 'file' : 'files'
       if (failedDownloads > 0) {
-        toast.warning(`ZIP downloaded (${successfulDownloads} ${fileLabel}, ${failedDownloads} failed)`)
+        toast.warning(
+          `ZIP downloaded (${successfulDownloads} ${fileLabel}, ${failedDownloads} failed)`,
+        )
       } else {
         toast.success(`ZIP downloaded (${successfulDownloads} ${fileLabel})`)
       }
@@ -353,14 +347,26 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
             onClick={handleDownloadCsv}
             disabled={isDownloadingCsv || data.expenses.length === 0}
           >
-            {isDownloadingCsv ? 'Generating...' : <><span aria-hidden="true">📄</span> Download CSV</>}
+            {isDownloadingCsv ? (
+              'Generating...'
+            ) : (
+              <>
+                <span aria-hidden="true">📄</span> Download CSV
+              </>
+            )}
           </Button>
           <Button
             variant="outline"
             onClick={handleDownloadZip}
             disabled={isDownloadingZip || !attachments?.length}
           >
-            {isDownloadingZip ? 'Generating...' : <><span aria-hidden="true">📎</span> Download attachments (ZIP)</>}
+            {isDownloadingZip ? (
+              'Generating...'
+            ) : (
+              <>
+                <span aria-hidden="true">📎</span> Download attachments (ZIP)
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>

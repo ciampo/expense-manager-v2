@@ -15,7 +15,7 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 ## 1. Convex Setup
 
-> **Convex project vs deployment:** Each Convex *project* has two *deployments*: **development** (used by `npx convex dev`, interactive) and **production** (used by `npx convex deploy` and deploy keys, non-interactive). Each deployment has its own URL and database. See the [Convex docs](https://docs.convex.dev/production) for details.
+> **Convex project vs deployment:** Each Convex _project_ has two _deployments_: **development** (used by `npx convex dev`, interactive) and **production** (used by `npx convex deploy` and deploy keys, non-interactive). Each deployment has its own URL and database. See the [Convex docs](https://docs.convex.dev/production) for details.
 
 ### 1.1 Create Development Project
 
@@ -46,6 +46,7 @@ Deploy keys provide non-interactive access to a project's **production** deploym
 5. This key will be added to GitHub secrets later **and** to `.env.e2e`
 
 Save the deploy key to `.env.e2e` in the project root (the production deployment URL will be added after step 1.6):
+
 ```env
 VITE_CONVEX_URL=https://placeholder-will-update-after-deploy.convex.cloud
 CONVEX_DEPLOY_KEY=your_test_project_deploy_key
@@ -61,10 +62,12 @@ npx convex dev
 ```
 
 When prompted:
+
 - Log in to your Convex account
 - Select the `expense-manager` project
 
 This will:
+
 - Generate `convex/_generated/` types
 - Sync your schema to Convex
 - Start the Convex development server
@@ -84,6 +87,7 @@ npx @convex-dev/auth --prod
 ```
 
 When prompted for the **site URL**, enter:
+
 - **Development deployment:** `http://localhost:3000`
 - **Production deployment:** your production domain (e.g., `https://your-app.workers.dev`)
 
@@ -108,6 +112,7 @@ npx @convex-dev/auth --prod
 ```
 
 After deploying, go to the Convex Dashboard → test project and copy the **production** deployment URL. Update `VITE_CONVEX_URL` in `.env.e2e`:
+
 ```env
 VITE_CONVEX_URL=https://your-test-project-prod-url.convex.cloud
 CONVEX_DEPLOY_KEY=your_test_project_deploy_key
@@ -203,14 +208,14 @@ Go to: Repository → Settings → Secrets and variables → Actions
 
 Click "New repository secret" for each:
 
-| Secret Name | Description |
-|-------------|-------------|
-| `CLOUDFLARE_API_TOKEN` | Your Cloudflare API token |
-| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
-| `CONVEX_PROD_URL` | `expense-manager` project → **production** deployment URL (used by `deploy.yml`) |
-| `CONVEX_DEV_URL` | `expense-manager` project → **development** deployment URL (used by `preview.yml` for PR previews) |
-| `CONVEX_TEST_URL` | `expense-manager-test` project → **production** deployment URL (same as `VITE_CONVEX_URL` in `.env.e2e`) |
-| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key (same as `CONVEX_DEPLOY_KEY` in `.env.e2e`) |
+| Secret Name              | Description                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`   | Your Cloudflare API token                                                                                |
+| `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account ID                                                                               |
+| `CONVEX_PROD_URL`        | `expense-manager` project → **production** deployment URL (used by `deploy.yml`)                         |
+| `CONVEX_DEV_URL`         | `expense-manager` project → **development** deployment URL (used by `preview.yml` for PR previews)       |
+| `CONVEX_TEST_URL`        | `expense-manager-test` project → **production** deployment URL (same as `VITE_CONVEX_URL` in `.env.e2e`) |
+| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key (same as `CONVEX_DEPLOY_KEY` in `.env.e2e`)   |
 
 ### 3.4 Configure Branch Protection Rules
 
@@ -297,6 +302,7 @@ Run `pnpm dlx wrangler login` to re-authenticate.
 ### Visual tests fail with different screenshots
 
 Ensure you're running tests in Docker for consistent results:
+
 ```bash
 pnpm test:visual:docker
 ```
@@ -304,6 +310,7 @@ pnpm test:visual:docker
 ### E2E tests fail in CI
 
 Check that:
+
 1. `CONVEX_TEST_URL` secret is correct
 2. `CONVEX_TEST_DEPLOY_KEY` secret is correct
 3. Schema is deployed to test project

@@ -38,7 +38,7 @@ export const monthlyData = query({
     const categoryMap = new Map(
       categories
         .filter((c) => c && (c.userId === undefined || c.userId === userId))
-        .map((c) => [c!._id, c!])
+        .map((c) => [c!._id, c!]),
     )
 
     // Calculate totals by category
@@ -113,7 +113,7 @@ export const monthlyAttachments = query({
             url,
             storageId: expense.attachmentId!,
           }
-        })
+        }),
     )
 
     return attachments.filter((a) => a.url !== null)

@@ -22,13 +22,7 @@ describe('documentation validation', () => {
     const allDocs = readme + '\n' + setupDoc
 
     // pnpm subcommands that are never package.json scripts
-    const pnpmBuiltins = new Set([
-      'install',
-      'add',
-      'remove',
-      'dlx',
-      'run',
-    ])
+    const pnpmBuiltins = new Set(['install', 'add', 'remove', 'dlx', 'run'])
 
     const referencedScripts = new Set<string>()
     let match: RegExpExecArray | null
@@ -42,9 +36,7 @@ describe('documentation validation', () => {
       referencedScripts.add(script)
     }
 
-    const missingScripts = [...referencedScripts].filter(
-      (s) => !availableScripts.includes(s)
-    )
+    const missingScripts = [...referencedScripts].filter((s) => !availableScripts.includes(s))
 
     expect(missingScripts).toEqual([])
   })
@@ -56,33 +48,23 @@ describe('documentation validation', () => {
 
     // Extract secret names from README's secrets table
     const readmeSecrets = new Set<string>()
-    const secretTablePattern =
-      /\|\s*`([A-Z_]+)`\s*\|.*?\|/g
+    const secretTablePattern = /\|\s*`([A-Z_]+)`\s*\|.*?\|/g
     let match: RegExpExecArray | null
     while ((match = secretTablePattern.exec(readme)) !== null) {
       // Only capture secrets from the CI/CD section
-      if (
-        readme.lastIndexOf(
-          'GitHub Actions secrets',
-          match.index
-        ) !== -1
-      ) {
+      if (readme.lastIndexOf('GitHub Actions secrets', match.index) !== -1) {
         readmeSecrets.add(match[1])
       }
     }
 
     // Verify all README secrets appear in SETUP.md
     for (const secret of readmeSecrets) {
-      expect(setupDoc).toContain(
-        secret,
-      )
+      expect(setupDoc).toContain(secret)
     }
 
     // Verify all README secrets appear in ENVIRONMENT_VARIABLES.md
     for (const secret of readmeSecrets) {
-      expect(envDoc).toContain(
-        secret,
-      )
+      expect(envDoc).toContain(secret)
     }
   })
 })

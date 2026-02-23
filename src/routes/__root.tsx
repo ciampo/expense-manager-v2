@@ -25,9 +25,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
       className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center"
     >
       <h1 className="text-6xl font-bold text-foreground">Error</h1>
-      <p className="mt-4 text-xl text-muted-foreground">
-        Something went wrong
-      </p>
+      <p className="mt-4 text-xl text-muted-foreground">Something went wrong</p>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
         {error.message || 'An unexpected error occurred.'}
       </p>

@@ -1,12 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -24,9 +18,7 @@ function LandingPage() {
               <Button variant="ghost" render={<Link to="/sign-in" />}>
                 Sign In
               </Button>
-              <Button render={<Link to="/sign-up" />}>
-                Sign Up
-              </Button>
+              <Button render={<Link to="/sign-up" />}>Sign Up</Button>
             </div>
           </nav>
         </div>
@@ -40,8 +32,8 @@ function LandingPage() {
               Manage your work expenses
             </h2>
             <p className="text-xl text-muted-foreground mb-8">
-              Easily track coworking, lunch, and business dinner expenses.
-              Generate monthly reports and download receipts in one click.
+              Easily track coworking, lunch, and business dinner expenses. Generate monthly reports
+              and download receipts in one click.
             </p>
             <div className="flex gap-4 justify-center">
               <Button size="lg" render={<Link to="/sign-up" />}>
@@ -57,45 +49,42 @@ function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6 mt-16 max-w-4xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle><span aria-hidden="true">📊</span> Dashboard</CardTitle>
-                <CardDescription>
-                  View all your expenses in a single organized view
-                </CardDescription>
+                <CardTitle>
+                  <span aria-hidden="true">📊</span> Dashboard
+                </CardTitle>
+                <CardDescription>View all your expenses in a single organized view</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Interactive table with filters and sorting by date, amount,
-                  and category.
+                  Interactive table with filters and sorting by date, amount, and category.
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle><span aria-hidden="true">📎</span> Attachments</CardTitle>
-                <CardDescription>
-                  Upload receipts and invoices for each expense
-                </CardDescription>
+                <CardTitle>
+                  <span aria-hidden="true">📎</span> Attachments
+                </CardTitle>
+                <CardDescription>Upload receipts and invoices for each expense</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Support for images and PDFs up to 10MB. Bulk download in
-                  ZIP format.
+                  Support for images and PDFs up to 10MB. Bulk download in ZIP format.
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle><span aria-hidden="true">📄</span> Reports</CardTitle>
-                <CardDescription>
-                  Generate monthly reports ready for accounting
-                </CardDescription>
+                <CardTitle>
+                  <span aria-hidden="true">📄</span> Reports
+                </CardTitle>
+                <CardDescription>Generate monthly reports ready for accounting</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  CSV export grouped by day and category. Download monthly
-                  attachments.
+                  CSV export grouped by day and category. Download monthly attachments.
                 </p>
               </CardContent>
             </Card>

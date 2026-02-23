@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  isValidDate,
-  validateExpenseFields,
-  validateCategoryFields,
-} from '../../convex/validation'
+import { isValidDate, validateExpenseFields, validateCategoryFields } from '../../convex/validation'
 
 // ---------------------------------------------------------------------------
 // isValidDate
@@ -55,53 +51,37 @@ describe('validateExpenseFields', () => {
   })
 
   it('rejects an invalid date', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, date: '2026-02-30' }),
-    ).toThrow('Invalid date')
+    expect(() => validateExpenseFields({ ...valid, date: '2026-02-30' })).toThrow('Invalid date')
   })
 
   it('rejects a malformed date', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, date: 'not-a-date' }),
-    ).toThrow('Invalid date')
+    expect(() => validateExpenseFields({ ...valid, date: 'not-a-date' })).toThrow('Invalid date')
   })
 
   // -- amount ---------------------------------------------------------------
 
   it('accepts a positive integer amount', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, amount: 1 }),
-    ).not.toThrow()
+    expect(() => validateExpenseFields({ ...valid, amount: 1 })).not.toThrow()
   })
 
   it('rejects zero amount', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, amount: 0 }),
-    ).toThrow('positive')
+    expect(() => validateExpenseFields({ ...valid, amount: 0 })).toThrow('positive')
   })
 
   it('rejects negative amount', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, amount: -100 }),
-    ).toThrow('positive')
+    expect(() => validateExpenseFields({ ...valid, amount: -100 })).toThrow('positive')
   })
 
   it('rejects non-integer amount', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, amount: 12.34 }),
-    ).toThrow('whole number')
+    expect(() => validateExpenseFields({ ...valid, amount: 12.34 })).toThrow('whole number')
   })
 
   it('rejects NaN amount', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, amount: NaN }),
-    ).toThrow()
+    expect(() => validateExpenseFields({ ...valid, amount: NaN })).toThrow()
   })
 
   it('rejects Infinity amount', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, amount: Infinity }),
-    ).toThrow()
+    expect(() => validateExpenseFields({ ...valid, amount: Infinity })).toThrow()
   })
 
   // -- merchant -------------------------------------------------------------
@@ -111,35 +91,27 @@ describe('validateExpenseFields', () => {
   })
 
   it('rejects empty merchant', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, merchant: '' }),
-    ).toThrow('required')
+    expect(() => validateExpenseFields({ ...valid, merchant: '' })).toThrow('required')
   })
 
   it('rejects whitespace-only merchant', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, merchant: '   ' }),
-    ).toThrow('required')
+    expect(() => validateExpenseFields({ ...valid, merchant: '   ' })).toThrow('required')
   })
 
   it('rejects merchant over 200 characters', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, merchant: 'A'.repeat(201) }),
-    ).toThrow('200 characters')
+    expect(() => validateExpenseFields({ ...valid, merchant: 'A'.repeat(201) })).toThrow(
+      '200 characters',
+    )
   })
 
   it('accepts merchant at exactly 200 characters', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, merchant: 'A'.repeat(200) }),
-    ).not.toThrow()
+    expect(() => validateExpenseFields({ ...valid, merchant: 'A'.repeat(200) })).not.toThrow()
   })
 
   it('checks length on trimmed merchant', () => {
     // 200 chars of content + surrounding whitespace should pass
     const padded = '  ' + 'A'.repeat(200) + '  '
-    expect(() =>
-      validateExpenseFields({ ...valid, merchant: padded }),
-    ).not.toThrow()
+    expect(() => validateExpenseFields({ ...valid, merchant: padded })).not.toThrow()
   })
 
   // -- comment (optional) ---------------------------------------------------
@@ -149,42 +121,32 @@ describe('validateExpenseFields', () => {
   })
 
   it('accepts undefined comment', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, comment: undefined }),
-    ).not.toThrow()
+    expect(() => validateExpenseFields({ ...valid, comment: undefined })).not.toThrow()
   })
 
   it('accepts a short comment', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, comment: 'Quick note' }),
-    ).not.toThrow()
+    expect(() => validateExpenseFields({ ...valid, comment: 'Quick note' })).not.toThrow()
   })
 
   it('accepts comment at exactly 1000 characters', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, comment: 'A'.repeat(1000) }),
-    ).not.toThrow()
+    expect(() => validateExpenseFields({ ...valid, comment: 'A'.repeat(1000) })).not.toThrow()
   })
 
   it('rejects comment over 1000 characters', () => {
-    expect(() =>
-      validateExpenseFields({ ...valid, comment: 'A'.repeat(1001) }),
-    ).toThrow('1000 characters')
+    expect(() => validateExpenseFields({ ...valid, comment: 'A'.repeat(1001) })).toThrow(
+      '1000 characters',
+    )
   })
 
   it('checks length on trimmed comment', () => {
     // 1000 chars of content + surrounding whitespace should pass
     const padded = '  ' + 'A'.repeat(1000) + '  '
-    expect(() =>
-      validateExpenseFields({ ...valid, comment: padded }),
-    ).not.toThrow()
+    expect(() => validateExpenseFields({ ...valid, comment: padded })).not.toThrow()
   })
 
   it('rejects whitespace-padded comment over 1000 chars of content', () => {
     const padded = '  ' + 'A'.repeat(1001) + '  '
-    expect(() =>
-      validateExpenseFields({ ...valid, comment: padded }),
-    ).toThrow('1000 characters')
+    expect(() => validateExpenseFields({ ...valid, comment: padded })).toThrow('1000 characters')
   })
 
   // -- return values ----------------------------------------------------------
@@ -247,9 +209,7 @@ describe('validateCategoryFields', () => {
   })
 
   it('rejects name over 100 characters after trim', () => {
-    expect(() => validateCategoryFields({ name: 'A'.repeat(101) })).toThrow(
-      '100 characters',
-    )
+    expect(() => validateCategoryFields({ name: 'A'.repeat(101) })).toThrow('100 characters')
   })
 
   it('checks length on trimmed name', () => {
@@ -261,9 +221,7 @@ describe('validateCategoryFields', () => {
   })
 
   it('rejects very large name via pre-trim hard cap', () => {
-    expect(() =>
-      validateCategoryFields({ name: 'A'.repeat(1001) }),
-    ).toThrow('100 characters')
+    expect(() => validateCategoryFields({ name: 'A'.repeat(1001) })).toThrow('100 characters')
   })
 
   // -- icon -----------------------------------------------------------------
@@ -304,9 +262,7 @@ describe('validateCategoryFields', () => {
   })
 
   it('accepts complex multi-code-unit emoji as a single grapheme', () => {
-    expect(
-      validateCategoryFields({ name: 'Family', icon: '👨‍👩‍👧‍👦' }),
-    ).toEqual({
+    expect(validateCategoryFields({ name: 'Family', icon: '👨‍👩‍👧‍👦' })).toEqual({
       name: 'Family',
       icon: '👨‍👩‍👧‍👦',
     })
@@ -314,9 +270,7 @@ describe('validateCategoryFields', () => {
 
   it('accepts icon with up to 10 grapheme clusters', () => {
     const tenEmojis = '😀😁😂🤣😃😄😅😆😉😊'
-    expect(
-      validateCategoryFields({ name: 'Emoji', icon: tenEmojis }),
-    ).toEqual({
+    expect(validateCategoryFields({ name: 'Emoji', icon: tenEmojis })).toEqual({
       name: 'Emoji',
       icon: tenEmojis,
     })
@@ -324,14 +278,14 @@ describe('validateCategoryFields', () => {
 
   it('rejects icon with more than 10 grapheme clusters', () => {
     const elevenEmojis = '😀😁😂🤣😃😄😅😆😉😊😋'
-    expect(() =>
-      validateCategoryFields({ name: 'Emoji', icon: elevenEmojis }),
-    ).toThrow('10 characters')
+    expect(() => validateCategoryFields({ name: 'Emoji', icon: elevenEmojis })).toThrow(
+      '10 characters',
+    )
   })
 
   it('rejects very large icon via pre-trim hard cap', () => {
-    expect(() =>
-      validateCategoryFields({ name: 'Food', icon: 'x'.repeat(101) }),
-    ).toThrow('10 characters')
+    expect(() => validateCategoryFields({ name: 'Food', icon: 'x'.repeat(101) })).toThrow(
+      '10 characters',
+    )
   })
 })

@@ -23,9 +23,7 @@ test.describe('HTML and Meta Tags', () => {
     await page.goto('/')
 
     // Check that Google Fonts is not loaded (we use @fontsource-variable/noto-sans)
-    const googleFontLinks = page.locator(
-      'link[rel="stylesheet"][href*="fonts.googleapis.com"]'
-    )
+    const googleFontLinks = page.locator('link[rel="stylesheet"][href*="fonts.googleapis.com"]')
     await expect(googleFontLinks).toHaveCount(0)
   })
 })

@@ -30,7 +30,7 @@ export function extensionFromContentType(contentType: string): string {
  */
 export async function promiseAllSettledPooled<T>(
   tasks: (() => Promise<T>)[],
-  limit: number
+  limit: number,
 ): Promise<PromiseSettledResult<T>[]> {
   if (tasks.length === 0) return []
   if (limit <= 0) {

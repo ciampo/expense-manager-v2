@@ -113,12 +113,7 @@ export const create = mutation({
     // Also check predefined categories
     const predefined = await ctx.db
       .query('categories')
-      .filter((q) =>
-        q.and(
-          q.eq(q.field('userId'), undefined),
-          q.eq(q.field('name'), name)
-        )
-      )
+      .filter((q) => q.and(q.eq(q.field('userId'), undefined), q.eq(q.field('name'), name)))
       .first()
 
     if (predefined) {

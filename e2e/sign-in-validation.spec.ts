@@ -48,14 +48,20 @@ test.describe('Sign-in form validation', () => {
     await page.getByRole('button', { name: 'Sign In' }).click()
 
     await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true')
-    await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    )
   })
 
   test('invalid fields reference their error via aria-describedby', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign In' }).click()
 
     await expect(page.getByLabel('Email')).toHaveAttribute('aria-describedby', 'email-error')
-    await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('aria-describedby', 'password-error')
+    await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute(
+      'aria-describedby',
+      'password-error',
+    )
   })
 
   test('sign-in page with validation errors has no a11y violations', async ({ page }) => {

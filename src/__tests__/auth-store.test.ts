@@ -26,8 +26,7 @@ describe('waitForAuth — initial resolution', () => {
   it('resolves when isLoading transitions from true to false (authenticated)', async () => {
     const store = createAuthStore()
 
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: true, isLoading: false })
 
     const result = await store.waitForAuth()
     expect(result).toEqual({ isAuthenticated: true })
@@ -36,8 +35,7 @@ describe('waitForAuth — initial resolution', () => {
   it('resolves when isLoading transitions from true to false (unauthenticated)', async () => {
     const store = createAuthStore()
 
-    store.isAuthenticated = false
-    store.isLoading = false
+    store.update({ isAuthenticated: false, isLoading: false })
 
     const result = await store.waitForAuth()
     expect(result).toEqual({ isAuthenticated: false })
@@ -57,8 +55,7 @@ describe('waitForAuth — initial resolution', () => {
     expect(resolved).toBe(false)
 
     // Now complete loading
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: true, isLoading: false })
 
     const result = await promise
     expect(resolved).toBe(true)
@@ -68,15 +65,14 @@ describe('waitForAuth — initial resolution', () => {
   it('returns a fresh resolved promise when called after loading is done', async () => {
     const store = createAuthStore()
 
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: true, isLoading: false })
 
     // First call resolves the internal promise
     await store.waitForAuth()
 
     // Second call — isLoading is false, so it returns Promise.resolve()
     // with the *current* isAuthenticated value
-    store.isAuthenticated = false
+    store.update({ isAuthenticated: false, isLoading: false })
     const result = await store.waitForAuth()
     expect(result).toEqual({ isAuthenticated: false })
   })
@@ -91,18 +87,16 @@ describe('waitForAuth — loading restart (multi-shot)', () => {
     const store = createAuthStore()
 
     // Phase 1: initial auth check → authenticated
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: true, isLoading: false })
 
     const firstResult = await store.waitForAuth()
     expect(firstResult).toEqual({ isAuthenticated: true })
 
     // Phase 2: loading restarts (e.g. token refresh)
-    store.isLoading = true
+    store.update({ isAuthenticated: store.isAuthenticated, isLoading: true })
 
     // Phase 3: re-auth completes — now unauthenticated
-    store.isAuthenticated = false
-    store.isLoading = false
+    store.update({ isAuthenticated: false, isLoading: false })
 
     const secondResult = await store.waitForAuth()
     expect(secondResult).toEqual({ isAuthenticated: false })
@@ -112,12 +106,11 @@ describe('waitForAuth — loading restart (multi-shot)', () => {
     const store = createAuthStore()
 
     // Complete initial auth
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: true, isLoading: false })
     await store.waitForAuth()
 
     // Restart loading
-    store.isLoading = true
+    store.update({ isAuthenticated: store.isAuthenticated, isLoading: true })
 
     let resolved = false
     const promise = store.waitForAuth().then((r) => {
@@ -130,8 +123,7 @@ describe('waitForAuth — loading restart (multi-shot)', () => {
     expect(resolved).toBe(false)
 
     // Complete re-auth
-    store.isAuthenticated = false
-    store.isLoading = false
+    store.update({ isAuthenticated: false, isLoading: false })
 
     const result = await promise
     expect(resolved).toBe(true)
@@ -142,20 +134,17 @@ describe('waitForAuth — loading restart (multi-shot)', () => {
     const store = createAuthStore()
 
     // Cycle 1: authenticated
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: true, isLoading: false })
     expect(await store.waitForAuth()).toEqual({ isAuthenticated: true })
 
     // Cycle 2: token refresh → still authenticated
-    store.isLoading = true
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: store.isAuthenticated, isLoading: true })
+    store.update({ isAuthenticated: true, isLoading: false })
     expect(await store.waitForAuth()).toEqual({ isAuthenticated: true })
 
     // Cycle 3: session revoked → unauthenticated
-    store.isLoading = true
-    store.isAuthenticated = false
-    store.isLoading = false
+    store.update({ isAuthenticated: store.isAuthenticated, isLoading: true })
+    store.update({ isAuthenticated: false, isLoading: false })
     expect(await store.waitForAuth()).toEqual({ isAuthenticated: false })
   })
 })
@@ -169,17 +158,15 @@ describe('waitForAuth — regression: stale promise after loading restart', () =
     const store = createAuthStore()
 
     // Initial auth: user is authenticated
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: true, isLoading: false })
     const initial = await store.waitForAuth()
     expect(initial).toEqual({ isAuthenticated: true })
 
     // Loading restarts (e.g. token refresh / re-auth)
-    store.isLoading = true
+    store.update({ isAuthenticated: store.isAuthenticated, isLoading: true })
 
     // Auth state changes during re-auth
-    store.isAuthenticated = false
-    store.isLoading = false
+    store.update({ isAuthenticated: false, isLoading: false })
 
     // With a single-shot (broken) implementation, waitForAuth() during
     // loading would return the old already-resolved promise with
@@ -193,20 +180,18 @@ describe('waitForAuth — regression: stale promise after loading restart', () =
     const store = createAuthStore()
 
     // Complete initial auth
-    store.isAuthenticated = true
-    store.isLoading = false
+    store.update({ isAuthenticated: true, isLoading: false })
     await store.waitForAuth()
 
     // Restart loading
-    store.isLoading = true
+    store.update({ isAuthenticated: store.isAuthenticated, isLoading: true })
 
     // Start waiting — with single-shot, this would resolve immediately
     // with the stale { isAuthenticated: true } from the first resolution.
     const waitPromise = store.waitForAuth()
 
     // Auth resolves differently this time
-    store.isAuthenticated = false
-    store.isLoading = false
+    store.update({ isAuthenticated: false, isLoading: false })
 
     const result = await waitPromise
     // Multi-shot: correctly returns the new value

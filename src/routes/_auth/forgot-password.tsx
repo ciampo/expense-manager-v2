@@ -112,9 +112,7 @@ function ForgotPasswordPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {step === 'email' ? 'Forgot password?' : 'Reset password'}
-        </CardTitle>
+        <CardTitle>{step === 'email' ? 'Forgot password?' : 'Reset password'}</CardTitle>
         <CardDescription>
           {step === 'email'
             ? "Enter your email and we'll send you a verification code"
@@ -155,10 +153,7 @@ function ForgotPasswordPage() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Sending...' : 'Send verification code'}
             </Button>
-            <Link
-              to="/sign-in"
-              className="text-sm text-primary underline hover:text-primary/80"
-            >
+            <Link to="/sign-in" className="text-sm text-primary underline hover:text-primary/80">
               Back to sign in
             </Link>
           </CardFooter>
@@ -220,17 +215,11 @@ function ForgotPasswordPage() {
                 minLength={8}
                 disabled={isLoading}
                 autoComplete="new-password"
-                aria-describedby={
-                  errors.confirmPassword ? 'confirm-password-error' : undefined
-                }
+                aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
                 aria-invalid={!!errors.confirmPassword}
               />
               {errors.confirmPassword && (
-                <p
-                  id="confirm-password-error"
-                  role="alert"
-                  className="text-sm text-destructive"
-                >
+                <p id="confirm-password-error" role="alert" className="text-sm text-destructive">
                   {errors.confirmPassword}
                 </p>
               )}

@@ -132,7 +132,10 @@ function SignInPage() {
           </form.Field>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <FieldError errors={serverError ? [{ message: serverError }] : undefined} className="text-center" />
+          <FieldError
+            errors={serverError ? [{ message: serverError }] : undefined}
+            className="text-center"
+          />
           <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
             {form.state.isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>

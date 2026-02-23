@@ -5,9 +5,7 @@ test.describe('Landing Page', () => {
     await page.goto('/')
 
     // Check main heading
-    await expect(page.getByRole('heading', { level: 2 })).toContainText(
-      'Manage your work expenses'
-    )
+    await expect(page.getByRole('heading', { level: 2 })).toContainText('Manage your work expenses')
 
     // Check navigation buttons in main content
     const main = page.getByRole('main')

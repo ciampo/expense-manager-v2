@@ -28,12 +28,7 @@ describe('FieldError', () => {
 
   it('renders multiple unique errors as a list', () => {
     render(
-      <FieldError
-        errors={[
-          { message: 'Too short.' },
-          { message: 'Must contain a number.' },
-        ]}
-      />,
+      <FieldError errors={[{ message: 'Too short.' }, { message: 'Must contain a number.' }]} />,
     )
 
     const alert = screen.getByRole('alert')
@@ -46,11 +41,7 @@ describe('FieldError', () => {
   it('deduplicates errors with identical messages', () => {
     render(
       <FieldError
-        errors={[
-          { message: 'Required.' },
-          { message: 'Required.' },
-          { message: 'Required.' },
-        ]}
+        errors={[{ message: 'Required.' }, { message: 'Required.' }, { message: 'Required.' }]}
       />,
     )
 
@@ -79,13 +70,7 @@ describe('FieldError', () => {
   })
 
   it('passes through id and className', () => {
-    render(
-      <FieldError
-        id="email-error"
-        className="text-center"
-        errors={[{ message: 'Bad' }]}
-      />,
-    )
+    render(<FieldError id="email-error" className="text-center" errors={[{ message: 'Bad' }]} />)
 
     const alert = screen.getByRole('alert')
     expect(alert.id).toBe('email-error')

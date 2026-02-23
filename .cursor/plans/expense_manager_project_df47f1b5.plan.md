@@ -6,25 +6,25 @@ todos:
     content: Initialize TanStack Start project with pnpm, install dependencies, configure Cloudflare
     status: in_progress
   - id: convex-setup
-    content: "Set up Convex: schema (expenses, categories), auth config, seed predefined categories"
+    content: 'Set up Convex: schema (expenses, categories), auth config, seed predefined categories'
     status: pending
   - id: auth-ui
-    content: "Build authentication: sign-up page, sign-in page, protected route layout"
+    content: 'Build authentication: sign-up page, sign-in page, protected route layout'
     status: pending
   - id: dashboard
-    content: "Build dashboard: expense table with TanStack Table, sorting, navigation to edit"
+    content: 'Build dashboard: expense table with TanStack Table, sorting, navigation to edit'
     status: pending
   - id: expense-form
-    content: "Build expense form: add/edit page, file upload, category selection"
+    content: 'Build expense form: add/edit page, file upload, category selection'
     status: pending
   - id: reports
-    content: "Build reports page: month selector, CSV export, ZIP attachment download"
+    content: 'Build reports page: month selector, CSV export, ZIP attachment download'
     status: pending
   - id: testing
-    content: "Set up testing: Vitest browser mode, Playwright E2E, visual regression with Docker"
+    content: 'Set up testing: Vitest browser mode, Playwright E2E, visual regression with Docker'
     status: pending
   - id: ci-cd
-    content: "Configure GitHub Actions: test on push/PR, deploy to Cloudflare, preview deployments"
+    content: 'Configure GitHub Actions: test on push/PR, deploy to Cloudflare, preview deployments'
     status: pending
 isProject: false
 ---
@@ -135,33 +135,32 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 File: `convex/schema.ts`
 
 ```typescript
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
+import { defineSchema, defineTable } from 'convex/server'
+import { v } from 'convex/values'
+import { authTables } from '@convex-dev/auth/server'
 
 export default defineSchema({
   ...authTables,
 
   expenses: defineTable({
-    userId: v.id("users"),
-    date: v.string(),           // ISO date string
+    userId: v.id('users'),
+    date: v.string(), // ISO date string
     merchant: v.string(),
-    amount: v.number(),         // cents to avoid floating point issues
-    categoryId: v.id("categories"),
-    attachmentId: v.optional(v.id("_storage")),
+    amount: v.number(), // cents to avoid floating point issues
+    categoryId: v.id('categories'),
+    attachmentId: v.optional(v.id('_storage')),
     comment: v.optional(v.string()),
     createdAt: v.number(),
   })
-    .index("by_user", ["userId"])
-    .index("by_user_and_date", ["userId", "date"]),
+    .index('by_user', ['userId'])
+    .index('by_user_and_date', ['userId', 'date']),
 
   categories: defineTable({
     name: v.string(),
-    userId: v.optional(v.id("users")), // null = predefined, set = user custom
+    userId: v.optional(v.id('users')), // null = predefined, set = user custom
     icon: v.optional(v.string()),
-  })
-    .index("by_user", ["userId"]),
-});
+  }).index('by_user', ['userId']),
+})
 ```
 
 ### 2.2 Predefined Categories (Seed Data)
@@ -312,9 +311,7 @@ export default defineConfig({
     port: 3000,
     reuseExistingServer: !process.env.CI,
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 })
 ```
 

@@ -1,8 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import {
-  extensionFromContentType,
-  promiseAllSettledPooled,
-} from '@/lib/download-utils'
+import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 
 describe('extensionFromContentType', () => {
   it('returns .jpg for image/jpeg', () => {
@@ -92,9 +89,7 @@ describe('promiseAllSettledPooled', () => {
     ]
     const results = await promiseAllSettledPooled(tasks, 5)
     expect(results[0]).toEqual({ status: 'fulfilled', value: 'ok' })
-    expect(results[1]).toEqual(
-      expect.objectContaining({ status: 'rejected' })
-    )
+    expect(results[1]).toEqual(expect.objectContaining({ status: 'rejected' }))
     expect((results[1] as PromiseRejectedResult).reason).toBeInstanceOf(Error)
     expect(results[2]).toEqual({ status: 'fulfilled', value: 'also ok' })
   })
@@ -138,10 +133,7 @@ describe('promiseAllSettledPooled', () => {
   it('warns and returns empty array for non-positive limit', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    const results = await promiseAllSettledPooled(
-      [() => Promise.resolve('should not run')],
-      0
-    )
+    const results = await promiseAllSettledPooled([() => Promise.resolve('should not run')], 0)
     expect(results).toEqual([])
     expect(warnSpy).toHaveBeenCalledOnce()
 
@@ -151,10 +143,7 @@ describe('promiseAllSettledPooled', () => {
   it('warns and returns empty array for negative limit', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    const results = await promiseAllSettledPooled(
-      [() => Promise.resolve('x')],
-      -1
-    )
+    const results = await promiseAllSettledPooled([() => Promise.resolve('x')], -1)
     expect(results).toEqual([])
     expect(warnSpy).toHaveBeenCalledOnce()
 

@@ -22,7 +22,7 @@ export default function globalTeardown() {
   if (!process.env.CONVEX_DEPLOY_KEY) {
     console.warn(
       '[global-teardown] CONVEX_DEPLOY_KEY not set — skipping test data cleanup. ' +
-        'Add it to .env.e2e or export it to clean up after local E2E runs.'
+        'Add it to .env.e2e or export it to clean up after local E2E runs.',
     )
     return
   }

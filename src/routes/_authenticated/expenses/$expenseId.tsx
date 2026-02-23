@@ -28,9 +28,7 @@ function EditExpensePage() {
 }
 
 function EditExpenseForm({ expenseId }: { expenseId: Id<'expenses'> }) {
-  const { data: expense } = useSuspenseQuery(
-    convexQuery(api.expenses.get, { id: expenseId })
-  )
+  const { data: expense } = useSuspenseQuery(convexQuery(api.expenses.get, { id: expenseId }))
 
   if (!expense) {
     return (
