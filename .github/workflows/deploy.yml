@@ -13,7 +13,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
         env:
           VITE_CONVEX_URL: ${{ secrets.CONVEX_PROD_URL }}
