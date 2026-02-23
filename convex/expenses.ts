@@ -97,7 +97,7 @@ export const create = mutation({
       throw new Error('Not authenticated')
     }
 
-    validateExpenseFields(args)
+    const { date, merchant, amount, comment } = validateExpenseFields(args)
     await verifyCategoryAccess(ctx, args.categoryId, userId)
 
     // Verify the user owns the uploaded file
@@ -107,13 +107,12 @@ export const create = mutation({
 
     const expenseId = await ctx.db.insert('expenses', {
       userId,
-      date: args.date,
-      merchant: args.merchant.trim(),
-      amount: args.amount,
+      date,
+      merchant,
+      amount,
       categoryId: args.categoryId,
       attachmentId: args.attachmentId,
-      // Empty/whitespace-only comments are stored as undefined (absent)
-      comment: args.comment?.trim() || undefined,
+      comment,
       createdAt: Date.now(),
     })
 
@@ -145,7 +144,7 @@ export const update = mutation({
       throw new Error('Expense not found')
     }
 
-    validateExpenseFields(args)
+    const { date, merchant, amount, comment } = validateExpenseFields(args)
     await verifyCategoryAccess(ctx, args.categoryId, userId)
 
     // If the attachment is changing, verify the user owns the new upload
@@ -166,13 +165,12 @@ export const update = mutation({
     }
 
     await ctx.db.patch(args.id, {
-      date: args.date,
-      merchant: args.merchant.trim(),
-      amount: args.amount,
+      date,
+      merchant,
+      amount,
       categoryId: args.categoryId,
       attachmentId: args.attachmentId,
-      // Empty/whitespace-only comments are stored as undefined (absent)
-      comment: args.comment?.trim() || undefined,
+      comment,
     })
 
     return args.id
