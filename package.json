@@ -100,7 +100,7 @@
     "wrangler": "^4.61.0"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
+    "*.{js,ts,tsx}": [
       "eslint --fix",
       "prettier --write"
     ],
