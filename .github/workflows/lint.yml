@@ -1,4 +1,4 @@
-name: Type Check
+name: Lint
 on:
   push:
     branches: [main]
@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  typecheck:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,4 +19,5 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: tsc --noEmit
+      - run: pnpm lint
+      - run: pnpm format:check

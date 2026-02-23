@@ -21,10 +21,7 @@ const CLEANUP_BATCH_SIZE = 100
 /**
  * Return the single `uploads` record for a storageId, or `null`.
  */
-async function getUploadRecord(
-  ctx: { db: QueryCtx['db'] },
-  storageId: Id<'_storage'>,
-) {
+async function getUploadRecord(ctx: { db: QueryCtx['db'] }, storageId: Id<'_storage'>) {
   return ctx.db
     .query('uploads')
     .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
@@ -35,10 +32,7 @@ async function getUploadRecord(
  * Return `true` if any expense — regardless of owner — references the
  * given storageId.
  */
-async function isFileReferencedByExpense(
-  ctx: { db: QueryCtx['db'] },
-  storageId: Id<'_storage'>,
-) {
+async function isFileReferencedByExpense(ctx: { db: QueryCtx['db'] }, storageId: Id<'_storage'>) {
   const expense = await ctx.db
     .query('expenses')
     .withIndex('by_attachment', (q) => q.eq('attachmentId', storageId))
@@ -132,9 +126,7 @@ export const confirmUpload = mutation({
     // (covers pre-existing data that predates the uploads table)
     const existingExpense = await ctx.db
       .query('expenses')
-      .withIndex('by_attachment', (q) =>
-        q.eq('attachmentId', args.storageId),
-      )
+      .withIndex('by_attachment', (q) => q.eq('attachmentId', args.storageId))
       .first()
 
     if (existingExpense && existingExpense.userId !== userId) {
@@ -270,10 +262,7 @@ export const cleanupOrphanedUploads = internalMutation({
           await ctx.storage.delete(upload.storageId)
           deletedFiles++
         } catch (err) {
-          console.warn(
-            `Cleanup: could not delete storage file ${upload.storageId}:`,
-            err,
-          )
+          console.warn(`Cleanup: could not delete storage file ${upload.storageId}:`, err)
         }
         await ctx.db.delete(upload._id)
       }
@@ -301,10 +290,7 @@ export const cleanupOrphanedUploads = internalMutation({
         await ctx.storage.delete(file._id)
         deletedFiles++
       } catch (err) {
-        console.warn(
-          `Cleanup: could not delete untracked file ${file._id}:`,
-          err,
-        )
+        console.warn(`Cleanup: could not delete untracked file ${file._id}:`, err)
       }
     }
 

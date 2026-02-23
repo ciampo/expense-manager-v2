@@ -10,9 +10,7 @@ async function runAxeAudit(page: Page) {
 // ── Public pages ──────────────────────────────────────────────
 
 test.describe('Accessibility Audit — Public Pages', () => {
-  test('landing page should have no accessibility violations', async ({
-    page,
-  }) => {
+  test('landing page should have no accessibility violations', async ({ page }) => {
     await page.goto('/')
     // Wait for the hero heading to confirm the page has rendered
     await page.getByRole('heading', { name: /expense manager/i }).waitFor()
@@ -21,9 +19,7 @@ test.describe('Accessibility Audit — Public Pages', () => {
     expect(results.violations).toEqual([])
   })
 
-  test('sign-in page should have no accessibility violations', async ({
-    page,
-  }) => {
+  test('sign-in page should have no accessibility violations', async ({ page }) => {
     await page.goto('/sign-in')
     await page.getByRole('heading', { name: /sign in/i }).waitFor()
 
@@ -31,9 +27,7 @@ test.describe('Accessibility Audit — Public Pages', () => {
     expect(results.violations).toEqual([])
   })
 
-  test('sign-up page should have no accessibility violations', async ({
-    page,
-  }) => {
+  test('sign-up page should have no accessibility violations', async ({ page }) => {
     await page.goto('/sign-up')
     await page.getByRole('heading', { name: /sign up/i }).waitFor()
 
@@ -41,9 +35,7 @@ test.describe('Accessibility Audit — Public Pages', () => {
     expect(results.violations).toEqual([])
   })
 
-  test('forgot-password page should have no accessibility violations', async ({
-    page,
-  }) => {
+  test('forgot-password page should have no accessibility violations', async ({ page }) => {
     await page.goto('/forgot-password')
     await page.getByRole('heading', { name: /forgot password/i }).waitFor()
 
@@ -63,9 +55,7 @@ test.describe('Accessibility Audit — Public Pages', () => {
     expect(href).toBe('#main-content')
   })
 
-  test('landing page header should contain a nav landmark', async ({
-    page,
-  }) => {
+  test('landing page header should contain a nav landmark', async ({ page }) => {
     await page.goto('/')
 
     const nav = page.locator('header nav')
@@ -122,7 +112,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
       throw new Error(
         `Sign-up did not redirect to /dashboard. ` +
           `Stuck on: ${url}. ` +
-          `Page content: ${bodyText.slice(0, 500)}`
+          `Page content: ${bodyText.slice(0, 500)}`,
       )
     }
     // Wait for the authenticated layout to fully render (nav is only in the
@@ -130,16 +120,12 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     await page.locator('header nav').waitFor()
   })
 
-  test('dashboard should have no accessibility violations', async ({
-    page,
-  }) => {
+  test('dashboard should have no accessibility violations', async ({ page }) => {
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
   })
 
-  test('new expense page should have no accessibility violations', async ({
-    page,
-  }) => {
+  test('new expense page should have no accessibility violations', async ({ page }) => {
     await page.goto('/expenses/new')
     // Wait for the expense form to render
     await page.getByRole('button', { name: /create expense/i }).waitFor()
@@ -148,9 +134,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     expect(results.violations).toEqual([])
   })
 
-  test('reports page should have no accessibility violations', async ({
-    page,
-  }) => {
+  test('reports page should have no accessibility violations', async ({ page }) => {
     await page.goto('/reports')
     // Wait for the authenticated layout to fully render (nav is only in the
     // real layout, not in the pendingComponent skeleton).
@@ -160,9 +144,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
     expect(results.violations).toEqual([])
   })
 
-  test('authenticated layout should have a nav landmark', async ({
-    page,
-  }) => {
+  test('authenticated layout should have a nav landmark', async ({ page }) => {
     const nav = page.locator('header nav')
     await expect(nav).toHaveCount(1)
   })

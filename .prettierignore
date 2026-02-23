@@ -1,0 +1,9 @@
+dist/
+.output/
+.vinxi/
+.tanstack/
+.wrangler/
+.convex/
+convex/_generated/
+src/routeTree.gen.ts
+pnpm-lock.yaml

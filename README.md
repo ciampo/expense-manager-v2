@@ -32,6 +32,7 @@ A modern expense management application for tracking work-related expenses, buil
 ### Setup
 
 1. Clone the repository:
+
    ```bash
    git clone <repo-url>
    cd expense-manager-v2
@@ -44,24 +45,29 @@ A modern expense management application for tracking work-related expenses, buil
    - Copy the deployment URL
 
 3. Set up environment variables:
+
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your Convex URL
    ```
 
 4. Start Convex development server (leave this running):
+
    ```bash
    npx convex dev
    ```
 
 5. Open a **new terminal** and configure authentication keys (run once per deployment):
+
    ```bash
    npx @convex-dev/auth
    ```
+
    When prompted for the **site URL**, enter `http://localhost:3000`.
    This sets `JWT_PRIVATE_KEY` and `JWKS` on your Convex deployment.
 
 6. Seed the predefined categories (run once, same terminal as step 5):
+
    ```bash
    npx convex run seed:seedCategories
    ```
@@ -77,16 +83,16 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ### Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start development server |
-| `pnpm build` | Build for production |
-| `pnpm test` | Run all tests |
-| `pnpm test:unit` | Run unit tests |
-| `pnpm test:e2e` | Run E2E tests |
-| `pnpm test:visual:docker` | Run visual regression tests in Docker |
-| `pnpm test:visual:docker:update` | Update visual regression baselines |
-| `pnpm deploy` | Deploy to Cloudflare Workers |
+| Command                          | Description                           |
+| -------------------------------- | ------------------------------------- |
+| `pnpm dev`                       | Start development server              |
+| `pnpm build`                     | Build for production                  |
+| `pnpm test`                      | Run all tests                         |
+| `pnpm test:unit`                 | Run unit tests                        |
+| `pnpm test:e2e`                  | Run E2E tests                         |
+| `pnpm test:visual:docker`        | Run visual regression tests in Docker |
+| `pnpm test:visual:docker:update` | Update visual regression baselines    |
+| `pnpm deploy`                    | Deploy to Cloudflare Workers          |
 
 ### Project Structure
 
@@ -171,11 +177,11 @@ pnpm test:visual:docker:update
 
 The project uses two Convex **projects**, each with its own development and production **deployments**:
 
-| Convex Project | Deployment Used | Purpose | URL configured via |
-|----------------|----------------|---------|-------------------|
-| `expense-manager` | development | Local dev (`pnpm dev`) | `.env.local` → `VITE_CONVEX_URL` |
-| `expense-manager` | production | Live app (deployed from `main`) | GitHub secret `CONVEX_PROD_URL` |
-| `expense-manager-test` | production | E2E and visual regression tests | `.env.e2e` → `VITE_CONVEX_URL`, GitHub secret `CONVEX_TEST_URL` |
+| Convex Project         | Deployment Used | Purpose                         | URL configured via                                              |
+| ---------------------- | --------------- | ------------------------------- | --------------------------------------------------------------- |
+| `expense-manager`      | development     | Local dev (`pnpm dev`)          | `.env.local` → `VITE_CONVEX_URL`                                |
+| `expense-manager`      | production      | Live app (deployed from `main`) | GitHub secret `CONVEX_PROD_URL`                                 |
+| `expense-manager-test` | production      | E2E and visual regression tests | `.env.e2e` → `VITE_CONVEX_URL`, GitHub secret `CONVEX_TEST_URL` |
 
 > **Why production deployments?** Deploy keys (needed for non-interactive CLI commands like seed, cleanup, and `npx convex deploy`) only work with production deployments. The "production" label is Convex terminology — it doesn't mean it's your live app, just the stable, CLI-accessible deployment.
 
@@ -205,6 +211,7 @@ This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respecti
 ### Cloudflare Workers
 
 1. Login to Cloudflare:
+
    ```bash
    pnpm dlx wrangler login
    ```
@@ -226,14 +233,14 @@ The project includes GitHub Actions workflows for:
 
 Configure these GitHub Actions secrets:
 
-| Secret | Description |
-|--------|-------------|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API token |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
-| `CONVEX_PROD_URL` | `expense-manager` project → **production** deployment URL |
-| `CONVEX_DEV_URL` | `expense-manager` project → **development** deployment URL (for PR previews) |
-| `CONVEX_TEST_URL` | `expense-manager-test` project → **production** deployment URL |
-| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key |
+| Secret                   | Description                                                                  |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`   | Cloudflare API token                                                         |
+| `CLOUDFLARE_ACCOUNT_ID`  | Cloudflare account ID                                                        |
+| `CONVEX_PROD_URL`        | `expense-manager` project → **production** deployment URL                    |
+| `CONVEX_DEV_URL`         | `expense-manager` project → **development** deployment URL (for PR previews) |
+| `CONVEX_TEST_URL`        | `expense-manager-test` project → **production** deployment URL               |
+| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key                   |
 
 ## Backend Security & Validation
 
@@ -248,6 +255,7 @@ File attachments go through a tracked ownership flow:
 5. `deleteFile` verifies ownership via the expenses table before deleting
 
 A daily cron job (`crons.ts`, 3:00 AM UTC) cleans up orphaned files in two passes:
+
 - **Tracked orphans**: upload records older than 24 h with no matching expense (any user)
 - **Untracked orphans**: storage files with no upload record and no expense reference (e.g. `confirmUpload` failed)
 
@@ -255,12 +263,12 @@ A daily cron job (`crons.ts`, 3:00 AM UTC) cleans up orphaned files in two passe
 
 All expense mutations (`create`, `update`) validate fields server-side:
 
-| Field | Rules |
-|-------|-------|
-| `date` | Must be a valid `YYYY-MM-DD` calendar date (e.g. `2026-02-30` is rejected) |
-| `amount` | Must be a positive integer (EUR cents) — `Number.isInteger` check |
-| `merchant` | Required after trimming, max 200 characters |
-| `comment` | Optional, max 1000 characters after trimming; empty → stored as absent |
+| Field      | Rules                                                                      |
+| ---------- | -------------------------------------------------------------------------- |
+| `date`     | Must be a valid `YYYY-MM-DD` calendar date (e.g. `2026-02-30` is rejected) |
+| `amount`   | Must be a positive integer (EUR cents) — `Number.isInteger` check          |
+| `merchant` | Required after trimming, max 200 characters                                |
+| `comment`  | Optional, max 1000 characters after trimming; empty → stored as absent     |
 
 ### Authorization
 

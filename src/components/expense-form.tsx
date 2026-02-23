@@ -8,11 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar } from '@/components/ui/calendar'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Command,
   CommandEmpty,
@@ -54,7 +50,13 @@ import { enUS } from 'date-fns/locale'
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+const ACCEPTED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+]
 
 interface ExpenseFormProps {
   expense?: {
@@ -71,7 +73,7 @@ interface ExpenseFormProps {
 
 export function ExpenseFormSkeleton() {
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="max-w-2xl space-y-6">
       <div className="space-y-2">
         <Skeleton className="h-4 w-16" />
         <Skeleton className="h-10 w-full" />
@@ -99,7 +101,7 @@ export function ExpenseFormSkeleton() {
 
 function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
   const { data: url, isLoading } = useQuery(
-    convexQuery(api.storage.getUrl, { storageId: attachmentId })
+    convexQuery(api.storage.getUrl, { storageId: attachmentId }),
   )
   const [isImage, setIsImage] = useState(true)
 
@@ -108,7 +110,7 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
   }
 
   if (!url) {
-    return <p className="text-sm text-muted-foreground">Attachment not available</p>
+    return <p className="text-muted-foreground text-sm">Attachment not available</p>
   }
 
   return (
@@ -127,7 +129,7 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+          className="text-primary inline-flex items-center gap-2 text-sm hover:underline"
         >
           <span aria-hidden="true">📄</span> View PDF attachment
         </a>
@@ -138,7 +140,7 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
 
 export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const navigate = useNavigate()
-  
+
   // Fetch data
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
   const { data: merchants } = useSuspenseQuery(convexQuery(api.expenses.getMerchants, {}))
@@ -149,11 +151,15 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const [amount, setAmount] = useState(expense ? centsToInputValue(expense.amount) : '')
   const [categoryId, setCategoryId] = useState<Id<'categories'> | null>(expense?.categoryId || null)
   const [comment, setComment] = useState(expense?.comment || '')
-  const [attachmentId, setAttachmentId] = useState<Id<'_storage'> | undefined>(expense?.attachmentId)
+  const [attachmentId, setAttachmentId] = useState<Id<'_storage'> | undefined>(
+    expense?.attachmentId,
+  )
   const [newCategoryName, setNewCategoryName] = useState('')
-  
+
   // Validation errors
-  const [errors, setErrors] = useState<{ category?: string; amount?: string; merchant?: string }>({})
+  const [errors, setErrors] = useState<{ category?: string; amount?: string; merchant?: string }>(
+    {},
+  )
 
   // UI state
   const [isDateOpen, setIsDateOpen] = useState(false)
@@ -229,47 +235,50 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   })
 
   // File upload handler
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
 
-    // Validate file type
-    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-      toast.error('Unsupported file type. Use images or PDF.')
-      return
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error('File too large. Maximum 10MB.')
-      return
-    }
-
-    setIsUploading(true)
-    try {
-      const uploadUrl = await generateUploadUrlAsync({})
-      
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      })
-
-      if (!response.ok) {
-        throw new Error('Upload failed')
+      // Validate file type
+      if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+        toast.error('Unsupported file type. Use images or PDF.')
+        return
       }
 
-      const { storageId } = await response.json()
-      // Register ownership so getUrl/expense mutations can verify it
-      await confirmUploadAsync({ storageId })
-      setAttachmentId(storageId)
-      toast.success('File uploaded')
-    } catch {
-      toast.error('Error uploading file')
-    } finally {
-      setIsUploading(false)
-    }
-  }, [generateUploadUrlAsync, confirmUploadAsync])
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error('File too large. Maximum 10MB.')
+        return
+      }
+
+      setIsUploading(true)
+      try {
+        const uploadUrl = await generateUploadUrlAsync({})
+
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        })
+
+        if (!response.ok) {
+          throw new Error('Upload failed')
+        }
+
+        const { storageId } = await response.json()
+        // Register ownership so getUrl/expense mutations can verify it
+        await confirmUploadAsync({ storageId })
+        setAttachmentId(storageId)
+        toast.success('File uploaded')
+      } catch {
+        toast.error('Error uploading file')
+      } finally {
+        setIsUploading(false)
+      }
+    },
+    [generateUploadUrlAsync, confirmUploadAsync],
+  )
 
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {
@@ -343,7 +352,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const selectedDate = date ? parseLocalDate(date) : undefined
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       {/* Date */}
       <div className="space-y-2">
         <Label htmlFor="date-picker">Date</Label>
@@ -434,7 +443,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           </PopoverContent>
         </Popover>
         {errors.merchant && (
-          <p id="merchant-error" role="alert" className="text-sm text-destructive">
+          <p id="merchant-error" role="alert" className="text-destructive text-sm">
             {errors.merchant}
           </p>
         )}
@@ -501,27 +510,30 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                       {category.icon && <span className="mr-2">{category.icon}</span>}
                       {category.name}
                       {category.isPredefined && (
-                        <span className="ml-auto text-xs text-muted-foreground">predefined</span>
+                        <span className="text-muted-foreground ml-auto text-xs">predefined</span>
                       )}
                     </CommandItem>
                   ))}
                 </CommandGroup>
-                {newCategoryName && !categories?.some(c => c.name.toLowerCase() === newCategoryName.toLowerCase()) && (
-                  <>
-                    <CommandSeparator />
-                    <CommandGroup>
-                      <CommandItem onSelect={handleCreateCategory}>
-                        + Create &quot;{newCategoryName}&quot;
-                      </CommandItem>
-                    </CommandGroup>
-                  </>
-                )}
+                {newCategoryName &&
+                  !categories?.some(
+                    (c) => c.name.toLowerCase() === newCategoryName.toLowerCase(),
+                  ) && (
+                    <>
+                      <CommandSeparator />
+                      <CommandGroup>
+                        <CommandItem onSelect={handleCreateCategory}>
+                          + Create &quot;{newCategoryName}&quot;
+                        </CommandItem>
+                      </CommandGroup>
+                    </>
+                  )}
               </CommandList>
             </Command>
           </PopoverContent>
         </Popover>
         {errors.category && (
-          <p id="category-error" role="alert" className="text-sm text-destructive">
+          <p id="category-error" role="alert" className="text-destructive text-sm">
             {errors.category}
           </p>
         )}
@@ -547,12 +559,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           />
         </InputGroup>
         {amount && parseCurrencyToCents(amount) > 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {formatCurrency(parseCurrencyToCents(amount))}
           </p>
         )}
         {errors.amount && (
-          <p id="amount-error" role="alert" className="text-sm text-destructive">
+          <p id="amount-error" role="alert" className="text-destructive text-sm">
             {errors.amount}
           </p>
         )}
@@ -562,7 +574,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       <div className="space-y-2">
         <Label htmlFor="attachment-input">Attachment (optional)</Label>
         {attachmentId ? (
-          <div className="space-y-3 p-3 border rounded-md">
+          <div className="space-y-3 rounded-md border p-3">
             <AttachmentPreview attachmentId={attachmentId} />
             <AlertDialog open={showDeleteAttachment} onOpenChange={setShowDeleteAttachment}>
               <AlertDialogTrigger
@@ -600,10 +612,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             disabled={isUploading}
           />
         )}
-        {isUploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
-        <p className="text-xs text-muted-foreground">
-          Images or PDF, maximum 10MB
-        </p>
+        {isUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
+        <p className="text-muted-foreground text-xs">Images or PDF, maximum 10MB</p>
       </div>
 
       {/* Comment */}
@@ -621,11 +631,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       {/* Actions */}
       <div className="flex gap-4">
         <Button type="submit" disabled={isLoading}>
-          {isLoading
-            ? 'Saving...'
-            : mode === 'create'
-              ? 'Create expense'
-              : 'Save changes'}
+          {isLoading ? 'Saving...' : mode === 'create' ? 'Create expense' : 'Save changes'}
         </Button>
         <Button type="button" variant="outline" onClick={() => navigate({ to: '/dashboard' })}>
           Cancel
@@ -634,9 +640,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         {mode === 'edit' && expense && (
           <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
             <AlertDialogTrigger
-              render={
-                <Button type="button" variant="destructive" className="ml-auto" />
-              }
+              render={<Button type="button" variant="destructive" className="ml-auto" />}
             >
               Delete
             </AlertDialogTrigger>
@@ -644,8 +648,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. The expense and any attachment
-                  will be permanently deleted.
+                  This action cannot be undone. The expense and any attachment will be permanently
+                  deleted.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

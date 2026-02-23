@@ -3,9 +3,7 @@
  * @param cents - Amount in cents (e.g., 1250 = €12.50)
  */
 export const formatCurrency = (cents: number): string =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(
-    cents / 100
-  )
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 
 /**
  * Parse a YYYY-MM-DD string as a **local** date.
@@ -28,11 +26,7 @@ export function parseLocalDate(isoDate: string): Date {
   const date = new Date(year, month - 1, day)
 
   // Verify that Date didn't normalize an invalid date (e.g. 2024-02-30 → 2024-03-01)
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() + 1 !== month ||
-    date.getDate() !== day
-  ) {
+  if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
     return new Date(NaN)
   }
 

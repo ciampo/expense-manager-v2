@@ -1,3 +1,6 @@
+// This file is a router factory (getRouter), not a React component module,
+// so the react-refresh fast-refresh warning does not apply.
+/* eslint-disable react-refresh/only-export-components */
 import { createRouter } from '@tanstack/react-router'
 import { QueryClient } from '@tanstack/react-query'
 import { routerWithQueryClient } from '@tanstack/react-router-with-query'
@@ -33,11 +36,10 @@ function AuthBridge({ authStore }: { authStore: AuthStore }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
 
   // Eagerly update the store during render so beforeLoad always reads
-  // current values. Order matters: isAuthenticated must be set before
+  // current values. The update method sets isAuthenticated before
   // isLoading, because the isLoading setter resolves the waitForAuth()
-  // promise which reads _isAuthenticated at resolution time.
-  authStore.isAuthenticated = isAuthenticated
-  authStore.isLoading = isLoading
+  // promise which reads isAuthenticated at resolution time.
+  authStore.update({ isAuthenticated, isLoading })
 
   // When auth state settles, tell the router to re-run its beforeLoad
   // guards. This triggers automatic redirects (e.g. _auth → /dashboard
@@ -57,7 +59,7 @@ export function getRouter() {
   if (!CONVEX_URL) {
     throw new Error(
       'Missing required environment variable VITE_CONVEX_URL. ' +
-      'See docs/ENVIRONMENT_VARIABLES.md for setup instructions.'
+        'See docs/ENVIRONMENT_VARIABLES.md for setup instructions.',
     )
   }
 

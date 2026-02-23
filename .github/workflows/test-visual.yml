@@ -7,6 +7,10 @@ on:
 env:
   VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   visual:
     runs-on: ubuntu-latest
@@ -19,7 +23,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm test:visual
       - uses: actions/upload-artifact@v4
         if: failure()

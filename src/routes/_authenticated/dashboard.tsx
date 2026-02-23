@@ -35,14 +35,12 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 function DashboardPage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Manage your expenses</p>
         </div>
-        <Button render={<Link to="/expenses/new" />}>
-          + New expense
-        </Button>
+        <Button render={<Link to="/expenses/new" />}>+ New expense</Button>
       </div>
 
       <Suspense fallback={<TableSkeleton />}>
@@ -79,13 +77,13 @@ function TableSkeleton() {
                 <Skeleton className="h-4 w-28" />
               </TableCell>
               <TableCell>
-                <Skeleton className="h-4 w-20 ml-auto" />
+                <Skeleton className="ml-auto h-4 w-20" />
               </TableCell>
               <TableCell>
                 <Skeleton className="h-4 w-8" />
               </TableCell>
               <TableCell>
-                <Skeleton className="h-8 w-20 ml-auto" />
+                <Skeleton className="ml-auto h-8 w-20" />
               </TableCell>
             </TableRow>
           ))}
@@ -99,7 +97,7 @@ function ExpenseTable() {
   const queryClient = useQueryClient()
   const { data: expenses } = useSuspenseQuery(convexQuery(api.expenses.list, {}))
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
-  
+
   const [deletingId, setDeletingId] = useState<Id<'expenses'> | null>(null)
 
   const expensesQueryKey = convexQuery(api.expenses.list, {}).queryKey
@@ -109,25 +107,21 @@ function ExpenseTable() {
     onMutate: async (args: { id: Id<'expenses'> }) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: expensesQueryKey })
-      
+
       // Snapshot current value
       const previousExpenses = queryClient.getQueryData(expensesQueryKey)
-      
+
       // Optimistically remove from cache
-      queryClient.setQueryData(
-        expensesQueryKey,
-        (old: typeof expenses) => old?.filter((e) => e._id !== args.id)
+      queryClient.setQueryData(expensesQueryKey, (old: typeof expenses) =>
+        old?.filter((e) => e._id !== args.id),
       )
-      
+
       return { previousExpenses }
     },
     onError: (_err, _args, context) => {
       // Rollback on error
       if (context?.previousExpenses) {
-        queryClient.setQueryData(
-          expensesQueryKey,
-          context.previousExpenses
-        )
+        queryClient.setQueryData(expensesQueryKey, context.previousExpenses)
       }
       toast.error('Error deleting expense')
     },
@@ -143,18 +137,14 @@ function ExpenseTable() {
 
   const categoryMap = useMemo(
     () => new Map(categories?.map((c) => [c._id, c.name]) || []),
-    [categories]
+    [categories],
   )
 
   if (!expenses || expenses.length === 0) {
     return (
       <div className="rounded-md border p-8 text-center">
-        <p className="text-muted-foreground mb-4">
-          You haven&apos;t recorded any expenses yet
-        </p>
-        <Button render={<Link to="/expenses/new" />}>
-          Add your first expense
-        </Button>
+        <p className="text-muted-foreground mb-4">You haven&apos;t recorded any expenses yet</p>
+        <Button render={<Link to="/expenses/new" />}>Add your first expense</Button>
       </div>
     )
   }
@@ -177,9 +167,7 @@ function ExpenseTable() {
             <TableRow key={expense._id}>
               <TableCell>{formatDate(expense.date)}</TableCell>
               <TableCell>{expense.merchant}</TableCell>
-              <TableCell>
-                {categoryMap.get(expense.categoryId) || 'N/A'}
-              </TableCell>
+              <TableCell>{categoryMap.get(expense.categoryId) || 'N/A'}</TableCell>
               <TableCell className="text-right font-medium">
                 {formatCurrency(expense.amount)}
               </TableCell>
@@ -198,20 +186,13 @@ function ExpenseTable() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={
-                      <Link
-                        to="/expenses/$expenseId"
-                        params={{ expenseId: expense._id }}
-                      />
-                    }
+                    render={<Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} />}
                   >
                     Edit
                   </Button>
                   <AlertDialog
                     open={deletingId === expense._id}
-                    onOpenChange={(open) =>
-                      setDeletingId(open ? expense._id : null)
-                    }
+                    onOpenChange={(open) => setDeletingId(open ? expense._id : null)}
                   >
                     <AlertDialogTrigger
                       render={
@@ -228,8 +209,8 @@ function ExpenseTable() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. The expense and any
-                          attachment will be permanently deleted.
+                          This action cannot be undone. The expense and any attachment will be
+                          permanently deleted.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

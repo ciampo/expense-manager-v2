@@ -12,11 +12,11 @@ The project uses [ShadCN UI](https://ui.shadcn.com) components (`src/components/
 
 **Why:** ShadCN components encapsulate consistent styling, accessibility attributes, focus management, and variant logic. Duplicating this with inline classes leads to drift, inconsistencies, and harder maintenance.
 
-| Instead of | Use |
-|---|---|
-| `<button className="inline-flex items-center ...">` | `<Button>` |
-| `<input className="...">` | `<Input>` |
-| Raw `<dialog>` or portal `<div>` | `<Dialog>` / `<Sheet>` |
+| Instead of                                          | Use                    |
+| --------------------------------------------------- | ---------------------- |
+| `<button className="inline-flex items-center ...">` | `<Button>`             |
+| `<input className="...">`                           | `<Input>`              |
+| Raw `<dialog>` or portal `<div>`                    | `<Dialog>` / `<Sheet>` |
 
 **Example — button:**
 

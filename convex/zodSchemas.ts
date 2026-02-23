@@ -20,11 +20,7 @@ export function isValidCalendarDate(dateStr: string): boolean {
   if (!DATE_REGEX.test(dateStr)) return false
   const [year, month, day] = dateStr.split('-').map(Number)
   const date = new Date(year, month - 1, day)
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  )
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
 }
 
 const GRAPHEME_SEGMENTER = new Intl.Segmenter(undefined, {
@@ -65,11 +61,7 @@ export const expenseMerchantSchema = z
 export const expenseCommentSchema = z
   .string()
   .transform((s) => s.trim())
-  .pipe(
-    z
-      .string()
-      .max(1000, { message: 'Comment must be 1000 characters or less.' }),
-  )
+  .pipe(z.string().max(1000, { message: 'Comment must be 1000 characters or less.' }))
   .transform((s) => s || undefined)
   .optional()
 
@@ -93,12 +85,9 @@ export const categoryNameSchema = z
   .max(1000, { message: 'Category name must be 100 characters or less.' })
   .transform((s) => s.trim())
   .pipe(
-    z
-      .string()
-      .min(1, { message: 'Category name is required.' })
-      .max(100, {
-        message: 'Category name must be 100 characters or less.',
-      }),
+    z.string().min(1, { message: 'Category name is required.' }).max(100, {
+      message: 'Category name must be 100 characters or less.',
+    }),
   )
 
 /**

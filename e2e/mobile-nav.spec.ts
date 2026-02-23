@@ -25,9 +25,7 @@ test.describe('Mobile Navigation', () => {
     await page.waitForURL('**/dashboard', { timeout: 15000 })
   })
 
-  test('hamburger menu is visible and desktop nav is hidden on mobile', async ({
-    page,
-  }) => {
+  test('hamburger menu is visible and desktop nav is hidden on mobile', async ({ page }) => {
     // Hamburger button should be visible
     const hamburger = page.getByRole('button', { name: 'Open menu' })
     await expect(hamburger).toBeVisible()

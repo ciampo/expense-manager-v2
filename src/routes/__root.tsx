@@ -22,13 +22,11 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     <main
       id="main-content"
       tabIndex={-1}
-      className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center"
+      className="bg-background flex min-h-screen flex-col items-center justify-center px-4 text-center"
     >
-      <h1 className="text-6xl font-bold text-foreground">Error</h1>
-      <p className="mt-4 text-xl text-muted-foreground">
-        Something went wrong
-      </p>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+      <h1 className="text-foreground text-6xl font-bold">Error</h1>
+      <p className="text-muted-foreground mt-4 text-xl">Something went wrong</p>
+      <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
         {error.message || 'An unexpected error occurred.'}
       </p>
       <div className="mt-6 flex gap-4">
@@ -46,11 +44,11 @@ function NotFoundComponent() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center"
+      className="bg-background flex min-h-screen flex-col items-center justify-center px-4 text-center"
     >
-      <h1 className="text-6xl font-bold text-foreground">404</h1>
-      <p className="mt-4 text-xl text-muted-foreground">Page not found</p>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+      <h1 className="text-foreground text-6xl font-bold">404</h1>
+      <p className="text-muted-foreground mt-4 text-xl">Page not found</p>
+      <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
         The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
       <div className="mt-6">
@@ -116,10 +114,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className="bg-background min-h-screen font-sans antialiased">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-100 focus:p-4 focus:bg-background focus:text-foreground"
+          className="focus:bg-background focus:text-foreground sr-only focus:not-sr-only focus:absolute focus:z-100 focus:p-4"
         >
           Skip to content
         </a>

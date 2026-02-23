@@ -28,13 +28,11 @@ function EditExpensePage() {
 }
 
 function EditExpenseForm({ expenseId }: { expenseId: Id<'expenses'> }) {
-  const { data: expense } = useSuspenseQuery(
-    convexQuery(api.expenses.get, { id: expenseId })
-  )
+  const { data: expense } = useSuspenseQuery(convexQuery(api.expenses.get, { id: expenseId }))
 
   if (!expense) {
     return (
-      <div className="text-center py-8">
+      <div className="py-8 text-center">
         <p className="text-muted-foreground">Expense not found</p>
       </div>
     )
