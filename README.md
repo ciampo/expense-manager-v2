@@ -83,25 +83,34 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ### Scripts
 
-| Command                          | Description                           |
-| -------------------------------- | ------------------------------------- |
-| `pnpm dev`                       | Start development server              |
-| `pnpm build`                     | Build for production                  |
-| `pnpm test`                      | Run all tests                         |
-| `pnpm test:unit`                 | Run unit tests                        |
-| `pnpm test:e2e`                  | Run E2E tests                         |
-| `pnpm test:visual:docker`        | Run visual regression tests in Docker |
-| `pnpm test:visual:docker:update` | Update visual regression baselines    |
-| `pnpm deploy`                    | Deploy to Cloudflare Workers          |
+| Command                          | Description                               |
+| -------------------------------- | ----------------------------------------- |
+| `pnpm dev`                       | Start development server                  |
+| `pnpm dev:e2e`                   | Start dev server with E2E test config     |
+| `pnpm build`                     | Build for production (includes typecheck) |
+| `pnpm preview`                   | Preview production build locally          |
+| `pnpm deploy`                    | Build and deploy to Cloudflare Workers    |
+| `pnpm test`                      | Run all Vitest tests                      |
+| `pnpm test:unit`                 | Run unit tests only                       |
+| `pnpm test:e2e`                  | Run Playwright E2E tests                  |
+| `pnpm test:e2e:seed`             | Seed test data to E2E Convex project      |
+| `pnpm test:e2e:cleanup`          | Clean up E2E test data                    |
+| `pnpm test:visual:docker`        | Run visual regression tests in Docker     |
+| `pnpm test:visual:docker:update` | Update visual regression baselines        |
+| `pnpm lint`                      | Run ESLint                                |
+| `pnpm lint:fix`                  | Run ESLint with auto-fix                  |
+| `pnpm format`                    | Format code with Prettier                 |
+| `pnpm format:check`              | Check code formatting                     |
 
 ### Project Structure
 
 ```
 expense-manager-v2/
 ├── src/
+│   ├── __tests__/           # Unit tests (Vitest)
 │   ├── components/          # React components
 │   │   └── ui/              # ShadCN UI components
-│   ├── lib/                 # Utilities (format, etc.)
+│   ├── lib/                 # Utilities (format, schemas, etc.)
 │   └── routes/              # TanStack Router routes
 │       ├── _auth/           # Auth pages (sign-in, sign-up, etc.)
 │       └── _authenticated/  # Protected pages
@@ -113,7 +122,11 @@ expense-manager-v2/
 │   ├── reports.ts           # Report functions
 │   ├── storage.ts           # File storage + upload ownership tracking
 │   ├── validation.ts        # Pure validation helpers (date, amount, etc.)
-│   └── crons.ts             # Scheduled jobs (orphan upload cleanup)
+│   ├── zodSchemas.ts        # Zod schemas for form validation
+│   ├── seed.ts              # Seed and cleanup functions
+│   ├── crons.ts             # Scheduled jobs (orphan upload cleanup)
+│   └── http.ts              # HTTP routes (auth callbacks)
+├── docs/                    # Detailed setup and reference docs
 ├── e2e/                     # Playwright E2E tests
 ├── tests/
 │   └── visual/              # Visual regression tests
@@ -229,8 +242,11 @@ The project includes GitHub Actions workflows for:
 - **Unit Tests**: Run on every push/PR
 - **E2E Tests**: Run on every push/PR with test data seeding
 - **Visual Regression**: Run on every push/PR in Docker
+- **Lint**: Run ESLint and Prettier checks on every push/PR
+- **Type Check**: Run TypeScript type checking on every push/PR
 - **Deploy**: Auto-deploy to production on push to `main`
 - **Preview**: Deploy preview on every PR
+- **Update Screenshots**: Manually triggered workflow to update and commit visual regression baselines
 
 Configure these GitHub Actions secrets:
 
