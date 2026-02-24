@@ -31,7 +31,7 @@ A modern expense management application for tracking work-related expenses, buil
 
 ### Setup
 
-> **Quick start:** Run `pnpm setup` for a guided interactive walkthrough of steps 1 and 3–6 below (you still need to create the Convex project manually in step 2).
+> **Quick start:** Run `pnpm setup` for a guided interactive walkthrough — installs dependencies, sets up `.env.local`, and walks through steps 3–6 below. You still need to create the Convex project manually (step 2).
 
 1. Clone the repository:
 
@@ -153,7 +153,7 @@ pnpm test:unit
 
 E2E tests run against the **production deployment** of a dedicated Convex test project (separate from your dev project). See [Convex deployments](#convex) below for background on the project/deployment model.
 
-> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–7 below.
+> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–7 below (creates `.env.e2e`, validates credentials, deploys, prompts for the production URL, configures auth, and seeds data).
 
 1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
 2. Generate a deploy key: Dashboard → test project → Settings → Deploy Keys → Generate Deploy Key — select **production**
@@ -269,7 +269,7 @@ The project includes GitHub Actions workflows for:
 - **Lint**: Run ESLint and Prettier checks on every push/PR
 - **Type Check**: Run TypeScript type checking on every push/PR
 - **Deploy**: Auto-deploy Convex backend and Cloudflare Workers on push to `main`
-- **Preview**: Deploy preview on every PR
+- **Preview**: Deploy preview on every PR (automatically cleaned up when the PR is closed)
 - **Update Screenshots**: Manually triggered workflow to update and commit visual regression baselines
 
 Configure these GitHub Actions secrets:

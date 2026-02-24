@@ -6,13 +6,13 @@ This document lists all environment variables used in the Expense Manager projec
 
 ## Overview
 
-| Variable                | Location                   | Purpose                                     |
-| ----------------------- | -------------------------- | ------------------------------------------- |
-| `VITE_CONVEX_URL`       | `.env.local`, `.env.e2e`   | Convex backend URL                          |
-| `CONVEX_DEPLOY_KEY`     | `.env.e2e`, GitHub Secrets | Deploy/run functions on test Convex project |
-| `CLOUDFLARE_API_TOKEN`  | GitHub Secrets             | Deploy to Cloudflare Workers                |
-| `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets             | Cloudflare account identifier               |
-| `AUTH_RESEND_KEY`       | Convex Environment         | Resend API key for password reset emails    |
+| Variable                | Location                   | Purpose                                                       |
+| ----------------------- | -------------------------- | ------------------------------------------------------------- |
+| `VITE_CONVEX_URL`       | `.env.local`, `.env.e2e`   | Convex backend URL                                            |
+| `CONVEX_DEPLOY_KEY`     | `.env.e2e`, GitHub Secrets | Deploy/run functions on Convex projects (test and production) |
+| `CLOUDFLARE_API_TOKEN`  | GitHub Secrets             | Deploy to Cloudflare Workers                                  |
+| `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets             | Cloudflare account identifier                                 |
+| `AUTH_RESEND_KEY`       | Convex Environment         | Resend API key for password reset emails                      |
 
 ---
 
@@ -221,8 +221,8 @@ These are automatically set by GitHub Actions or defined in workflow files.
 # Get from: https://dashboard.convex.dev/ → Your Project → Deployment URL
 VITE_CONVEX_URL=https://your-project.convex.cloud
 
-# Auto-populated by `npx convex dev` -- do not edit manually
-# CONVEX_DEPLOYMENT=dev:your-project
+# Convex deployment identifier (auto-populated by `npx convex dev`)
+CONVEX_DEPLOYMENT=dev:your-project
 ```
 
 ### `.env.e2e` Template
@@ -243,6 +243,13 @@ CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
 # Convex deployment URL
 # Get from: https://dashboard.convex.dev/
 VITE_CONVEX_URL=https://your-project.convex.cloud
+
+# Convex deployment identifier (auto-populated by `npx convex dev`)
+CONVEX_DEPLOYMENT=dev:your-project
+
+# Production deploy key for Convex backend deployment (optional, for manual deploys)
+# Get from: Convex Dashboard → your project → Settings → Deploy Keys
+# CONVEX_DEPLOY_KEY=prod:your-project-deploy-key
 ```
 
 ---

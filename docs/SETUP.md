@@ -2,7 +2,12 @@
 
 This guide covers all the manual configuration steps required to set up the Expense Manager project.
 
-> **Tip:** For a guided, interactive experience, run `pnpm setup` (automates steps 1.4, 1.5, and 1.7 for local development) or `pnpm setup:e2e` (automates steps 1.6 and 1.7 for the E2E test project). You still need to create the Convex projects (1.1–1.3) and configure email/Cloudflare/GitHub manually. This guide is useful as a reference or when you need more control over individual steps.
+> **Tip:** For a guided, interactive experience:
+>
+> - `pnpm setup` — installs dependencies, creates `.env.local`, and guides you through steps 1.4, 1.5, and the dev-project seeding in 1.7.
+> - `pnpm setup:e2e` — creates `.env.e2e`, validates credentials, deploys the schema (1.6), configures auth, and seeds the test project (1.7).
+>
+> You still need to create the Convex projects (1.1–1.3) and configure email/Cloudflare/GitHub manually. This guide is useful as a reference or when you need more control over individual steps.
 
 ## Prerequisites
 
@@ -109,7 +114,7 @@ This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respecti
 
 ### 1.6 Deploy Schema and Auth Keys to Test Project
 
-> **Shortcut:** `pnpm setup:e2e` automates steps 1.6 and 1.7 interactively (creates `.env.e2e`, validates values, deploys schema, configures auth, and seeds data).
+> **Shortcut:** `pnpm setup:e2e` guides you through steps 1.6 and 1.7 interactively — creates `.env.e2e`, validates credentials, deploys the schema, prompts for the production URL, configures auth, and seeds data.
 
 The test project needs the same schema deployed to its **production** deployment. This step creates the production deployment if it doesn't exist yet.
 
