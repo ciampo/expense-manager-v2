@@ -159,6 +159,11 @@ describe('setup scripts validation', () => {
       expect(() => execSync(`bash -n "${fullPath}"`, { stdio: 'pipe' })).not.toThrow()
     })
 
+    it(`${script} checks for node as a prerequisite`, () => {
+      const content = readFile(script)
+      expect(content).toContain('command -v node')
+    })
+
     it(`${script} checks for pnpm as a prerequisite`, () => {
       const content = readFile(script)
       expect(content).toContain('command -v pnpm')
@@ -178,6 +183,20 @@ describe('setup scripts validation', () => {
   it('setup-e2e.sh references .env.e2e.example as its template', () => {
     const content = readFile('scripts/setup-e2e.sh')
     expect(content).toContain('.env.e2e.example')
+  })
+
+  it('setup.sh validates placeholder values before proceeding', () => {
+    const content = readFile('scripts/setup.sh')
+    expect(content).toContain('https://your-project.convex.cloud')
+  })
+
+  it('setup.sh validates CONVEX_DEPLOYMENT before running seed', () => {
+    const content = readFile('scripts/setup.sh')
+    const deploymentCheck = content.indexOf('CONVEX_DEPLOYMENT')
+    const seedCommand = content.indexOf('seed:seedCategories')
+    expect(deploymentCheck).toBeGreaterThan(-1)
+    expect(seedCommand).toBeGreaterThan(-1)
+    expect(deploymentCheck).toBeLessThan(seedCommand)
   })
 
   it('setup-e2e.sh validates placeholder values before proceeding', () => {
