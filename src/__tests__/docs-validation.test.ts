@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, existsSync } from 'fs'
+import { readFileSync, readdirSync, existsSync, statSync } from 'fs'
+import { execSync } from 'child_process'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -130,5 +131,117 @@ describe('documentation validation', () => {
       expect(envDoc).toContain(file)
       expect(existsSync(resolve(ROOT, file))).toBe(true)
     }
+  })
+
+  it('deploy.yml includes Convex backend deploy step', () => {
+    const deploy = readFile('.github/workflows/deploy.yml')
+
+    expect(deploy).toContain('convex deploy')
+    expect(deploy).toContain('CONVEX_PROD_DEPLOY_KEY')
+  })
+})
+
+describe('setup scripts validation', () => {
+  const scripts = ['scripts/setup.sh', 'scripts/setup-e2e.sh']
+
+  for (const script of scripts) {
+    it(`${script} exists and is executable`, () => {
+      const fullPath = resolve(ROOT, script)
+      expect(existsSync(fullPath)).toBe(true)
+
+      const stats = statSync(fullPath)
+      // Check owner-execute bit (0o100)
+      expect(stats.mode & 0o100).toBeTruthy()
+    })
+
+    it(`${script} has valid bash syntax`, () => {
+      const fullPath = resolve(ROOT, script)
+      expect(() => execSync(`bash -n "${fullPath}"`, { stdio: 'pipe' })).not.toThrow()
+    })
+
+    it(`${script} checks for node as a prerequisite`, () => {
+      const content = readFile(script)
+      expect(content).toContain('command -v node')
+    })
+
+    it(`${script} checks for pnpm as a prerequisite`, () => {
+      const content = readFile(script)
+      expect(content).toContain('command -v pnpm')
+    })
+
+    it(`${script} uses set -euo pipefail`, () => {
+      const content = readFile(script)
+      expect(content).toContain('set -euo pipefail')
+    })
+  }
+
+  it('setup.sh references .env.example as its template', () => {
+    const content = readFile('scripts/setup.sh')
+    expect(content).toContain('.env.example')
+  })
+
+  it('setup-e2e.sh references .env.e2e.example as its template', () => {
+    const content = readFile('scripts/setup-e2e.sh')
+    expect(content).toContain('.env.e2e.example')
+  })
+
+  it('setup.sh validates placeholder values before proceeding', () => {
+    const content = readFile('scripts/setup.sh')
+    expect(content).toContain('https://your-project.convex.cloud')
+  })
+
+  it('setup.sh validates CONVEX_DEPLOYMENT before running seed', () => {
+    const content = readFile('scripts/setup.sh')
+    const deploymentCheck = content.indexOf('CONVEX_DEPLOYMENT')
+    const seedCommand = content.indexOf('seed:seedCategories')
+    expect(deploymentCheck).toBeGreaterThan(-1)
+    expect(seedCommand).toBeGreaterThan(-1)
+    expect(deploymentCheck).toBeLessThan(seedCommand)
+  })
+
+  it('setup-e2e.sh validates placeholder values before proceeding', () => {
+    const content = readFile('scripts/setup-e2e.sh')
+    expect(content).toContain('prod:your-test-project-deploy-key')
+    expect(content).toContain('https://your-test-project.convex.cloud')
+  })
+
+  for (const script of scripts) {
+    it(`${script} does not use unsafe export+xargs env loading`, () => {
+      const content = readFile(script)
+      expect(content).not.toMatch(/export\s+\$\(/)
+    })
+  }
+
+  it('setup-e2e.sh validates CONVEX_DEPLOY_KEY before deploying', () => {
+    const content = readFile('scripts/setup-e2e.sh')
+    const placeholderCheck = content.indexOf('prod:your-test-project-deploy-key')
+    const deployCommand = content.indexOf('npx convex deploy')
+    expect(placeholderCheck).toBeGreaterThan(-1)
+    expect(deployCommand).toBeGreaterThan(-1)
+    expect(placeholderCheck).toBeLessThan(deployCommand)
+  })
+
+  it('placeholder values in scripts match the example files', () => {
+    const envExample = readFile('.env.example')
+    const envE2eExample = readFile('.env.e2e.example')
+    const setupSh = readFile('scripts/setup.sh')
+    const setupE2eSh = readFile('scripts/setup-e2e.sh')
+
+    const envUrl = envExample.match(/^VITE_CONVEX_URL=(.+)$/m)?.[1]
+    expect(envUrl).toBeDefined()
+    expect(setupSh).toContain(envUrl!)
+
+    const e2eUrl = envE2eExample.match(/^VITE_CONVEX_URL=(.+)$/m)?.[1]
+    const e2eKey = envE2eExample.match(/^CONVEX_DEPLOY_KEY=(.+)$/m)?.[1]
+    expect(e2eUrl).toBeDefined()
+    expect(e2eKey).toBeDefined()
+    expect(setupE2eSh).toContain(e2eUrl!)
+    expect(setupE2eSh).toContain(e2eKey!)
+  })
+
+  it('setup scripts are referenced in package.json', () => {
+    const pkg = JSON.parse(readFile('package.json'))
+    expect(pkg.scripts.setup).toBe('bash scripts/setup.sh')
+    expect(pkg.scripts['setup:e2e']).toBe('bash scripts/setup-e2e.sh')
   })
 })

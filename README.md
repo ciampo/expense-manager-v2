@@ -31,6 +31,8 @@ A modern expense management application for tracking work-related expenses, buil
 
 ### Setup
 
+> **Quick start:** Run `pnpm setup` for a guided interactive walkthrough — installs dependencies, sets up `.env.local`, and walks through steps 3–6 below. You still need to create the Convex project manually (step 2).
+
 1. Clone the repository:
 
    ```bash
@@ -42,7 +44,7 @@ A modern expense management application for tracking work-related expenses, buil
 2. Create a Convex project:
    - Go to [Convex Dashboard](https://dashboard.convex.dev/)
    - Create a new project
-   - Copy the deployment URL
+   - Copy the **development** deployment URL (use the deployment switcher in the dashboard)
 
 3. Set up environment variables:
 
@@ -87,6 +89,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 | Command                          | Description                               |
 | -------------------------------- | ----------------------------------------- |
+| `pnpm setup`                     | Guided interactive local dev setup        |
+| `pnpm setup:e2e`                 | Guided interactive E2E test project setup |
 | `pnpm dev`                       | Start development server                  |
 | `pnpm dev:e2e`                   | Start dev server with E2E test config     |
 | `pnpm build`                     | Build for production (includes typecheck) |
@@ -128,6 +132,7 @@ expense-manager-v2/
 │   ├── seed.ts              # Seed and cleanup functions
 │   ├── crons.ts             # Scheduled jobs (orphan upload cleanup)
 │   └── http.ts              # HTTP routes (auth callbacks)
+├── scripts/                 # Setup scripts (pnpm setup, pnpm setup:e2e)
 ├── docs/                    # Detailed setup and reference docs
 ├── e2e/                     # Playwright E2E tests
 ├── tests/
@@ -148,27 +153,28 @@ pnpm test:unit
 
 E2E tests run against the **production deployment** of a dedicated Convex test project (separate from your dev project). See [Convex deployments](#convex) below for background on the project/deployment model.
 
+> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–7 below (creates `.env.e2e`, validates credentials, deploys, prompts for the production URL, configures auth, and seeds data).
+
 1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
-2. Generate a production deploy key: Dashboard → test project → Settings → Deploy Keys
-3. Add both values to `.env.e2e` (see `.env.e2e.example` for reference):
+2. Generate a deploy key: Dashboard → test project → Settings → Deploy Keys → Generate Deploy Key — select **production**
+3. Set up `.env.e2e` with the deploy key (see `.env.e2e.example` for reference):
    ```env
-   VITE_CONVEX_URL=https://your-test-project.convex.cloud
+   VITE_CONVEX_URL=https://placeholder-will-update-after-step-4.convex.cloud
    CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
    ```
-   > `VITE_CONVEX_URL` must be the **production deployment** URL (shown after step 4). `CONVEX_DEPLOY_KEY` is the production deploy key from step 2.
 4. Deploy the schema (this creates the production deployment if it doesn't exist):
    ```bash
-   # Load the deploy key from .env.e2e
-   export $(grep -v '^#' .env.e2e | grep CONVEX_DEPLOY_KEY | xargs)
+   export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2- | tr -d '\r')
    npx convex deploy
    ```
-5. Configure auth keys for the test project's production deployment:
+5. Copy the **production** deployment URL from the Convex Dashboard (shown after step 4) and update `VITE_CONVEX_URL` in `.env.e2e`
+6. Configure auth keys for the test project's production deployment:
    ```bash
    npx @convex-dev/auth --prod
    ```
    When prompted for the **site URL**, enter `http://localhost:3000` (E2E tests run locally).
-6. Seed test data: `pnpm test:e2e:seed`
-7. Run tests:
+7. Seed test data: `pnpm test:e2e:seed`
+8. Run tests:
    ```bash
    pnpm test:e2e
    ```
@@ -191,15 +197,31 @@ pnpm test:visual:docker:update
 
 ### Convex
 
-The project uses two Convex **projects**, each with its own development and production **deployments**:
+#### Environment architecture
 
-| Convex Project         | Deployment Used | Purpose                         | URL configured via                                              |
-| ---------------------- | --------------- | ------------------------------- | --------------------------------------------------------------- |
-| `expense-manager`      | development     | Local dev (`pnpm dev`)          | `.env.local` → `VITE_CONVEX_URL`                                |
-| `expense-manager`      | production      | Live app (deployed from `main`) | GitHub secret `CONVEX_PROD_URL`                                 |
-| `expense-manager-test` | production      | E2E and visual regression tests | `.env.e2e` → `VITE_CONVEX_URL`, GitHub secret `CONVEX_TEST_URL` |
+The project uses three **fully isolated** Convex environments. Each has its own database, auth keys, and backend functions — data never leaks between them:
 
-> **Why production deployments?** Deploy keys (needed for non-interactive CLI commands like seed, cleanup, and `npx convex deploy`) only work with production deployments. The "production" label is Convex terminology — it doesn't mean it's your live app, just the stable, CLI-accessible deployment.
+| Environment    | Convex Project         | Deployment  | Backend deployed by                             | Frontend connects via                        |
+| -------------- | ---------------------- | ----------- | ----------------------------------------------- | -------------------------------------------- |
+| **Local dev**  | `expense-manager`      | development | `npx convex dev` (auto-syncs on file save)      | `.env.local` → `VITE_CONVEX_URL`             |
+| **Production** | `expense-manager`      | production  | `deploy.yml` (on merge to `main`)               | GitHub secret `CONVEX_PROD_URL`              |
+| **Test (E2E)** | `expense-manager-test` | production  | `test-e2e.yml` (on every PR and push to `main`) | `.env.e2e` / GitHub secret `CONVEX_TEST_URL` |
+
+> **Why "production" for test?** Convex deploy keys only work with production deployments. The "production" label is Convex terminology for the non-interactive, CLI-accessible deployment — it doesn't mean live user-facing. The test project is a **completely separate Convex project** with its own database.
+
+#### How CI workflows map to environments
+
+No CI workflow ever writes to an environment it shouldn't:
+
+| Workflow          | Trigger                 | Convex environment touched             | What it does                                                           |
+| ----------------- | ----------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
+| `test-e2e.yml`    | PR, push to `main`      | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after           |
+| `test-visual.yml` | PR, push to `main`      | **Test** project (read-only via URL)   | Runs visual regression tests against test data                         |
+| `preview.yml`     | PR open/sync            | **Dev** project (read-only via URL)    | Builds frontend preview pointing to the dev backend — no deploy        |
+| `deploy.yml`      | Push to `main` **only** | **Production** project (deploy)        | Deploys Convex backend, then builds and deploys frontend to CF Workers |
+| Others            | PR, push to `main`      | None                                   | Lint, typecheck, unit tests — no Convex interaction                    |
+
+**Key guarantee:** Only merges to `main` trigger production deployment. PRs are tested entirely against the isolated test project.
 
 #### Setting up auth keys
 
@@ -246,8 +268,8 @@ The project includes GitHub Actions workflows for:
 - **Visual Regression**: Run on every push/PR in Docker
 - **Lint**: Run ESLint and Prettier checks on every push/PR
 - **Type Check**: Run TypeScript type checking on every push/PR
-- **Deploy**: Auto-deploy to production on push to `main`
-- **Preview**: Deploy preview on every PR
+- **Deploy**: Auto-deploy Convex backend and Cloudflare Workers on push to `main`
+- **Preview**: Deploy preview on every PR (automatically cleaned up when the PR is closed)
 - **Update Screenshots**: Manually triggered workflow to update and commit visual regression baselines
 
 Configure these GitHub Actions secrets:
@@ -257,27 +279,12 @@ Configure these GitHub Actions secrets:
 | `CLOUDFLARE_API_TOKEN`   | Cloudflare API token                                                         |
 | `CLOUDFLARE_ACCOUNT_ID`  | Cloudflare account ID                                                        |
 | `CONVEX_PROD_URL`        | `expense-manager` project → **production** deployment URL                    |
+| `CONVEX_PROD_DEPLOY_KEY` | `expense-manager` project → **production** deploy key                        |
 | `CONVEX_DEV_URL`         | `expense-manager` project → **development** deployment URL (for PR previews) |
 | `CONVEX_TEST_URL`        | `expense-manager-test` project → **production** deployment URL               |
 | `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key                   |
 
-#### Convex Backend Deployment
-
-Convex backend functions and schema are **not** automatically deployed by the CI/CD pipeline. When you change files in the `convex/` directory, you must deploy them manually:
-
-```bash
-# Deploy to the production Convex deployment of the main expense-manager project
-npx convex deploy
-```
-
-This requires a `CONVEX_DEPLOY_KEY` environment variable set for the production project. You can find the key in the [Convex Dashboard](https://dashboard.convex.dev/) under Settings → Deploy Keys.
-
-```bash
-export CONVEX_DEPLOY_KEY=prod:your-production-deploy-key
-npx convex deploy
-```
-
-> **Note:** During local development, `npx convex dev` automatically syncs changes to the development deployment. Manual deployment is only needed for the production deployment.
+> **Note:** During local development, `npx convex dev` automatically syncs backend changes to the development deployment on every file save. The CI pipeline handles production deployment — you never need to run `npx convex deploy` manually.
 
 ## Backend Security & Validation
 
