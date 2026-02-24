@@ -14,6 +14,10 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - name: Deploy Convex backend
+        run: npx convex deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
       - run: pnpm build
         env:
           VITE_CONVEX_URL: ${{ secrets.CONVEX_PROD_URL }}
