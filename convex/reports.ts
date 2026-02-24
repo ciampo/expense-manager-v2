@@ -3,6 +3,72 @@ import { query } from './_generated/server'
 import { auth } from './auth'
 
 /**
+ * Convert "YYYY-MM" keys into { year, month } objects sorted newest first.
+ */
+function sortedMonthsFromKeys(monthKeys: Iterable<string>): { year: number; month: number }[] {
+  return Array.from(monthKeys)
+    .map((key) => {
+      const [year, month] = key.split('-').map(Number)
+      return { year, month }
+    })
+    .sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year
+      return b.month - a.month
+    })
+}
+
+/**
+ * Extract distinct { year, month } pairs from an array of ISO date strings,
+ * sorted newest first. Pure function, safe to call from tests.
+ */
+export function distinctMonthsFromDates(dates: string[]): { year: number; month: number }[] {
+  const monthSet = new Set<string>()
+  for (const date of dates) {
+    const [year, month] = date.split('-')
+    monthSet.add(`${year}-${month}`)
+  }
+  return sortedMonthsFromKeys(monthSet)
+}
+
+/**
+ * Get the distinct months for which the user has expense data.
+ * Returns an array of { year, month } objects sorted newest first.
+ *
+ * Uses pagination to avoid loading all expense documents into memory at once.
+ */
+export const availableMonths = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) {
+      return []
+    }
+
+    const monthSet = new Set<string>()
+    let isDone = false
+    let cursor: string | null = null
+
+    while (!isDone) {
+      const page = await ctx.db
+        .query('expenses')
+        .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+        .order('desc')
+        .paginate({ numItems: 100, cursor })
+
+      for (const expense of page.page) {
+        const [year, month] = expense.date.split('-')
+        monthSet.add(`${year}-${month}`)
+      }
+
+      isDone = page.isDone
+      cursor = page.continueCursor
+    }
+
+    return sortedMonthsFromKeys(monthSet)
+  },
+})
+
+/**
  * Get expenses for a specific month
  */
 export const monthlyData = query({

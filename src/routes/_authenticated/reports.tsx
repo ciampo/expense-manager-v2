@@ -23,31 +23,7 @@ export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
 })
 
-// Get available months (current and last 12 months)
-function getAvailableMonths() {
-  const months = []
-  const now = new Date()
-
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    months.push({
-      year: date.getFullYear(),
-      month: date.getMonth() + 1, // 1-12
-      label: getMonthName(date.getMonth() + 1, date.getFullYear()),
-    })
-  }
-
-  return months
-}
-
 function ReportsPage() {
-  const availableMonths = getAvailableMonths()
-  const [selectedMonth, setSelectedMonth] = useState(
-    `${availableMonths[0].year}-${availableMonths[0].month}`,
-  )
-
-  const [year, month] = selectedMonth.split('-').map(Number)
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -55,19 +31,47 @@ function ReportsPage() {
         <p className="text-muted-foreground">Generate monthly reports of your expenses</p>
       </div>
 
+      <Suspense fallback={<ReportPageSkeleton />}>
+        <ReportsContent />
+      </Suspense>
+    </div>
+  )
+}
+
+function ReportsContent() {
+  const { data: availableMonths } = useSuspenseQuery(convexQuery(api.reports.availableMonths, {}))
+
+  const [selectedMonth, setSelectedMonth] = useState('')
+
+  const effectiveMonth =
+    selectedMonth ||
+    (availableMonths.length > 0 ? `${availableMonths[0].year}-${availableMonths[0].month}` : '')
+
+  if (availableMonths.length === 0) {
+    return (
+      <p className="text-muted-foreground">
+        No expense data yet. Add some expenses to generate reports.
+      </p>
+    )
+  }
+
+  const [year, month] = effectiveMonth.split('-').map(Number)
+
+  return (
+    <>
       {/* Month selector */}
       <div className="mb-8">
         <label id="reports-month-label" className="mb-2 block text-sm font-medium">
           Select month
         </label>
-        <Select value={selectedMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
+        <Select value={effectiveMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
           <SelectTrigger className="w-64" aria-labelledby="reports-month-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {availableMonths.map((m) => (
               <SelectItem key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
-                {m.label}
+                {getMonthName(m.month, m.year)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -77,6 +81,18 @@ function ReportsPage() {
       <Suspense fallback={<ReportSkeleton />}>
         <MonthlyReport year={year} month={month} />
       </Suspense>
+    </>
+  )
+}
+
+function ReportPageSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <Skeleton className="mb-2 h-4 w-24" />
+        <Skeleton className="h-10 w-64" />
+      </div>
+      <ReportSkeleton />
     </div>
   )
 }
