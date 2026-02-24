@@ -36,7 +36,8 @@ CONVEX_DEPLOYMENT=dev:your-project  # Auto-populated by `npx convex dev`
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager` project
-3. Copy the **development** deployment URL
+3. Use the deployment switcher to select **Development**
+4. Copy the deployment URL
 
 ---
 
@@ -58,8 +59,8 @@ CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager-test` project
-3. Copy the **production** deployment URL for `VITE_CONVEX_URL`
-4. Go to Settings → Deploy Keys → Generate Deploy Key for `CONVEX_DEPLOY_KEY`
+3. Use the deployment switcher to select **Production**, then copy the deployment URL for `VITE_CONVEX_URL`
+4. Go to Settings → Deploy Keys → Generate Deploy Key (select **production**) for `CONVEX_DEPLOY_KEY`
 
 > **Why production?** Deploy keys only work with production deployments. The E2E seed, cleanup, and `npx convex deploy` commands all require a deploy key for non-interactive access. The app under test (`VITE_CONVEX_URL`) must point to the same deployment that these commands target.
 
@@ -102,20 +103,22 @@ These secrets are configured in your GitHub repository settings.
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager` project
-3. Copy the **production** deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+3. Use the deployment switcher to select **Production**
+4. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
 
 #### `CONVEX_PROD_DEPLOY_KEY`
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager` project
-3. Settings → Deploy Keys → Generate Deploy Key
-4. Copy the key (only shown once)
+3. Settings → Deploy Keys → Generate Deploy Key — select **production**
+4. Copy the key (starts with `prod:`, only shown once)
 
 #### `CONVEX_DEV_URL`
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager` project
-3. Copy the **development** deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+3. Use the deployment switcher to select **Development**
+4. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
 
 > This is the same URL as `VITE_CONVEX_URL` in `.env.local`. It's used by the PR preview workflow so preview deployments connect to the development backend.
 
@@ -123,16 +126,17 @@ These secrets are configured in your GitHub repository settings.
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager-test` project
-3. Copy the **production** deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+3. Use the deployment switcher to select **Production**
+4. Copy the deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
 
 > This is the same URL as `VITE_CONVEX_URL` in `.env.e2e`.
 
 #### `CONVEX_TEST_DEPLOY_KEY`
 
-1. Go to Convex Dashboard
+1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager-test` project
-3. Settings → Deploy Keys → Generate Deploy Key
-4. Copy the key (only shown once)
+3. Settings → Deploy Keys → Generate Deploy Key — select **production**
+4. Copy the key (starts with `prod:`, only shown once)
 
 > This is the same key as `CONVEX_DEPLOY_KEY` in `.env.e2e`.
 

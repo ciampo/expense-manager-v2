@@ -45,16 +45,16 @@ Deploy keys provide non-interactive access to a project's **production** deploym
 
 1. In Convex Dashboard, select the **main** project (`expense-manager`)
 2. Go to Settings → Deploy Keys
-3. Click "Generate Deploy Key"
-4. Copy and save the key securely (it's only shown once)
+3. Click "Generate Deploy Key" — select **production** when prompted for the deployment type
+4. Copy and save the key securely (it starts with `prod:` and is only shown once)
 5. This key will be added to GitHub secrets later as `CONVEX_PROD_DEPLOY_KEY`
 
 #### Test project deploy key (for E2E tests)
 
 1. In Convex Dashboard, select the **test** project (`expense-manager-test`)
 2. Go to Settings → Deploy Keys
-3. Click "Generate Deploy Key"
-4. Copy and save the key securely (it's only shown once)
+3. Click "Generate Deploy Key" — select **production** when prompted for the deployment type
+4. Copy and save the key securely (it starts with `prod:` and is only shown once)
 5. This key will be added to GitHub secrets later as `CONVEX_TEST_DEPLOY_KEY` **and** to `.env.e2e`
 
 Save the test deploy key to `.env.e2e` in the project root (the production deployment URL will be added after step 1.6):

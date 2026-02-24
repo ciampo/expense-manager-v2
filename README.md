@@ -44,7 +44,7 @@ A modern expense management application for tracking work-related expenses, buil
 2. Create a Convex project:
    - Go to [Convex Dashboard](https://dashboard.convex.dev/)
    - Create a new project
-   - Copy the deployment URL
+   - Copy the **development** deployment URL (use the deployment switcher in the dashboard)
 
 3. Set up environment variables:
 
