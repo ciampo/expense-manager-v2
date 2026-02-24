@@ -138,7 +138,7 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
 3. Add both values to `.env.e2e` (see `.env.e2e.example` for reference):
    ```env
    VITE_CONVEX_URL=https://your-test-project.convex.cloud
-   CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+   CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
    ```
    > `VITE_CONVEX_URL` must be the **production deployment** URL (shown after step 4). `CONVEX_DEPLOY_KEY` is the production deploy key from step 2.
 4. Deploy the schema (this creates the production deployment if it doesn't exist):
@@ -248,14 +248,14 @@ Configure these GitHub Actions secrets:
 Convex backend functions and schema are **not** automatically deployed by the CI/CD pipeline. When you change files in the `convex/` directory, you must deploy them manually:
 
 ```bash
-# Deploy to the production Convex deployment
+# Deploy to the production Convex deployment of the main expense-manager project
 npx convex deploy
 ```
 
-This requires a `CONVEX_DEPLOY_KEY` environment variable set for the production project. You can export it from `.env.local` or set it in your shell:
+This requires a `CONVEX_DEPLOY_KEY` environment variable set for the production project. You can find the key in the [Convex Dashboard](https://dashboard.convex.dev/) under Settings → Deploy Keys.
 
 ```bash
-export CONVEX_DEPLOY_KEY=your_production_deploy_key
+export CONVEX_DEPLOY_KEY=prod:your-production-deploy-key
 npx convex deploy
 ```
 

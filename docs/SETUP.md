@@ -49,7 +49,7 @@ Save the deploy key to `.env.e2e` in the project root (the production deployment
 
 ```env
 VITE_CONVEX_URL=https://placeholder-will-update-after-deploy.convex.cloud
-CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
 ```
 
 > **Note:** `CONVEX_DEPLOY_KEY` in `.env.e2e` is used by the Convex CLI for deploy, seed, and cleanup commands, and by Playwright's `globalTeardown` to automatically clean up test data (including auth users) after each E2E run.
@@ -101,7 +101,7 @@ The test project needs the same schema deployed to its **production** deployment
 
 ```bash
 # Load the deploy key from .env.e2e
-export $(grep CONVEX_DEPLOY_KEY .env.e2e | xargs)
+export $(grep -v '^#' .env.e2e | grep CONVEX_DEPLOY_KEY | xargs)
 
 # Deploy schema — creates the production deployment on first run
 npx convex deploy
@@ -115,7 +115,7 @@ After deploying, go to the Convex Dashboard → test project and copy the **prod
 
 ```env
 VITE_CONVEX_URL=https://your-test-project-prod-url.convex.cloud
-CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
 ```
 
 > **Important:** All `convex` commands in this terminal session will target the test project's production deployment as long as `CONVEX_DEPLOY_KEY` is set. To switch back to the development project, run `unset CONVEX_DEPLOY_KEY`.

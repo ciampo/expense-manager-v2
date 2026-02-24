@@ -46,7 +46,7 @@ Used when running E2E tests (loaded via `--mode e2e`). Both values target the **
 
 ```env
 VITE_CONVEX_URL=https://your-test-project.convex.cloud
-CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
 ```
 
 | Variable            | Required | Description                                                                                             |
@@ -221,7 +221,7 @@ VITE_CONVEX_URL=https://your-test-project.convex.cloud
 
 # expense-manager-test project → production deploy key (used by E2E test seed/cleanup)
 # Get from: Convex Dashboard → expense-manager-test → Settings → Deploy Keys
-CONVEX_DEPLOY_KEY=your_test_project_deploy_key
+CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
 ```
 
 ### `.env.example` (Committed to Git)
@@ -250,6 +250,7 @@ These files contain secrets and are in `.gitignore`:
 ### Safe to Commit
 
 - `.env.example` (contains placeholder values only)
+- `.env.e2e.example` (contains placeholder values only)
 
 ### Rotating Secrets
 
