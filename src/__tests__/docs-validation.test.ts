@@ -205,9 +205,38 @@ describe('setup scripts validation', () => {
     expect(content).toContain('https://your-test-project.convex.cloud')
   })
 
-  it('setup-e2e.sh does not use unsafe export+xargs env loading', () => {
+  for (const script of scripts) {
+    it(`${script} does not use unsafe export+xargs env loading`, () => {
+      const content = readFile(script)
+      expect(content).not.toMatch(/export\s+\$\(/)
+    })
+  }
+
+  it('setup-e2e.sh validates CONVEX_DEPLOY_KEY before deploying', () => {
     const content = readFile('scripts/setup-e2e.sh')
-    expect(content).not.toMatch(/export\s+\$\(/)
+    const placeholderCheck = content.indexOf('prod:your-test-project-deploy-key')
+    const deployCommand = content.indexOf('npx convex deploy')
+    expect(placeholderCheck).toBeGreaterThan(-1)
+    expect(deployCommand).toBeGreaterThan(-1)
+    expect(placeholderCheck).toBeLessThan(deployCommand)
+  })
+
+  it('placeholder values in scripts match the example files', () => {
+    const envExample = readFile('.env.example')
+    const envE2eExample = readFile('.env.e2e.example')
+    const setupSh = readFile('scripts/setup.sh')
+    const setupE2eSh = readFile('scripts/setup-e2e.sh')
+
+    const envUrl = envExample.match(/^VITE_CONVEX_URL=(.+)$/m)?.[1]
+    expect(envUrl).toBeDefined()
+    expect(setupSh).toContain(envUrl!)
+
+    const e2eUrl = envE2eExample.match(/^VITE_CONVEX_URL=(.+)$/m)?.[1]
+    const e2eKey = envE2eExample.match(/^CONVEX_DEPLOY_KEY=(.+)$/m)?.[1]
+    expect(e2eUrl).toBeDefined()
+    expect(e2eKey).toBeDefined()
+    expect(setupE2eSh).toContain(e2eUrl!)
+    expect(setupE2eSh).toContain(e2eKey!)
   })
 
   it('setup scripts are referenced in package.json', () => {
