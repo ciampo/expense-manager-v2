@@ -132,6 +132,7 @@ expense-manager-v2/
 │   ├── seed.ts              # Seed and cleanup functions
 │   ├── crons.ts             # Scheduled jobs (orphan upload cleanup)
 │   └── http.ts              # HTTP routes (auth callbacks)
+├── scripts/                 # Setup scripts (pnpm setup, pnpm setup:e2e)
 ├── docs/                    # Detailed setup and reference docs
 ├── e2e/                     # Playwright E2E tests
 ├── tests/
@@ -151,6 +152,8 @@ pnpm test:unit
 ### E2E Tests
 
 E2E tests run against the **production deployment** of a dedicated Convex test project (separate from your dev project). See [Convex deployments](#convex) below for background on the project/deployment model.
+
+> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–6 below.
 
 1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
 2. Generate a production deploy key: Dashboard → test project → Settings → Deploy Keys

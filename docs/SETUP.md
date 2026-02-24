@@ -2,6 +2,8 @@
 
 This guide covers all the manual configuration steps required to set up the Expense Manager project.
 
+> **Tip:** For a guided, interactive experience, run `pnpm setup` (local development) or `pnpm setup:e2e` (E2E test project). The scripts automate steps 1.4–1.7 and are the recommended way to get started. This guide is useful as a reference or when you need more control over individual steps.
+
 ## Prerequisites
 
 - Node.js >= 24.13.0
@@ -106,6 +108,8 @@ This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respecti
 > **Note:** The test project's production deployment also needs auth keys — this is covered in step 1.6 below, after the production deployment has been created.
 
 ### 1.6 Deploy Schema and Auth Keys to Test Project
+
+> **Shortcut:** `pnpm setup:e2e` automates steps 1.6 and 1.7 interactively (creates `.env.e2e`, validates values, deploys schema, configures auth, and seeds data).
 
 The test project needs the same schema deployed to its **production** deployment. This step creates the production deployment if it doesn't exist yet.
 
