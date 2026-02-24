@@ -27,13 +27,14 @@ if [ ! -f .env.local ]; then
   echo "     3. Use the deployment switcher to select 'Development'"
   echo "     4. Copy the deployment URL and paste it as VITE_CONVEX_URL"
   echo ""
-  read -p "   Press Enter once you've updated .env.local..."
+  read -p "   Press Enter once you've updated .env.local..." || true
 else
   echo "   .env.local already exists, skipping"
 fi
 
 # Validate that VITE_CONVEX_URL has been customised
-CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.local | cut -d'=' -f2-)
+# `|| true` prevents pipefail from exiting when the key is missing
+CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.local | cut -d'=' -f2- || true)
 if [ -z "${CONVEX_URL}" ]; then
   echo "Error: VITE_CONVEX_URL is empty or missing in .env.local"
   exit 1
@@ -49,7 +50,7 @@ echo "3. Starting Convex development server..."
 echo "   Run this in a separate terminal:"
 echo "   npx convex dev"
 echo ""
-read -p "   Press Enter once 'npx convex dev' is running..."
+read -p "   Press Enter once 'npx convex dev' is running..." || true
 
 echo ""
 echo "4. Configuring authentication keys..."

@@ -8,6 +8,12 @@ echo ""
 command -v node >/dev/null 2>&1 || { echo "Error: Node.js is required. Install from https://nodejs.org"; exit 1; }
 command -v pnpm >/dev/null 2>&1 || { echo "Error: pnpm is required. Run: corepack enable pnpm"; exit 1; }
 
+# Ensure dependencies are installed (npx convex, pnpm test:e2e:seed need them)
+if [ ! -d node_modules ]; then
+  echo "Installing dependencies first..."
+  pnpm install
+fi
+
 echo "This script sets up the E2E test Convex project."
 echo "Prerequisites:"
 echo "  - A separate Convex project (e.g., 'expense-manager-test') created in the dashboard"
@@ -23,14 +29,15 @@ if [ ! -f .env.e2e ]; then
   echo "Created .env.e2e from .env.e2e.example"
   echo "⚠  Edit .env.e2e with your test project's URL and deploy key"
   echo ""
-  read -p "Press Enter once you've updated .env.e2e..."
+  read -p "Press Enter once you've updated .env.e2e..." || true
 else
   echo ".env.e2e already exists"
 fi
 
 # Load env variables safely (avoid shell injection from export+xargs)
-CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2-)
-VITE_CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.e2e | cut -d'=' -f2-)
+# `|| true` prevents pipefail from exiting when the key is missing
+CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2- || true)
+VITE_CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.e2e | cut -d'=' -f2- || true)
 
 # Validate deploy key
 if [ -z "${CONVEX_DEPLOY_KEY}" ]; then
