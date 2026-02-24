@@ -79,6 +79,8 @@ A modern expense management application for tracking work-related expenses, buil
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
 
+> **Note:** The above covers the minimum for local development. For the complete setup — including password reset (email provider), Cloudflare deployment, E2E test infrastructure, and GitHub CI/CD secrets — see [`docs/SETUP.md`](docs/SETUP.md). For a full environment variables reference, see [`docs/ENVIRONMENT_VARIABLES.md`](docs/ENVIRONMENT_VARIABLES.md).
+
 ## Development
 
 ### Scripts
