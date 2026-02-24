@@ -20,8 +20,12 @@ if [ ! -f .env.local ]; then
   fi
   cp .env.example .env.local
   echo "   Created .env.local from .env.example"
-  echo "   ⚠  Edit .env.local with your Convex deployment URL"
-  echo "   (Get it from https://dashboard.convex.dev/)"
+  echo ""
+  echo "   ⚠  Edit .env.local with your Convex development deployment URL:"
+  echo "     1. Go to https://dashboard.convex.dev/"
+  echo "     2. Create a new project (or select an existing one)"
+  echo "     3. Use the deployment switcher to select 'Development'"
+  echo "     4. Copy the deployment URL and paste it as VITE_CONVEX_URL"
   echo ""
   read -p "   Press Enter once you've updated .env.local..."
 else
@@ -30,6 +34,10 @@ fi
 
 # Validate that VITE_CONVEX_URL has been customised
 CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.local | cut -d'=' -f2-)
+if [ -z "${CONVEX_URL}" ]; then
+  echo "Error: VITE_CONVEX_URL is empty or missing in .env.local"
+  exit 1
+fi
 if [ "${CONVEX_URL}" = "https://your-project.convex.cloud" ]; then
   echo "Error: VITE_CONVEX_URL in .env.local still has the placeholder value."
   echo "Update it with your Convex deployment URL, then re-run this script."

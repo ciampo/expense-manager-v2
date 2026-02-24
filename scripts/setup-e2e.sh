@@ -44,6 +44,10 @@ if [ "${CONVEX_DEPLOY_KEY}" = "prod:your-test-project-deploy-key" ]; then
 fi
 
 # Validate Convex URL
+if [ -z "${VITE_CONVEX_URL}" ]; then
+  echo "Error: VITE_CONVEX_URL is empty or missing in .env.e2e"
+  exit 1
+fi
 if [ "${VITE_CONVEX_URL}" = "https://your-test-project.convex.cloud" ]; then
   echo "Error: VITE_CONVEX_URL in .env.e2e still has the placeholder value."
   echo "Update it with the production deployment URL from your test Convex project, then re-run this script."
