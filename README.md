@@ -198,15 +198,31 @@ pnpm test:visual:docker:update
 
 ### Convex
 
-The project uses two Convex **projects**, each with its own development and production **deployments**:
+#### Environment architecture
 
-| Convex Project         | Deployment Used | Purpose                         | URL configured via                                              |
-| ---------------------- | --------------- | ------------------------------- | --------------------------------------------------------------- |
-| `expense-manager`      | development     | Local dev (`pnpm dev`)          | `.env.local` → `VITE_CONVEX_URL`                                |
-| `expense-manager`      | production      | Live app (deployed from `main`) | GitHub secret `CONVEX_PROD_URL`                                 |
-| `expense-manager-test` | production      | E2E and visual regression tests | `.env.e2e` → `VITE_CONVEX_URL`, GitHub secret `CONVEX_TEST_URL` |
+The project uses three **fully isolated** Convex environments. Each has its own database, auth keys, and backend functions — data never leaks between them:
 
-> **Why production deployments?** Deploy keys (needed for non-interactive CLI commands like seed, cleanup, and `npx convex deploy`) only work with production deployments. The "production" label is Convex terminology — it doesn't mean it's your live app, just the stable, CLI-accessible deployment.
+| Environment    | Convex Project         | Deployment  | Backend deployed by                             | Frontend connects via                        |
+| -------------- | ---------------------- | ----------- | ----------------------------------------------- | -------------------------------------------- |
+| **Local dev**  | `expense-manager`      | development | `npx convex dev` (auto-syncs on file save)      | `.env.local` → `VITE_CONVEX_URL`             |
+| **Production** | `expense-manager`      | production  | `deploy.yml` (on merge to `main`)               | GitHub secret `CONVEX_PROD_URL`              |
+| **Test (E2E)** | `expense-manager-test` | production  | `test-e2e.yml` (on every PR and push to `main`) | `.env.e2e` / GitHub secret `CONVEX_TEST_URL` |
+
+> **Why "production" for test?** Convex deploy keys only work with production deployments. The "production" label is Convex terminology for the non-interactive, CLI-accessible deployment — it doesn't mean live user-facing. The test project is a **completely separate Convex project** with its own database.
+
+#### How CI workflows map to environments
+
+No CI workflow ever writes to an environment it shouldn't:
+
+| Workflow          | Trigger                 | Convex environment touched             | What it does                                                           |
+| ----------------- | ----------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
+| `test-e2e.yml`    | PR, push to `main`      | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after           |
+| `test-visual.yml` | PR, push to `main`      | **Test** project (read-only via URL)   | Runs visual regression tests against test data                         |
+| `preview.yml`     | PR open/sync            | **Dev** project (read-only via URL)    | Builds frontend preview pointing to the dev backend — no deploy        |
+| `deploy.yml`      | Push to `main` **only** | **Production** project (deploy)        | Deploys Convex backend, then builds and deploys frontend to CF Workers |
+| Others            | PR, push to `main`      | None                                   | Lint, typecheck, unit tests — no Convex interaction                    |
+
+**Key guarantee:** Only merges to `main` trigger production deployment. PRs are tested entirely against the isolated test project.
 
 #### Setting up auth keys
 
@@ -269,11 +285,7 @@ Configure these GitHub Actions secrets:
 | `CONVEX_TEST_URL`        | `expense-manager-test` project → **production** deployment URL               |
 | `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key                   |
 
-#### Convex Backend Deployment
-
-Convex backend functions and schema are automatically deployed by the `deploy.yml` workflow when changes are pushed to `main`. The workflow runs `npx convex deploy` using the `CONVEX_PROD_DEPLOY_KEY` secret before deploying the frontend to Cloudflare Workers.
-
-> **Note:** During local development, `npx convex dev` automatically syncs changes to the development deployment. The CI pipeline handles production deployment.
+> **Note:** During local development, `npx convex dev` automatically syncs backend changes to the development deployment on every file save. The CI pipeline handles production deployment — you never need to run `npx convex deploy` manually.
 
 ## Backend Security & Validation
 
