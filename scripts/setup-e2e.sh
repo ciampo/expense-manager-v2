@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ ! -t 0 ]; then
+  echo "Error: This script requires an interactive terminal."
+  exit 1
+fi
+
 echo "=== Expense Manager - E2E Test Project Setup ==="
 echo ""
 
@@ -8,12 +13,10 @@ echo ""
 command -v node >/dev/null 2>&1 || { echo "Error: Node.js is required. Install from https://nodejs.org"; exit 1; }
 command -v pnpm >/dev/null 2>&1 || { echo "Error: pnpm is required. Run: corepack enable pnpm"; exit 1; }
 
-# Ensure dependencies are installed (npx convex, pnpm test:e2e:seed need them)
-if [ ! -d node_modules ]; then
-  echo "Installing dependencies first..."
-  pnpm install
-fi
+echo "Installing dependencies..."
+pnpm install
 
+echo ""
 echo "This script sets up the E2E test Convex project."
 echo "Prerequisites:"
 echo "  - A separate Convex project (e.g., 'expense-manager-test') created in the dashboard"

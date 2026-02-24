@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ ! -t 0 ]; then
+  echo "Error: This script requires an interactive terminal."
+  exit 1
+fi
+
 echo "=== Expense Manager - Local Development Setup ==="
 echo ""
 
