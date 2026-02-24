@@ -3,6 +3,28 @@ import { query } from './_generated/server'
 import { auth } from './auth'
 
 /**
+ * Extract distinct { year, month } pairs from an array of ISO date strings,
+ * sorted newest first. Pure function, safe to call from tests.
+ */
+export function distinctMonthsFromDates(dates: string[]): { year: number; month: number }[] {
+  const monthSet = new Set<string>()
+  for (const date of dates) {
+    const [year, month] = date.split('-')
+    monthSet.add(`${year}-${month}`)
+  }
+
+  return Array.from(monthSet)
+    .map((key) => {
+      const [year, month] = key.split('-').map(Number)
+      return { year, month }
+    })
+    .sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year
+      return b.month - a.month
+    })
+}
+
+/**
  * Get the distinct months for which the user has expense data.
  * Returns an array of { year, month } objects sorted newest first.
  */
@@ -19,21 +41,7 @@ export const availableMonths = query({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .collect()
 
-    const monthSet = new Set<string>()
-    for (const expense of expenses) {
-      const [year, month] = expense.date.split('-')
-      monthSet.add(`${year}-${month}`)
-    }
-
-    return Array.from(monthSet)
-      .map((key) => {
-        const [year, month] = key.split('-').map(Number)
-        return { year, month }
-      })
-      .sort((a, b) => {
-        if (a.year !== b.year) return b.year - a.year
-        return b.month - a.month
-      })
+    return distinctMonthsFromDates(expenses.map((e) => e.date))
   },
 })
 
