@@ -14,6 +14,10 @@ pnpm install
 echo ""
 echo "2. Setting up environment variables..."
 if [ ! -f .env.local ]; then
+  if [ ! -f .env.example ]; then
+    echo "Error: .env.example not found. Are you running this from the project root?"
+    exit 1
+  fi
   cp .env.example .env.local
   echo "   Created .env.local from .env.example"
   echo "   ⚠  Edit .env.local with your Convex deployment URL"
@@ -22,6 +26,14 @@ if [ ! -f .env.local ]; then
   read -p "   Press Enter once you've updated .env.local..."
 else
   echo "   .env.local already exists, skipping"
+fi
+
+# Validate that VITE_CONVEX_URL has been customised
+CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.local | cut -d'=' -f2-)
+if [ "${CONVEX_URL}" = "https://your-project.convex.cloud" ]; then
+  echo "Error: VITE_CONVEX_URL in .env.local still has the placeholder value."
+  echo "Update it with your Convex deployment URL, then re-run this script."
+  exit 1
 fi
 
 echo ""
