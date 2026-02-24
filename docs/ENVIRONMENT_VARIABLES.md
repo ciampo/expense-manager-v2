@@ -73,14 +73,15 @@ These secrets are configured in your GitHub repository settings.
 
 ### Required Secrets
 
-| Secret Name              | Description                                                          | Source               |
-| ------------------------ | -------------------------------------------------------------------- | -------------------- |
-| `CLOUDFLARE_API_TOKEN`   | API token for Cloudflare Workers deployment                          | Cloudflare Dashboard |
-| `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account identifier                                   | Cloudflare Dashboard |
-| `CONVEX_PROD_URL`        | `expense-manager` → **production** deployment URL                    | Convex Dashboard     |
-| `CONVEX_DEV_URL`         | `expense-manager` → **development** deployment URL (for PR previews) | Convex Dashboard     |
-| `CONVEX_TEST_URL`        | `expense-manager-test` → **production** deployment URL               | Convex Dashboard     |
-| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` → **production** deploy key                   | Convex Dashboard     |
+| Secret Name              | Description                                                           | Source               |
+| ------------------------ | --------------------------------------------------------------------- | -------------------- |
+| `CLOUDFLARE_API_TOKEN`   | API token for Cloudflare Workers deployment                           | Cloudflare Dashboard |
+| `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account identifier                                    | Cloudflare Dashboard |
+| `CONVEX_PROD_URL`        | `expense-manager` → **production** deployment URL                     | Convex Dashboard     |
+| `CONVEX_PROD_DEPLOY_KEY` | `expense-manager` → **production** deploy key (for CI backend deploy) | Convex Dashboard     |
+| `CONVEX_DEV_URL`         | `expense-manager` → **development** deployment URL (for PR previews)  | Convex Dashboard     |
+| `CONVEX_TEST_URL`        | `expense-manager-test` → **production** deployment URL                | Convex Dashboard     |
+| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` → **production** deploy key                    | Convex Dashboard     |
 
 ### How to Get Each Value
 
@@ -102,6 +103,13 @@ These secrets are configured in your GitHub repository settings.
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager` project
 3. Copy the **production** deployment URL (e.g., `https://xxx-xxx-xxx.convex.cloud`)
+
+#### `CONVEX_PROD_DEPLOY_KEY`
+
+1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
+2. Select the `expense-manager` project
+3. Settings → Deploy Keys → Generate Deploy Key
+4. Copy the key (only shown once)
 
 #### `CONVEX_DEV_URL`
 
@@ -193,6 +201,7 @@ These are automatically set by GitHub Actions or defined in workflow files.
 | Variable            | Workflow File  | Value                                   |
 | ------------------- | -------------- | --------------------------------------- |
 | `VITE_CONVEX_URL`   | `deploy.yml`   | `${{ secrets.CONVEX_PROD_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `deploy.yml`   | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}` |
 | `VITE_CONVEX_URL`   | `preview.yml`  | `${{ secrets.CONVEX_DEV_URL }}`         |
 | `VITE_CONVEX_URL`   | `test-e2e.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
 | `CONVEX_DEPLOY_KEY` | `test-e2e.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
@@ -292,10 +301,11 @@ pnpm test:e2e
 # Required GitHub Secrets
 CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
-CONVEX_PROD_URL         # For production deployments (deploy.yml)
-CONVEX_DEV_URL          # For PR preview deployments (preview.yml)
-CONVEX_TEST_URL         # For E2E tests
-CONVEX_TEST_DEPLOY_KEY  # For E2E tests
+CONVEX_PROD_URL            # For production deployments (deploy.yml)
+CONVEX_PROD_DEPLOY_KEY     # For Convex backend deploy (deploy.yml)
+CONVEX_DEV_URL             # For PR preview deployments (preview.yml)
+CONVEX_TEST_URL            # For E2E tests
+CONVEX_TEST_DEPLOY_KEY     # For E2E tests
 ```
 
 ### Convex Email (Optional)

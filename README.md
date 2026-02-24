@@ -31,6 +31,8 @@ A modern expense management application for tracking work-related expenses, buil
 
 ### Setup
 
+> **Quick start:** Run `pnpm setup` for a guided interactive walkthrough of all the steps below.
+
 1. Clone the repository:
 
    ```bash
@@ -87,6 +89,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 | Command                          | Description                               |
 | -------------------------------- | ----------------------------------------- |
+| `pnpm setup`                     | Guided interactive local dev setup        |
+| `pnpm setup:e2e`                 | Guided interactive E2E test project setup |
 | `pnpm dev`                       | Start development server                  |
 | `pnpm dev:e2e`                   | Start dev server with E2E test config     |
 | `pnpm build`                     | Build for production (includes typecheck) |
@@ -159,7 +163,7 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
 4. Deploy the schema (this creates the production deployment if it doesn't exist):
    ```bash
    # Load the deploy key from .env.e2e
-   export $(grep -v '^#' .env.e2e | grep CONVEX_DEPLOY_KEY | xargs)
+   export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2-)
    npx convex deploy
    ```
 5. Configure auth keys for the test project's production deployment:
@@ -246,7 +250,7 @@ The project includes GitHub Actions workflows for:
 - **Visual Regression**: Run on every push/PR in Docker
 - **Lint**: Run ESLint and Prettier checks on every push/PR
 - **Type Check**: Run TypeScript type checking on every push/PR
-- **Deploy**: Auto-deploy to production on push to `main`
+- **Deploy**: Auto-deploy Convex backend and Cloudflare Workers on push to `main`
 - **Preview**: Deploy preview on every PR
 - **Update Screenshots**: Manually triggered workflow to update and commit visual regression baselines
 
@@ -257,27 +261,16 @@ Configure these GitHub Actions secrets:
 | `CLOUDFLARE_API_TOKEN`   | Cloudflare API token                                                         |
 | `CLOUDFLARE_ACCOUNT_ID`  | Cloudflare account ID                                                        |
 | `CONVEX_PROD_URL`        | `expense-manager` project → **production** deployment URL                    |
+| `CONVEX_PROD_DEPLOY_KEY` | `expense-manager` project → **production** deploy key                        |
 | `CONVEX_DEV_URL`         | `expense-manager` project → **development** deployment URL (for PR previews) |
 | `CONVEX_TEST_URL`        | `expense-manager-test` project → **production** deployment URL               |
 | `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key                   |
 
 #### Convex Backend Deployment
 
-Convex backend functions and schema are **not** automatically deployed by the CI/CD pipeline. When you change files in the `convex/` directory, you must deploy them manually:
+Convex backend functions and schema are automatically deployed by the `deploy.yml` workflow when changes are pushed to `main`. The workflow runs `npx convex deploy` using the `CONVEX_PROD_DEPLOY_KEY` secret before deploying the frontend to Cloudflare Workers.
 
-```bash
-# Deploy to the production Convex deployment of the main expense-manager project
-npx convex deploy
-```
-
-This requires a `CONVEX_DEPLOY_KEY` environment variable set for the production project. You can find the key in the [Convex Dashboard](https://dashboard.convex.dev/) under Settings → Deploy Keys.
-
-```bash
-export CONVEX_DEPLOY_KEY=prod:your-production-deploy-key
-npx convex deploy
-```
-
-> **Note:** During local development, `npx convex dev` automatically syncs changes to the development deployment. Manual deployment is only needed for the production deployment.
+> **Note:** During local development, `npx convex dev` automatically syncs changes to the development deployment. The CI pipeline handles production deployment.
 
 ## Backend Security & Validation
 

@@ -35,17 +35,27 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 > At this point the test project only has a development deployment. Step 1.6 (`npx convex deploy`) will create the production deployment.
 
-### 1.3 Generate Deploy Key for Test Project
+### 1.3 Generate Deploy Keys
 
-Deploy keys provide non-interactive access to a project's **production** deployment. They are required for CLI commands like `convex deploy`, `convex run ... --prod`, and are used by E2E test seed/cleanup scripts.
+Deploy keys provide non-interactive access to a project's **production** deployment. They are required for CLI commands like `convex deploy`, `convex run ... --prod`, and are used by CI/CD and E2E test seed/cleanup scripts.
 
-1. In Convex Dashboard, select the **test** project
+#### Main project deploy key (for CI/CD)
+
+1. In Convex Dashboard, select the **main** project (`expense-manager`)
 2. Go to Settings → Deploy Keys
 3. Click "Generate Deploy Key"
 4. Copy and save the key securely (it's only shown once)
-5. This key will be added to GitHub secrets later **and** to `.env.e2e`
+5. This key will be added to GitHub secrets later as `CONVEX_PROD_DEPLOY_KEY`
 
-Save the deploy key to `.env.e2e` in the project root (the production deployment URL will be added after step 1.6):
+#### Test project deploy key (for E2E tests)
+
+1. In Convex Dashboard, select the **test** project (`expense-manager-test`)
+2. Go to Settings → Deploy Keys
+3. Click "Generate Deploy Key"
+4. Copy and save the key securely (it's only shown once)
+5. This key will be added to GitHub secrets later as `CONVEX_TEST_DEPLOY_KEY` **and** to `.env.e2e`
+
+Save the test deploy key to `.env.e2e` in the project root (the production deployment URL will be added after step 1.6):
 
 ```env
 VITE_CONVEX_URL=https://placeholder-will-update-after-deploy.convex.cloud
@@ -101,7 +111,7 @@ The test project needs the same schema deployed to its **production** deployment
 
 ```bash
 # Load the deploy key from .env.e2e
-export $(grep -v '^#' .env.e2e | grep CONVEX_DEPLOY_KEY | xargs)
+export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2-)
 
 # Deploy schema — creates the production deployment on first run
 npx convex deploy
@@ -213,6 +223,7 @@ Click "New repository secret" for each:
 | `CLOUDFLARE_API_TOKEN`   | Your Cloudflare API token                                                                                |
 | `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account ID                                                                               |
 | `CONVEX_PROD_URL`        | `expense-manager` project → **production** deployment URL (used by `deploy.yml`)                         |
+| `CONVEX_PROD_DEPLOY_KEY` | `expense-manager` project → **production** deploy key (used by `deploy.yml` for Convex backend deploy)   |
 | `CONVEX_DEV_URL`         | `expense-manager` project → **development** deployment URL (used by `preview.yml` for PR previews)       |
 | `CONVEX_TEST_URL`        | `expense-manager-test` project → **production** deployment URL (same as `VITE_CONVEX_URL` in `.env.e2e`) |
 | `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key (same as `CONVEX_DEPLOY_KEY` in `.env.e2e`)   |
@@ -267,7 +278,7 @@ pnpm test:visual:docker
 ### Before CI/CD
 
 - [ ] GitHub repository created
-- [ ] All 6 GitHub secrets added
+- [ ] All 7 GitHub secrets added
 - [ ] Branch protection rules configured
 - [ ] Docker Desktop running
 
