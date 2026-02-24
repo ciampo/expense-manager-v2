@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, existsSync } from 'fs'
+import { readFileSync, readdirSync, existsSync, statSync } from 'fs'
+import { execSync } from 'child_process'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -130,5 +131,69 @@ describe('documentation validation', () => {
       expect(envDoc).toContain(file)
       expect(existsSync(resolve(ROOT, file))).toBe(true)
     }
+  })
+
+  it('deploy.yml includes Convex backend deploy step', () => {
+    const deploy = readFile('.github/workflows/deploy.yml')
+
+    expect(deploy).toContain('convex deploy')
+    expect(deploy).toContain('CONVEX_PROD_DEPLOY_KEY')
+  })
+})
+
+describe('setup scripts validation', () => {
+  const scripts = ['scripts/setup.sh', 'scripts/setup-e2e.sh']
+
+  for (const script of scripts) {
+    it(`${script} exists and is executable`, () => {
+      const fullPath = resolve(ROOT, script)
+      expect(existsSync(fullPath)).toBe(true)
+
+      const stats = statSync(fullPath)
+      // Check owner-execute bit (0o100)
+      expect(stats.mode & 0o100).toBeTruthy()
+    })
+
+    it(`${script} has valid bash syntax`, () => {
+      const fullPath = resolve(ROOT, script)
+      expect(() => execSync(`bash -n "${fullPath}"`, { stdio: 'pipe' })).not.toThrow()
+    })
+
+    it(`${script} checks for pnpm as a prerequisite`, () => {
+      const content = readFile(script)
+      expect(content).toContain('command -v pnpm')
+    })
+
+    it(`${script} uses set -euo pipefail`, () => {
+      const content = readFile(script)
+      expect(content).toContain('set -euo pipefail')
+    })
+  }
+
+  it('setup.sh references .env.example as its template', () => {
+    const content = readFile('scripts/setup.sh')
+    expect(content).toContain('.env.example')
+  })
+
+  it('setup-e2e.sh references .env.e2e.example as its template', () => {
+    const content = readFile('scripts/setup-e2e.sh')
+    expect(content).toContain('.env.e2e.example')
+  })
+
+  it('setup-e2e.sh validates placeholder values before proceeding', () => {
+    const content = readFile('scripts/setup-e2e.sh')
+    expect(content).toContain('prod:your-test-project-deploy-key')
+    expect(content).toContain('https://your-test-project.convex.cloud')
+  })
+
+  it('setup-e2e.sh does not use unsafe export+xargs env loading', () => {
+    const content = readFile('scripts/setup-e2e.sh')
+    expect(content).not.toMatch(/export\s+\$\(/)
+  })
+
+  it('setup scripts are referenced in package.json', () => {
+    const pkg = JSON.parse(readFile('package.json'))
+    expect(pkg.scripts.setup).toBe('bash scripts/setup.sh')
+    expect(pkg.scripts['setup:e2e']).toBe('bash scripts/setup-e2e.sh')
   })
 })
