@@ -151,7 +151,7 @@ These are stored in Convex and available to your server functions.
 Or via CLI:
 
 ```bash
-npx convex env set VARIABLE_NAME=value
+npx convex env set VARIABLE_NAME value
 ```
 
 ### Auth Variables (Auto-configured)
@@ -163,13 +163,13 @@ npx convex env set VARIABLE_NAME=value
 
 > **Note:** These are set automatically by running `npx @convex-dev/auth` (or `npx @convex-dev/auth --prod` for production). Do not edit them manually.
 
-### Optional Variables
+### Application Variables
 
-| Variable          | Required | Description                              |
-| ----------------- | -------- | ---------------------------------------- |
-| `AUTH_RESEND_KEY` | Yes      | Resend API key for password reset emails |
+| Variable          | Required for              | Description                              |
+| ----------------- | ------------------------- | ---------------------------------------- |
+| `AUTH_RESEND_KEY` | Password reset (optional) | Resend API key for password reset emails |
 
-Required for the forgot-password flow to work. Without it, users cannot reset their passwords.
+The app runs without `AUTH_RESEND_KEY`, but the forgot-password flow will not work.
 
 ### Setting Up Email Provider
 
@@ -316,5 +316,5 @@ CONVEX_TEST_DEPLOY_KEY     # For E2E tests
 
 ```bash
 # Set in Convex environment
-npx convex env set AUTH_RESEND_KEY=re_xxxxx
+npx convex env set AUTH_RESEND_KEY re_xxxxx
 ```

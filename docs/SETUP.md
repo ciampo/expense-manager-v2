@@ -2,7 +2,7 @@
 
 This guide covers all the manual configuration steps required to set up the Expense Manager project.
 
-> **Tip:** For a guided, interactive experience, run `pnpm setup` (local development) or `pnpm setup:e2e` (E2E test project). The scripts automate steps 1.4–1.7 and are the recommended way to get started. This guide is useful as a reference or when you need more control over individual steps.
+> **Tip:** For a guided, interactive experience, run `pnpm setup` (automates steps 1.4, 1.5, and 1.7 for local development) or `pnpm setup:e2e` (automates steps 1.6 and 1.7 for the E2E test project). You still need to create the Convex projects (1.1–1.3) and configure email/Cloudflare/GitHub manually. This guide is useful as a reference or when you need more control over individual steps.
 
 ## Prerequisites
 
@@ -297,6 +297,9 @@ pnpm dev
 
 # Run unit tests
 pnpm test:unit
+
+# Run E2E tests (requires .env.e2e with valid values)
+pnpm test:e2e
 
 # Run visual tests (requires Docker)
 pnpm test:visual:docker

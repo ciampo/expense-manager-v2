@@ -31,7 +31,7 @@ A modern expense management application for tracking work-related expenses, buil
 
 ### Setup
 
-> **Quick start:** Run `pnpm setup` for a guided interactive walkthrough of all the steps below.
+> **Quick start:** Run `pnpm setup` for a guided interactive walkthrough of steps 1 and 3–6 below (you still need to create the Convex project manually in step 2).
 
 1. Clone the repository:
 
@@ -153,29 +153,28 @@ pnpm test:unit
 
 E2E tests run against the **production deployment** of a dedicated Convex test project (separate from your dev project). See [Convex deployments](#convex) below for background on the project/deployment model.
 
-> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–6 below.
+> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–7 below.
 
 1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
-2. Generate a production deploy key: Dashboard → test project → Settings → Deploy Keys
-3. Add both values to `.env.e2e` (see `.env.e2e.example` for reference):
+2. Generate a deploy key: Dashboard → test project → Settings → Deploy Keys → Generate Deploy Key — select **production**
+3. Set up `.env.e2e` with the deploy key (see `.env.e2e.example` for reference):
    ```env
-   VITE_CONVEX_URL=https://your-test-project.convex.cloud
+   VITE_CONVEX_URL=https://placeholder-will-update-after-step-4.convex.cloud
    CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
    ```
-   > `VITE_CONVEX_URL` must be the **production deployment** URL (shown after step 4). `CONVEX_DEPLOY_KEY` is the production deploy key from step 2.
 4. Deploy the schema (this creates the production deployment if it doesn't exist):
    ```bash
-   # Load the deploy key from .env.e2e
    export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2-)
    npx convex deploy
    ```
-5. Configure auth keys for the test project's production deployment:
+5. Copy the **production** deployment URL from the Convex Dashboard (shown after step 4) and update `VITE_CONVEX_URL` in `.env.e2e`
+6. Configure auth keys for the test project's production deployment:
    ```bash
    npx @convex-dev/auth --prod
    ```
    When prompted for the **site URL**, enter `http://localhost:3000` (E2E tests run locally).
-6. Seed test data: `pnpm test:e2e:seed`
-7. Run tests:
+7. Seed test data: `pnpm test:e2e:seed`
+8. Run tests:
    ```bash
    pnpm test:e2e
    ```
