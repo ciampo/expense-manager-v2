@@ -120,7 +120,7 @@ The test project needs the same schema deployed to its **production** deployment
 
 ```bash
 # Load the deploy key from .env.e2e
-export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2-)
+export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2- | tr -d '\r')
 
 # Deploy schema — creates the production deployment on first run
 npx convex deploy

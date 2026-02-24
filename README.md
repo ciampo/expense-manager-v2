@@ -164,7 +164,7 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
    ```
 4. Deploy the schema (this creates the production deployment if it doesn't exist):
    ```bash
-   export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2-)
+   export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2- | tr -d '\r')
    npx convex deploy
    ```
 5. Copy the **production** deployment URL from the Convex Dashboard (shown after step 4) and update `VITE_CONVEX_URL` in `.env.e2e`

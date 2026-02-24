@@ -9,6 +9,7 @@ This document lists all environment variables used in the Expense Manager projec
 | Variable                | Location                   | Purpose                                                       |
 | ----------------------- | -------------------------- | ------------------------------------------------------------- |
 | `VITE_CONVEX_URL`       | `.env.local`, `.env.e2e`   | Convex backend URL                                            |
+| `CONVEX_DEPLOYMENT`     | `.env.local`               | Auto-set by `npx convex dev` — do not edit manually           |
 | `CONVEX_DEPLOY_KEY`     | `.env.e2e`, GitHub Secrets | Deploy/run functions on Convex projects (test and production) |
 | `CLOUDFLARE_API_TOKEN`  | GitHub Secrets             | Deploy to Cloudflare Workers                                  |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets             | Cloudflare account identifier                                 |
