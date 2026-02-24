@@ -24,6 +24,21 @@ export const Route = createFileRoute('/_authenticated/reports')({
 })
 
 function ReportsPage() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Reports</h1>
+        <p className="text-muted-foreground">Generate monthly reports of your expenses</p>
+      </div>
+
+      <Suspense fallback={<ReportPageSkeleton />}>
+        <ReportsContent />
+      </Suspense>
+    </div>
+  )
+}
+
+function ReportsContent() {
   const { data: availableMonths } = useSuspenseQuery(convexQuery(api.reports.availableMonths, {}))
 
   const [selectedMonth, setSelectedMonth] = useState('')
@@ -34,27 +49,16 @@ function ReportsPage() {
 
   if (availableMonths.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Reports</h1>
-          <p className="text-muted-foreground">Generate monthly reports of your expenses</p>
-        </div>
-        <p className="text-muted-foreground">
-          No expense data yet. Add some expenses to generate reports.
-        </p>
-      </div>
+      <p className="text-muted-foreground">
+        No expense data yet. Add some expenses to generate reports.
+      </p>
     )
   }
 
   const [year, month] = effectiveMonth.split('-').map(Number)
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Reports</h1>
-        <p className="text-muted-foreground">Generate monthly reports of your expenses</p>
-      </div>
-
+    <>
       {/* Month selector */}
       <div className="mb-8">
         <label id="reports-month-label" className="mb-2 block text-sm font-medium">
@@ -77,6 +81,18 @@ function ReportsPage() {
       <Suspense fallback={<ReportSkeleton />}>
         <MonthlyReport year={year} month={month} />
       </Suspense>
+    </>
+  )
+}
+
+function ReportPageSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <Skeleton className="mb-2 h-4 w-24" />
+        <Skeleton className="h-10 w-64" />
+      </div>
+      <ReportSkeleton />
     </div>
   )
 }

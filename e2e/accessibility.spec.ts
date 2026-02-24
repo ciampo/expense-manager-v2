@@ -136,9 +136,9 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
 
   test('reports page should have no accessibility violations', async ({ page }) => {
     await page.goto('/reports')
-    // Wait for the authenticated layout to fully render (nav is only in the
-    // real layout, not in the pendingComponent skeleton).
-    await page.locator('header nav').waitFor()
+    // Wait for the reports page content to resolve (Suspense boundary settled).
+    // A fresh user has no expenses, so the empty-state message appears.
+    await page.getByText('No expense data yet').waitFor()
 
     const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
