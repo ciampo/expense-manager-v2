@@ -27,19 +27,21 @@ if [ ! -f .env.e2e ]; then
   fi
   cp .env.e2e.example .env.e2e
   echo "Created .env.e2e from .env.e2e.example"
-  echo "⚠  Edit .env.e2e with your test project's URL and deploy key"
+  echo "⚠  Edit .env.e2e and set CONVEX_DEPLOY_KEY to your test project's production deploy key."
+  echo "   (VITE_CONVEX_URL can stay as a placeholder for now — you'll update it after deploying.)"
   echo ""
-  read -p "Press Enter once you've updated .env.e2e..." || true
+  read -p "Press Enter once you've set CONVEX_DEPLOY_KEY in .env.e2e..." || true
 else
   echo ".env.e2e already exists"
 fi
 
-# Load env variables safely (avoid shell injection from export+xargs)
-# `|| true` prevents pipefail from exiting when the key is missing
-CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2- || true)
-VITE_CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.e2e | cut -d'=' -f2- || true)
+# Load env variables safely (avoid shell injection from export+xargs).
+# `|| true` prevents pipefail from exiting when a key is missing.
+# `tr -d '\r'` strips Windows carriage returns from values.
+CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2- | tr -d '\r' || true)
+VITE_CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.e2e | cut -d'=' -f2- | tr -d '\r' || true)
 
-# Validate deploy key
+# Validate deploy key (required before deploying)
 if [ -z "${CONVEX_DEPLOY_KEY}" ]; then
   echo "Error: CONVEX_DEPLOY_KEY not found in .env.e2e"
   exit 1
@@ -50,22 +52,28 @@ if [ "${CONVEX_DEPLOY_KEY}" = "prod:your-test-project-deploy-key" ]; then
   exit 1
 fi
 
-# Validate Convex URL
-if [ -z "${VITE_CONVEX_URL}" ]; then
-  echo "Error: VITE_CONVEX_URL is empty or missing in .env.e2e"
-  exit 1
-fi
-if [ "${VITE_CONVEX_URL}" = "https://your-test-project.convex.cloud" ]; then
-  echo "Error: VITE_CONVEX_URL in .env.e2e still has the placeholder value."
-  echo "Update it with the production deployment URL from your test Convex project, then re-run this script."
-  exit 1
-fi
-
 export CONVEX_DEPLOY_KEY
 
 echo ""
 echo "1. Deploying schema to test project..."
 npx convex deploy
+
+# Validate VITE_CONVEX_URL after deploying — first-time users won't have the
+# production URL until `npx convex deploy` creates the production deployment.
+if [ -z "${VITE_CONVEX_URL}" ] || [ "${VITE_CONVEX_URL}" = "https://your-test-project.convex.cloud" ]; then
+  echo ""
+  echo "⚠  Update VITE_CONVEX_URL in .env.e2e with the production deployment URL."
+  echo "   Find it in: Convex Dashboard → expense-manager-test → deployment switcher → Production"
+  echo ""
+  read -p "Press Enter once you've updated VITE_CONVEX_URL in .env.e2e..." || true
+
+  VITE_CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.e2e | cut -d'=' -f2- | tr -d '\r' || true)
+  if [ -z "${VITE_CONVEX_URL}" ] || [ "${VITE_CONVEX_URL}" = "https://your-test-project.convex.cloud" ]; then
+    echo "Error: VITE_CONVEX_URL in .env.e2e is still empty or has the placeholder value."
+    echo "Update it with the production deployment URL from your test Convex project, then re-run this script."
+    exit 1
+  fi
+fi
 
 echo ""
 echo "2. Configuring auth keys for test project..."

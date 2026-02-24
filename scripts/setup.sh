@@ -32,9 +32,10 @@ else
   echo "   .env.local already exists, skipping"
 fi
 
-# Validate that VITE_CONVEX_URL has been customised
-# `|| true` prevents pipefail from exiting when the key is missing
-CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.local | cut -d'=' -f2- || true)
+# Validate that VITE_CONVEX_URL has been customised.
+# `|| true` prevents pipefail from exiting when the key is missing.
+# `tr -d '\r'` strips Windows carriage returns from the value.
+CONVEX_URL=$(grep -m1 '^VITE_CONVEX_URL=' .env.local | cut -d'=' -f2- | tr -d '\r' || true)
 if [ -z "${CONVEX_URL}" ]; then
   echo "Error: VITE_CONVEX_URL is empty or missing in .env.local"
   exit 1
