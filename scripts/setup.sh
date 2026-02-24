@@ -53,6 +53,13 @@ echo "   npx convex dev"
 echo ""
 read -p "   Press Enter once 'npx convex dev' is running..." || true
 
+# Validate that npx convex dev has initialized the deployment
+if ! grep -q '^CONVEX_DEPLOYMENT=' .env.local 2>/dev/null; then
+  echo "Error: CONVEX_DEPLOYMENT not found in .env.local"
+  echo "Please ensure 'npx convex dev' is running in another terminal and has finished initializing."
+  exit 1
+fi
+
 echo ""
 echo "4. Configuring authentication keys..."
 echo "   When prompted for the site URL, enter: http://localhost:3000"
