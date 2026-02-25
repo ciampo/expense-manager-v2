@@ -1,9 +1,37 @@
 import { v } from 'convex/values'
-import type { QueryCtx } from './_generated/server'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 import { validateCategoryFields } from './validation'
+
+/**
+ * Find an existing category by name or create a new one for the user.
+ * Checks both user-created and predefined categories for dedup.
+ * Returns the category ID in all cases.
+ */
+export async function upsertCategory(
+  ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'>,
+  categoryName: string,
+): Promise<Id<'categories'>> {
+  const { name } = validateCategoryFields({ name: categoryName })
+
+  const existing = await ctx.db
+    .query('categories')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .filter((q) => q.eq(q.field('name'), name))
+    .first()
+  if (existing) return existing._id
+
+  const predefined = await ctx.db
+    .query('categories')
+    .filter((q) => q.and(q.eq(q.field('userId'), undefined), q.eq(q.field('name'), name)))
+    .first()
+  if (predefined) return predefined._id
+
+  return ctx.db.insert('categories', { name, userId })
+}
 
 /**
  * Verify that a category is accessible to the given user.

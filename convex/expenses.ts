@@ -3,7 +3,7 @@ import type { MutationCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
-import { verifyCategoryAccess } from './categories'
+import { upsertCategory, verifyCategoryAccess } from './categories'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
 import { validateExpenseFields } from './validation'
 
@@ -103,7 +103,8 @@ export const create = mutation({
     date: v.string(),
     merchant: v.string(),
     amount: v.number(),
-    categoryId: v.id('categories'),
+    categoryId: v.optional(v.id('categories')),
+    newCategoryName: v.optional(v.string()),
     attachmentId: v.optional(v.id('_storage')),
     comment: v.optional(v.string()),
   },
@@ -114,9 +115,16 @@ export const create = mutation({
     }
 
     const { date, merchant, amount, comment } = validateExpenseFields(args)
-    await verifyCategoryAccess(ctx, args.categoryId, userId)
 
-    // Verify the user owns the uploaded file
+    let categoryId = args.categoryId
+    if (!categoryId && args.newCategoryName) {
+      categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
+    }
+    if (!categoryId) {
+      throw new Error('Category is required')
+    }
+    await verifyCategoryAccess(ctx, categoryId, userId)
+
     if (args.attachmentId) {
       await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
     }
@@ -126,7 +134,7 @@ export const create = mutation({
       date,
       merchant,
       amount,
-      categoryId: args.categoryId,
+      categoryId,
       attachmentId: args.attachmentId,
       comment,
       createdAt: Date.now(),
@@ -147,7 +155,8 @@ export const update = mutation({
     date: v.string(),
     merchant: v.string(),
     amount: v.number(),
-    categoryId: v.id('categories'),
+    categoryId: v.optional(v.id('categories')),
+    newCategoryName: v.optional(v.string()),
     attachmentId: v.optional(v.id('_storage')),
     comment: v.optional(v.string()),
   },
@@ -163,14 +172,20 @@ export const update = mutation({
     }
 
     const { date, merchant, amount, comment } = validateExpenseFields(args)
-    await verifyCategoryAccess(ctx, args.categoryId, userId)
 
-    // If the attachment is changing, verify the user owns the new upload
+    let categoryId = args.categoryId
+    if (!categoryId && args.newCategoryName) {
+      categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
+    }
+    if (!categoryId) {
+      throw new Error('Category is required')
+    }
+    await verifyCategoryAccess(ctx, categoryId, userId)
+
     if (args.attachmentId && args.attachmentId !== existing.attachmentId) {
       await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
     }
 
-    // If attachment changed and old one exists, clean it up.
     // Storage deletion is best-effort — if the file is already gone
     // (e.g. cleaned up by the cron), the update should still proceed.
     if (existing.attachmentId && existing.attachmentId !== args.attachmentId) {
@@ -186,7 +201,7 @@ export const update = mutation({
       date,
       merchant,
       amount,
-      categoryId: args.categoryId,
+      categoryId,
       attachmentId: args.attachmentId,
       comment,
     })

@@ -204,10 +204,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     },
   })
 
-  const { mutateAsync: createCategoryAsync } = useMutation({
-    mutationFn: useConvexMutation(api.categories.create),
-  })
-
   const { mutateAsync: generateUploadUrlAsync } = useMutation({
     mutationFn: useConvexMutation(api.storage.generateUploadUrl),
   })
@@ -275,7 +271,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
   const needsNewCategory = !categoryId && !!newCategoryName.trim()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
 
@@ -297,25 +293,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       return
     }
 
-    let resolvedCategoryId = categoryId
-    if (!resolvedCategoryId && newCategoryName.trim()) {
-      try {
-        resolvedCategoryId = await createCategoryAsync({ name: newCategoryName.trim() })
-      } catch {
-        toast.error('Error creating category')
-        return
-      }
-    }
-
-    if (!resolvedCategoryId) {
-      return
-    }
-
     const data = {
       date,
       merchant: merchant.trim(),
       amount: amountCents,
-      categoryId: resolvedCategoryId,
+      ...(categoryId ? { categoryId } : { newCategoryName: newCategoryName.trim() }),
       attachmentId,
       comment: comment.trim() || undefined,
     }
