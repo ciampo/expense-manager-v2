@@ -9,20 +9,23 @@ import { validateExpenseFields } from './validation'
 
 /**
  * Insert a merchant name into the merchants table if it doesn't already exist
- * for the given user. Intended to keep the autocomplete data in sync whenever
- * an expense is created or updated.
+ * for the given user (case-insensitive). Keeps the original casing for display
+ * while using a lowercased normalizedName for dedup.
  */
 export async function upsertMerchant(
   ctx: { db: MutationCtx['db'] },
   userId: Id<'users'>,
   merchantName: string,
 ) {
+  const normalizedName = merchantName.toLowerCase()
   const existing = await ctx.db
     .query('merchants')
-    .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', merchantName))
+    .withIndex('by_user_and_normalized_name', (q) =>
+      q.eq('userId', userId).eq('normalizedName', normalizedName),
+    )
     .first()
   if (!existing) {
-    await ctx.db.insert('merchants', { name: merchantName, userId })
+    await ctx.db.insert('merchants', { name: merchantName, normalizedName, userId })
   }
 }
 
@@ -85,7 +88,7 @@ export const getMerchants = query({
 
     const merchants = await ctx.db
       .query('merchants')
-      .withIndex('by_user_and_name', (q) => q.eq('userId', userId))
+      .withIndex('by_user_and_normalized_name', (q) => q.eq('userId', userId))
       .collect()
 
     return merchants.map((m) => m.name)
