@@ -17,6 +17,8 @@ import type * as http from "../http.js";
 import type * as reports from "../reports.js";
 import type * as seed from "../seed.js";
 import type * as storage from "../storage.js";
+import type * as validation from "../validation.js";
+import type * as zodSchemas from "../zodSchemas.js";
 
 import type {
   ApiFromModules,
@@ -34,6 +36,8 @@ declare const fullApi: ApiFromModules<{
   reports: typeof reports;
   seed: typeof seed;
   storage: typeof storage;
+  validation: typeof validation;
+  zodSchemas: typeof zodSchemas;
 }>;
 
 /**
