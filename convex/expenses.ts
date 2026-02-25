@@ -1,9 +1,30 @@
 import { v } from 'convex/values'
+import type { MutationCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
+import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 import { verifyCategoryAccess } from './categories'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
 import { validateExpenseFields } from './validation'
+
+/**
+ * Insert a merchant name into the merchants table if it doesn't already exist
+ * for the given user. Intended to keep the autocomplete data in sync whenever
+ * an expense is created or updated.
+ */
+export async function upsertMerchant(
+  ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'>,
+  merchantName: string,
+) {
+  const existing = await ctx.db
+    .query('merchants')
+    .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', merchantName))
+    .first()
+  if (!existing) {
+    await ctx.db.insert('merchants', { name: merchantName, userId })
+  }
+}
 
 /**
  * List all expenses for the current user, sorted by date (most recent first)
@@ -108,17 +129,7 @@ export const create = mutation({
       createdAt: Date.now(),
     })
 
-    // Upsert merchant for autocomplete
-    const trimmedMerchant = args.merchant.trim()
-    const existingMerchant = await ctx.db
-      .query('merchants')
-      .withIndex('by_user_and_name', (q) =>
-        q.eq('userId', userId).eq('name', trimmedMerchant)
-      )
-      .first()
-    if (!existingMerchant) {
-      await ctx.db.insert('merchants', { name: trimmedMerchant, userId })
-    }
+    await upsertMerchant(ctx, userId, merchant)
 
     return expenseId
   },
@@ -177,17 +188,7 @@ export const update = mutation({
       comment,
     })
 
-    // Upsert merchant for autocomplete
-    const trimmedMerchant = args.merchant.trim()
-    const existingMerchant = await ctx.db
-      .query('merchants')
-      .withIndex('by_user_and_name', (q) =>
-        q.eq('userId', userId).eq('name', trimmedMerchant)
-      )
-      .first()
-    if (!existingMerchant) {
-      await ctx.db.insert('merchants', { name: trimmedMerchant, userId })
-    }
+    await upsertMerchant(ctx, userId, merchant)
 
     return args.id
   },
