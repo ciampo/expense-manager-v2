@@ -107,7 +107,7 @@ test.describe('Expense form — combobox UX', () => {
   // ── Category combobox ──────────────────────────────────────
 
   test.describe('Category combobox', () => {
-    test('shows "+ Create" option at the bottom when typed name has no exact match', async ({
+    test('shows "+ Use" option at the bottom when typed name has no exact match', async ({
       page,
     }) => {
       await page.getByRole('combobox', { name: /category/i }).click()
@@ -117,32 +117,30 @@ test.describe('Expense form — combobox UX', () => {
       await page.getByPlaceholder(/search or create/i).fill('My Custom Category')
 
       const createOption = listbox.getByRole('option', {
-        name: /\+ Create "My Custom Category"/,
+        name: /\+ Use "My Custom Category"/,
       })
       await expect(createOption).toBeVisible()
     })
 
-    test('"+ Create" option does not appear when input matches an existing category', async ({
+    test('"+ Use" option does not appear when input matches an existing category', async ({
       page,
     }) => {
       await page.getByRole('combobox', { name: /category/i }).click()
       // "Coworking" is a predefined category
       await page.getByPlaceholder(/search or create/i).fill('Coworking')
 
-      const createOption = page.getByRole('option', { name: /\+ Create "Coworking"/ })
+      const createOption = page.getByRole('option', { name: /\+ Use "Coworking"/ })
       await expect(createOption).not.toBeVisible()
 
       // But the existing category should still be visible
       await expect(page.getByRole('option', { name: /coworking/i })).toBeVisible()
     })
 
-    test('selecting "+ Create" closes the popover without creating the category', async ({
-      page,
-    }) => {
+    test('selecting "+ Use" closes the popover without creating the category', async ({ page }) => {
       const trigger = page.getByRole('combobox', { name: /category/i })
       await trigger.click()
       await page.getByPlaceholder(/search or create/i).fill('Deferred Category')
-      await page.getByRole('option', { name: /\+ Create "Deferred Category"/ }).click()
+      await page.getByRole('option', { name: /\+ Use "Deferred Category"/ }).click()
 
       // Popover should be closed
       await expect(page.getByRole('listbox')).not.toBeVisible()
@@ -163,10 +161,10 @@ test.describe('Expense form — combobox UX', () => {
       await page.getByPlaceholder(/search or create/i).fill('SomeShop')
       await page.getByRole('option', { name: /\+ Use "SomeShop"/ }).click()
 
-      // Choose a new category via "+ Create"
+      // Choose a new category via "+ Use"
       await page.getByRole('combobox', { name: /category/i }).click()
       await page.getByPlaceholder(/search or create/i).fill('Brand New Cat')
-      await page.getByRole('option', { name: /\+ Create "Brand New Cat"/ }).click()
+      await page.getByRole('option', { name: /\+ Use "Brand New Cat"/ }).click()
 
       // Fill amount
       await page.getByLabel(/amount/i).fill('25')

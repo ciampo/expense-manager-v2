@@ -516,7 +516,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                           setIsCategoryOpen(false)
                         }}
                       >
-                        + Create &quot;{newCategoryName}&quot;
+                        + Use &quot;{newCategoryName}&quot;
                       </CommandItem>
                     </CommandGroup>
                   </>

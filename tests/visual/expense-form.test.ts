@@ -51,8 +51,8 @@ test.describe('Visual Regression - Expense Form', () => {
   test('new expense form — category combobox open with typed text', async ({ page }) => {
     await page.getByRole('combobox', { name: /category/i }).click()
     await page.getByPlaceholder(/search or create/i).fill('New Category')
-    // Wait for the "+ Create" option to render
-    await expect(page.getByRole('option', { name: /\+ Create "New Category"/ })).toBeVisible()
+    // Wait for the "+ Use" option to render
+    await expect(page.getByRole('option', { name: /\+ Use "New Category"/ })).toBeVisible()
     await expect(page).toHaveScreenshot('expense-form-category-combobox-new.png', {
       fullPage: true,
     })
@@ -61,7 +61,7 @@ test.describe('Visual Regression - Expense Form', () => {
   test('new expense form — pending new category shown in trigger', async ({ page }) => {
     await page.getByRole('combobox', { name: /category/i }).click()
     await page.getByPlaceholder(/search or create/i).fill('Pending Cat')
-    await page.getByRole('option', { name: /\+ Create "Pending Cat"/ }).click()
+    await page.getByRole('option', { name: /\+ Use "Pending Cat"/ }).click()
 
     // Popover should be closed, trigger shows the pending name
     await expect(page.getByRole('listbox')).not.toBeVisible()
