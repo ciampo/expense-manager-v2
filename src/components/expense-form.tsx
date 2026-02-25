@@ -203,16 +203,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     },
   })
 
-  const createCategory = useMutation({
+  const { mutateAsync: createCategoryAsync } = useMutation({
     mutationFn: useConvexMutation(api.categories.create),
-    onSuccess: (newId: Id<'categories'>) => {
-      setCategoryId(newId)
-      setNewCategoryName('')
-      toast.success('Category created')
-    },
-    onError: () => {
-      toast.error('Error creating category')
-    },
   })
 
   const { mutateAsync: generateUploadUrlAsync } = useMutation({
@@ -280,13 +272,14 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     [generateUploadUrlAsync, confirmUploadAsync],
   )
 
-  // Handle form submit
-  const handleSubmit = (e: React.FormEvent) => {
+  const needsNewCategory = !categoryId && !!newCategoryName.trim()
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
 
     const newErrors: typeof errors = {}
-    if (!categoryId) {
+    if (!categoryId && !newCategoryName.trim()) {
       newErrors.category = 'Select a category'
     }
     const amountCents = parseCurrencyToCents(amount)
@@ -296,13 +289,24 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     if (!merchant.trim()) {
       newErrors.merchant = 'Enter the merchant'
     }
-    // The `|| !categoryId` is redundant with the check above but is required
-    // so TypeScript can narrow `categoryId` from `Id | null` to `Id` after
-    // this guard — without it the `data` object below would have a type error.
-    if (Object.keys(newErrors).length > 0 || !categoryId) {
+    if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       const firstError = Object.values(newErrors)[0]
       if (firstError) toast.error(firstError)
+      return
+    }
+
+    let resolvedCategoryId = categoryId
+    if (!resolvedCategoryId && newCategoryName.trim()) {
+      try {
+        resolvedCategoryId = await createCategoryAsync({ name: newCategoryName.trim() })
+      } catch {
+        toast.error('Error creating category')
+        return
+      }
+    }
+
+    if (!resolvedCategoryId) {
       return
     }
 
@@ -310,7 +314,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       date,
       merchant: merchant.trim(),
       amount: amountCents,
-      categoryId,
+      categoryId: resolvedCategoryId,
       attachmentId,
       comment: comment.trim() || undefined,
     }
@@ -336,12 +340,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       setAttachmentId(undefined)
     }
     setShowDeleteAttachment(false)
-  }
-
-  const handleCreateCategory = () => {
-    if (newCategoryName.trim()) {
-      createCategory.mutate({ name: newCategoryName.trim() })
-    }
   }
 
   const isLoading = createExpense.isPending || updateExpense.isPending || deleteExpense.isPending
@@ -471,6 +469,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 {selectedCategory.icon && <span className="mr-2">{selectedCategory.icon}</span>}
                 {selectedCategory.name}
               </>
+            ) : needsNewCategory ? (
+              newCategoryName.trim()
             ) : (
               'Select category...'
             )}
@@ -510,7 +510,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     <>
                       <CommandSeparator />
                       <CommandGroup>
-                        <CommandItem onSelect={handleCreateCategory}>
+                        <CommandItem
+                          onSelect={() => {
+                            setCategoryId(null)
+                            setIsCategoryOpen(false)
+                          }}
+                        >
                           + Create &quot;{newCategoryName}&quot;
                         </CommandItem>
                       </CommandGroup>
