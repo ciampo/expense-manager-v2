@@ -26,7 +26,9 @@ async function signUp(page: Page) {
  */
 async function selectMerchant(page: Page, merchantName: string) {
   await page.locator('#merchant-combobox').click()
-  await page.getByPlaceholder('Search or create...').fill(merchantName)
+  const input = page.getByPlaceholder('Search or create...')
+  await expect(input).toBeVisible()
+  await input.fill(merchantName)
 
   await page.getByRole('option', { name: merchantName }).first().click()
 }
@@ -36,6 +38,10 @@ async function createExpense(page: Page, merchantName: string) {
   await page.getByRole('button', { name: /create expense/i }).waitFor()
 
   await selectMerchant(page, merchantName)
+
+  // Wait for the merchant popover to fully unmount (exit animation)
+  // before opening the category popover.
+  await expect(page.getByPlaceholder('Search or create...')).toHaveCount(0)
 
   await page.locator('#category-combobox').click()
   await page.getByRole('option', { name: /Coworking/ }).click()
@@ -106,6 +112,9 @@ test.describe('Merchant Autocomplete', () => {
 
     await page.getByRole('link', { name: 'Edit' }).click()
     await page.getByRole('heading', { name: /edit expense/i }).waitFor()
+
+    // Wait for the expense data to populate the merchant combobox
+    await expect(page.locator('#merchant-combobox')).toHaveText('Alpha Market')
 
     await selectMerchant(page, 'Beta Deli')
 
