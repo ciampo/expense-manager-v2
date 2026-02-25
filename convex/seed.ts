@@ -1,5 +1,6 @@
 import { internalMutation, internalQuery } from './_generated/server'
 import { authTables } from '@convex-dev/auth/server'
+import { upsertMerchant } from './expenses'
 
 // Predefined categories for work expenses
 const PREDEFINED_CATEGORIES = [
@@ -52,6 +53,31 @@ export const checkSeeded = internalQuery({
       seeded: categories.length > 0,
       count: categories.length,
     }
+  },
+})
+
+/**
+ * One-time backfill: populate the merchants table from existing expenses.
+ * Safe to run repeatedly — uses the same upsertMerchant helper so duplicates
+ * and case variants are handled identically to the live create/update path.
+ *
+ * Run after deploying the merchants table:
+ *   npx convex run seed:backfillMerchants
+ */
+export const backfillMerchants = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const expenses = await ctx.db.query('expenses').collect()
+
+    const seen = new Set<string>()
+    for (const expense of expenses) {
+      const key = `${expense.userId}:${expense.merchant.toLowerCase()}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      await upsertMerchant(ctx, expense.userId, expense.merchant)
+    }
+
+    return { processed: seen.size, message: `Backfilled ${seen.size} unique merchants` }
   },
 })
 
