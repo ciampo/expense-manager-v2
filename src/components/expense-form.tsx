@@ -411,8 +411,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 {shouldShowCreateOption(merchants ?? [], merchant) && (
                   <>
                     <CommandSeparator />
-                    <CommandGroup>
-                      <CommandItem onSelect={() => setIsMerchantOpen(false)}>
+                    <CommandGroup forceMount>
+                      <CommandItem forceMount onSelect={() => setIsMerchantOpen(false)}>
                         + Use &quot;{merchant}&quot;
                       </CommandItem>
                     </CommandGroup>
@@ -491,8 +491,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 ) && (
                   <>
                     <CommandSeparator />
-                    <CommandGroup>
+                    <CommandGroup forceMount>
                       <CommandItem
+                        forceMount
                         onSelect={() => {
                           setCategoryId(null)
                           setIsCategoryOpen(false)
