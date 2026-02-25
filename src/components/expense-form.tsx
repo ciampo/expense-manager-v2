@@ -412,18 +412,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 onValueChange={setMerchant}
               />
               <CommandList>
-                <CommandEmpty>
-                  {merchant && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={() => setIsMerchantOpen(false)}
-                    >
-                      + Use &quot;{merchant}&quot;
-                    </Button>
-                  )}
-                </CommandEmpty>
+                <CommandEmpty>No merchants found</CommandEmpty>
                 <CommandGroup heading="Recent merchants">
                   {merchants?.map((m) => (
                     <CommandItem
@@ -438,16 +427,17 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
-                {merchant && !merchants?.some(m => m.toLowerCase() === merchant.toLowerCase()) && (
-                  <>
-                    <CommandSeparator />
-                    <CommandGroup>
-                      <CommandItem onSelect={() => setIsMerchantOpen(false)}>
-                        + Use &quot;{merchant}&quot;
-                      </CommandItem>
-                    </CommandGroup>
-                  </>
-                )}
+                {merchant &&
+                  !merchants?.some((m) => m.toLowerCase() === merchant.toLowerCase()) && (
+                    <>
+                      <CommandSeparator />
+                      <CommandGroup>
+                        <CommandItem onSelect={() => setIsMerchantOpen(false)}>
+                          + Use &quot;{merchant}&quot;
+                        </CommandItem>
+                      </CommandGroup>
+                    </>
+                  )}
               </CommandList>
             </Command>
           </PopoverContent>
