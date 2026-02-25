@@ -18,13 +18,24 @@ async function signUp(page: Page) {
   await page.locator('header nav').waitFor()
 }
 
+/**
+ * Select a merchant in an open combobox. Handles both new merchants
+ * (clicks the "Use" button) and existing ones (clicks the option).
+ */
+async function selectMerchant(page: Page, merchantName: string) {
+  await page.locator('#merchant-combobox').click()
+  await page.getByPlaceholder('Search or create...').fill(merchantName)
+
+  const existingOption = page.getByRole('option', { name: merchantName })
+  const useButton = page.getByRole('button', { name: new RegExp(`Use "${merchantName}"`) })
+  await existingOption.or(useButton).first().click()
+}
+
 async function createExpense(page: Page, merchantName: string) {
   await page.goto('/expenses/new')
   await page.getByRole('button', { name: /create expense/i }).waitFor()
 
-  await page.locator('#merchant-combobox').click()
-  await page.getByPlaceholder('Search or create...').fill(merchantName)
-  await page.getByRole('button', { name: new RegExp(`Use "${merchantName}"`) }).click()
+  await selectMerchant(page, merchantName)
 
   await page.locator('#category-combobox').click()
   await page.getByRole('option', { name: /Coworking/ }).click()
@@ -72,28 +83,35 @@ test.describe('Merchant Autocomplete', () => {
     expect(zetaIdx).toBeGreaterThanOrEqual(0)
     expect(alphaIdx).toBeLessThan(zetaIdx)
 
-    // "Alpha Market" was used twice — verify it appears exactly once (dedup)
-    const alphaCount = allOptionTexts.filter((t) => t === 'Alpha Market').length
-    expect(alphaCount).toBe(1)
+    expect(allOptionTexts.filter((t) => t === 'Alpha Market').length).toBe(1)
+  })
+
+  test('autocomplete matches merchants case-insensitively', async ({ page }) => {
+    await createExpense(page, 'Alpha Market')
+
+    await openMerchantCombobox(page)
+
+    // Typing a different case should still surface the existing merchant
+    await page.getByPlaceholder('Search or create...').fill('alpha market')
+    await expect(page.getByRole('option', { name: 'Alpha Market' })).toBeVisible()
+
+    // Only the original casing should appear
+    const allOptionTexts = await page.getByRole('option').allTextContents()
+    expect(allOptionTexts.filter((t) => t.toLowerCase() === 'alpha market').length).toBe(1)
+    expect(allOptionTexts).toContain('Alpha Market')
   })
 
   test('updating an expense merchant upserts the new name into autocomplete', async ({ page }) => {
     await createExpense(page, 'Alpha Market')
 
-    // Navigate to the expense and edit it
     await page.getByRole('link', { name: 'Edit' }).click()
     await page.getByRole('heading', { name: /edit expense/i }).waitFor()
 
-    // Change merchant
-    await page.locator('#merchant-combobox').click()
-    await page.getByPlaceholder('Search or create...').fill('Beta Deli')
-    await page.getByRole('button', { name: /Use "Beta Deli"/ }).click()
+    await selectMerchant(page, 'Beta Deli')
 
-    // Save
     await page.getByRole('button', { name: /save changes/i }).click()
     await page.waitForURL('**/dashboard', { timeout: 15000 })
 
-    // Verify both the old and new merchant appear in autocomplete
     await openMerchantCombobox(page)
     await expect(page.getByRole('option', { name: 'Alpha Market' })).toBeVisible()
     await expect(page.getByRole('option', { name: 'Beta Deli' })).toBeVisible()
