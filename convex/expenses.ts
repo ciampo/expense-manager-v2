@@ -85,10 +85,10 @@ export const getMerchants = query({
 
     const merchants = await ctx.db
       .query('merchants')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', userId))
       .collect()
 
-    return merchants.map((m) => m.name).sort()
+    return merchants.map((m) => m.name)
   },
 })
 
