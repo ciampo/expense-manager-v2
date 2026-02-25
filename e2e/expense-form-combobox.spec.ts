@@ -57,6 +57,7 @@ test.describe('Expense form — combobox UX', () => {
       await page.getByRole('combobox', { name: /merchant/i }).click()
       await page.getByPlaceholder(/search or create/i).fill('TestMerchant')
       await page.getByRole('option', { name: /\+ Use "TestMerchant"/ }).click()
+      await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 
       // Fill out remaining required fields and submit
       await page.getByRole('combobox', { name: /category/i }).click()
@@ -161,6 +162,11 @@ test.describe('Expense form — combobox UX', () => {
       await page.getByPlaceholder(/search or create/i).fill('SomeShop')
       await page.getByRole('option', { name: /\+ Use "SomeShop"/ }).click()
 
+      // Wait for the merchant popover content to fully unmount (exit animation)
+      // before opening the next popover — avoids two "Search or create..." inputs
+      // coexisting in the DOM (strict mode violation).
+      await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
+
       // Choose a new category via "+ Use"
       await page.getByRole('combobox', { name: /category/i }).click()
       await page.getByPlaceholder(/search or create/i).fill('Brand New Cat')
@@ -181,11 +187,16 @@ test.describe('Expense form — combobox UX', () => {
       await expect(page.getByRole('option', { name: /brand new cat/i })).toBeVisible()
     })
 
-    test('shows "No categories found" when search matches nothing', async ({ page }) => {
+    test('only shows "+ Use" option when search matches no existing category', async ({ page }) => {
       await page.getByRole('combobox', { name: /category/i }).click()
       await page.getByPlaceholder(/search or create/i).fill('zzzzzznonexistent')
 
-      await expect(page.getByText('No categories found')).toBeVisible()
+      // The "+ Use" item is the only visible option (existing categories are filtered out)
+      const useOption = page.getByRole('option', { name: /\+ Use "zzzzzznonexistent"/ })
+      await expect(useOption).toBeVisible()
+
+      // Predefined categories should be filtered away
+      await expect(page.getByRole('option', { name: /coworking/i })).not.toBeVisible()
     })
   })
 })
