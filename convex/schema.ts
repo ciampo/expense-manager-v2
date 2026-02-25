@@ -26,6 +26,14 @@ export default defineSchema({
     icon: v.optional(v.string()),
   }).index('by_user', ['userId']),
 
+  merchants: defineTable({
+    name: v.string(),
+    normalizedName: v.string(), // lowercased for case-insensitive dedup
+    userId: v.id('users'),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_and_normalized_name', ['userId', 'normalizedName']),
+
   /**
    * Tracks file uploads so we can verify ownership from the moment of upload,
    * before the file is linked to an expense. Cleaned up by a daily cron that

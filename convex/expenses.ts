@@ -1,9 +1,33 @@
 import { v } from 'convex/values'
+import type { MutationCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
+import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 import { verifyCategoryAccess } from './categories'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
 import { validateExpenseFields } from './validation'
+
+/**
+ * Insert a merchant name into the merchants table if it doesn't already exist
+ * for the given user (case-insensitive). Keeps the original casing for display
+ * while using a lowercased normalizedName for dedup.
+ */
+export async function upsertMerchant(
+  ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'>,
+  merchantName: string,
+) {
+  const normalizedName = merchantName.toLowerCase()
+  const existing = await ctx.db
+    .query('merchants')
+    .withIndex('by_user_and_normalized_name', (q) =>
+      q.eq('userId', userId).eq('normalizedName', normalizedName),
+    )
+    .first()
+  if (!existing) {
+    await ctx.db.insert('merchants', { name: merchantName, normalizedName, userId })
+  }
+}
 
 /**
  * List all expenses for the current user, sorted by date (most recent first)
@@ -53,12 +77,6 @@ export const get = query({
 
 /**
  * Get unique merchant names for autocomplete.
- *
- * NOTE: This fetches all user expenses to extract merchant names, making it
- * O(n) on the total number of expenses. Convex does not support projection
- * queries (selecting specific fields only), so the full document is read.
- * For users with a very large number of expenses, consider introducing a
- * dedicated `merchants` table that is updated on expense create/update.
  */
 export const getMerchants = query({
   args: {},
@@ -68,14 +86,12 @@ export const getMerchants = query({
       return []
     }
 
-    const expenses = await ctx.db
-      .query('expenses')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
+    const merchants = await ctx.db
+      .query('merchants')
+      .withIndex('by_user_and_normalized_name', (q) => q.eq('userId', userId))
       .collect()
 
-    // Get unique merchant names
-    const merchantSet = new Set(expenses.map((e) => e.merchant))
-    return Array.from(merchantSet).sort()
+    return merchants.map((m) => m.name)
   },
 })
 
@@ -115,6 +131,8 @@ export const create = mutation({
       comment,
       createdAt: Date.now(),
     })
+
+    await upsertMerchant(ctx, userId, merchant)
 
     return expenseId
   },
@@ -172,6 +190,8 @@ export const update = mutation({
       attachmentId: args.attachmentId,
       comment,
     })
+
+    await upsertMerchant(ctx, userId, merchant)
 
     return args.id
   },
