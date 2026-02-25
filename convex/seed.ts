@@ -120,6 +120,12 @@ export const cleanup = internalMutation({
       await ctx.db.delete(upload._id)
     }
 
+    // Delete all merchants
+    const merchants = await ctx.db.query('merchants').collect()
+    for (const merchant of merchants) {
+      await ctx.db.delete(merchant._id)
+    }
+
     // Delete user-created categories (keep predefined)
     const userCategories = await ctx.db
       .query('categories')
