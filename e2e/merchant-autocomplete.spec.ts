@@ -20,15 +20,15 @@ async function signUp(page: Page) {
 
 /**
  * Select a merchant in an open combobox. Handles both new merchants
- * (clicks the "Use" button) and existing ones (clicks the option).
+ * (the "+ Use" CommandItem) and existing ones — both render as
+ * role="option", and the merchant name appears in the accessible name
+ * of either variant, so a single locator covers both paths.
  */
 async function selectMerchant(page: Page, merchantName: string) {
   await page.locator('#merchant-combobox').click()
   await page.getByPlaceholder('Search or create...').fill(merchantName)
 
-  const existingOption = page.getByRole('option', { name: merchantName })
-  const useButton = page.getByRole('button', { name: new RegExp(`Use "${merchantName}"`) })
-  await existingOption.or(useButton).first().click()
+  await page.getByRole('option', { name: merchantName }).first().click()
 }
 
 async function createExpense(page: Page, merchantName: string) {
