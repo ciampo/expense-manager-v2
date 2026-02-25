@@ -44,6 +44,7 @@ import {
   parseLocalDate,
   toISODateString,
 } from '@/lib/format'
+import { shouldShowCreateOption } from '@/lib/combobox'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
@@ -425,17 +426,16 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
-                {merchant &&
-                  !merchants?.some((m) => m.toLowerCase() === merchant.toLowerCase()) && (
-                    <>
-                      <CommandSeparator />
-                      <CommandGroup>
-                        <CommandItem onSelect={() => setIsMerchantOpen(false)}>
-                          + Use &quot;{merchant}&quot;
-                        </CommandItem>
-                      </CommandGroup>
-                    </>
-                  )}
+                {shouldShowCreateOption(merchants ?? [], merchant) && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup>
+                      <CommandItem onSelect={() => setIsMerchantOpen(false)}>
+                        + Use &quot;{merchant}&quot;
+                      </CommandItem>
+                    </CommandGroup>
+                  </>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
@@ -503,24 +503,24 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
-                {newCategoryName &&
-                  !categories?.some(
-                    (c) => c.name.toLowerCase() === newCategoryName.toLowerCase(),
-                  ) && (
-                    <>
-                      <CommandSeparator />
-                      <CommandGroup>
-                        <CommandItem
-                          onSelect={() => {
-                            setCategoryId(null)
-                            setIsCategoryOpen(false)
-                          }}
-                        >
-                          + Create &quot;{newCategoryName}&quot;
-                        </CommandItem>
-                      </CommandGroup>
-                    </>
-                  )}
+                {shouldShowCreateOption(
+                  (categories ?? []).map((c) => c.name),
+                  newCategoryName,
+                ) && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup>
+                      <CommandItem
+                        onSelect={() => {
+                          setCategoryId(null)
+                          setIsCategoryOpen(false)
+                        }}
+                      >
+                        + Create &quot;{newCategoryName}&quot;
+                      </CommandItem>
+                    </CommandGroup>
+                  </>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
