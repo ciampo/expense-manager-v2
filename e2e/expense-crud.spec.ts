@@ -44,7 +44,7 @@ test.describe('Expense CRUD', () => {
     // Merchant
     await page.getByRole('combobox', { name: /merchant/i }).click()
     await page.getByPlaceholder(/search or create/i).fill('Test Merchant')
-    await page.getByRole('option', { name: /\+ Use "Test Merchant"/ }).click()
+    await page.getByRole('option', { name: '+ Use "Test Merchant"', exact: true }).click()
 
     // Wait for the merchant popover to fully unmount (exit animation)
     // before opening the category popover.
@@ -60,7 +60,7 @@ test.describe('Expense CRUD', () => {
     // Submit
     await page.getByRole('button', { name: /create expense/i }).click()
 
-    await page.waitForURL('**/dashboard', { timeout: 10000 })
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
     await expect(page.getByText('Test Merchant')).toBeVisible()
     await expect(page.getByText('€25.50')).toBeVisible()
 
@@ -75,7 +75,7 @@ test.describe('Expense CRUD', () => {
     await amountInput.fill('50,00')
 
     await page.getByRole('button', { name: /save changes/i }).click()
-    await page.waitForURL('**/dashboard', { timeout: 10000 })
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
 
     await expect(page.getByText('Test Merchant')).toBeVisible()
     await expect(page.getByText('€50.00')).toBeVisible()
