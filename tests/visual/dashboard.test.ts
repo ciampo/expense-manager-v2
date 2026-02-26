@@ -1,36 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
-
-const TEST_PASSWORD = 'TestPassword123!'
+import { signUpTestUser } from './utils'
 
 test.describe('Visual Regression - Dashboard', () => {
-  test.setTimeout(60000)
-
-  async function signUp(page: Page) {
-    const uniqueEmail = `visual-dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
-
-    await page.goto('/sign-up')
-    await page.getByRole('heading', { name: /sign up/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
-
-    await page.getByLabel('Email').fill(uniqueEmail)
-    await page.getByLabel('Password', { exact: true }).fill(TEST_PASSWORD)
-    await page.getByLabel('Confirm password').fill(TEST_PASSWORD)
-    await page.getByRole('button', { name: 'Sign Up' }).click()
-
-    try {
-      await page.waitForURL('**/dashboard', { timeout: 15000 })
-    } catch {
-      const url = page.url()
-      const bodyText = await page
-        .locator('body')
-        .innerText()
-        .catch(() => 'could not read body')
-      throw new Error(
-        `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
-      )
-    }
-    await page.locator('header nav').waitFor()
-  }
+  test.setTimeout(60_000)
 
   async function createExpense(page: Page, merchant: string, amount: string) {
     await page.getByRole('link', { name: /new expense/i }).click()
@@ -52,7 +24,7 @@ test.describe('Visual Regression - Dashboard', () => {
   }
 
   test.beforeEach(async ({ page }) => {
-    await signUp(page)
+    await signUpTestUser(page)
   })
 
   test('empty state', async ({ page }) => {
