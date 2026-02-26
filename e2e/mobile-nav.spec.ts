@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Mobile Navigation', () => {
-  const testPassword = 'TestPass123!'
+  const testPassword = 'TestPassword123!'
 
   // Mobile viewport — iPhone 13 dimensions
   test.use({ viewport: { width: 390, height: 844 } })
@@ -22,7 +22,18 @@ test.describe('Mobile Navigation', () => {
     await page.getByLabel('Confirm password').fill(testPassword)
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
-    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    try {
+      await page.waitForURL('**/dashboard', { timeout: 15000 })
+    } catch {
+      const url = page.url()
+      const bodyText = await page
+        .locator('body')
+        .innerText()
+        .catch(() => 'could not read body')
+      throw new Error(
+        `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
+      )
+    }
   })
 
   test('hamburger menu is visible and desktop nav is hidden on mobile', async ({ page }) => {

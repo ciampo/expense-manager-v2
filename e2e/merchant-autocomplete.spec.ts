@@ -14,7 +14,18 @@ async function signUp(page: Page) {
   await page.getByLabel('Confirm password').fill(TEST_PASSWORD)
   await page.getByRole('button', { name: 'Sign Up' }).click()
 
-  await page.waitForURL('**/dashboard', { timeout: 15000 })
+  try {
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
+  } catch {
+    const url = page.url()
+    const bodyText = await page
+      .locator('body')
+      .innerText()
+      .catch(() => 'could not read body')
+    throw new Error(
+      `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
+    )
+  }
   await page.locator('header nav').waitFor()
 }
 
@@ -110,7 +121,7 @@ test.describe('Merchant Autocomplete', () => {
   test('updating an expense merchant upserts the new name into autocomplete', async ({ page }) => {
     await createExpense(page, 'Alpha Market')
 
-    await page.getByRole('link', { name: 'Edit' }).click()
+    await page.getByRole('link', { name: /edit/i }).click()
     await page.getByRole('heading', { name: /edit expense/i }).waitFor()
 
     // Wait for the expense data to populate the merchant combobox
