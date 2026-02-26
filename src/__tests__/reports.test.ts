@@ -1,5 +1,41 @@
 import { describe, it, expect } from 'vitest'
-import { distinctMonthsFromDates } from '../../convex/reports'
+import { distinctMonthsFromDates, validateYearMonth } from '../../convex/reports'
+
+describe('validateYearMonth', () => {
+  it('accepts valid year and month values', () => {
+    expect(() => validateYearMonth(2026, 1)).not.toThrow()
+    expect(() => validateYearMonth(2026, 6)).not.toThrow()
+    expect(() => validateYearMonth(2026, 12)).not.toThrow()
+    expect(() => validateYearMonth(2000, 1)).not.toThrow()
+    expect(() => validateYearMonth(2100, 12)).not.toThrow()
+  })
+
+  it('rejects month below 1', () => {
+    expect(() => validateYearMonth(2026, 0)).toThrow('Invalid month: 0')
+    expect(() => validateYearMonth(2026, -1)).toThrow('Invalid month: -1')
+  })
+
+  it('rejects month above 12', () => {
+    expect(() => validateYearMonth(2026, 13)).toThrow('Invalid month: 13')
+    expect(() => validateYearMonth(2026, 99)).toThrow('Invalid month: 99')
+  })
+
+  it('rejects non-integer month', () => {
+    expect(() => validateYearMonth(2026, 1.5)).toThrow('Invalid month: 1.5')
+  })
+
+  it('rejects year below 2000', () => {
+    expect(() => validateYearMonth(1999, 6)).toThrow('Invalid year: 1999')
+  })
+
+  it('rejects year above 2100', () => {
+    expect(() => validateYearMonth(2101, 6)).toThrow('Invalid year: 2101')
+  })
+
+  it('rejects non-integer year', () => {
+    expect(() => validateYearMonth(2026.5, 6)).toThrow('Invalid year: 2026.5')
+  })
+})
 
 describe('distinctMonthsFromDates', () => {
   it('returns empty array for empty input', () => {

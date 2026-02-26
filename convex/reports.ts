@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { auth } from './auth'
 
-function validateYearMonth(year: number, month: number): void {
+export function validateYearMonth(year: number, month: number): void {
   if (!Number.isInteger(month) || month < 1 || month > 12) {
     throw new Error(`Invalid month: ${month}. Must be an integer between 1 and 12.`)
   }
