@@ -1,17 +1,20 @@
 import type { Page } from '@playwright/test'
+import { waitForHydration } from './page-readiness'
 
 const TEST_PASSWORD = 'TestPassword123!'
 
 /**
- * Sign up a fresh test user and wait until the authenticated dashboard is ready.
+ * Sign up a fresh test user and wait until the authenticated dashboard
+ * is ready. Works on both desktop and mobile viewports.
+ *
  * Provides descriptive errors when the flow stalls — helpful for CI debugging.
  */
 export async function signUpTestUser(page: Page): Promise<void> {
-  const uniqueEmail = `visual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
+  const uniqueEmail = `test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
 
   await page.goto('/sign-up')
   await page.getByRole('heading', { name: /sign up/i }).waitFor()
-  await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10_000 })
+  await waitForHydration(page)
 
   await page.getByLabel('Email').fill(uniqueEmail)
   await page.getByLabel('Password', { exact: true }).fill(TEST_PASSWORD)
@@ -31,5 +34,5 @@ export async function signUpTestUser(page: Page): Promise<void> {
     )
   }
 
-  await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10_000 })
+  await waitForHydration(page)
 }
