@@ -98,7 +98,7 @@ export const monthlyData = query({
     // Collect unique category IDs from this month's expenses
     const categoryIds = [...new Set(expenses.map((e) => e.categoryId))]
     // Fetch only the categories referenced by these expenses
-    const categories = await Promise.all(categoryIds.map((id) => ctx.db.get(id)))
+    const categories = await Promise.all(categoryIds.map((id) => ctx.db.get('categories', id)))
     // Defense-in-depth: only allow predefined categories (no userId) or
     // categories owned by the current user. Treat others as missing/Unknown.
     const categoryMap = new Map(

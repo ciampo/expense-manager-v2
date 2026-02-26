@@ -66,7 +66,7 @@ export async function deleteUploadRecord(
 ) {
   const upload = await getUploadRecord(ctx, storageId)
   if (upload) {
-    await ctx.db.delete(upload._id)
+    await ctx.db.delete('uploads', upload._id)
   }
 }
 
@@ -213,7 +213,7 @@ export const deleteFile = mutation({
 
     await ctx.storage.delete(args.storageId)
     await deleteUploadRecord(ctx, args.storageId)
-    await ctx.db.patch(expense._id, { attachmentId: undefined })
+    await ctx.db.patch('expenses', expense._id, { attachmentId: undefined })
     return true
   },
 })
@@ -255,7 +255,7 @@ export const cleanupOrphanedUploads = internalMutation({
       if (inUse) {
         // File is still attached to an expense — only remove the stale
         // upload record.
-        await ctx.db.delete(upload._id)
+        await ctx.db.delete('uploads', upload._id)
       } else {
         // Truly orphaned — delete storage file + upload record.
         try {
@@ -264,7 +264,7 @@ export const cleanupOrphanedUploads = internalMutation({
         } catch (err) {
           console.warn(`Cleanup: could not delete storage file ${upload.storageId}:`, err)
         }
-        await ctx.db.delete(upload._id)
+        await ctx.db.delete('uploads', upload._id)
       }
     }
 

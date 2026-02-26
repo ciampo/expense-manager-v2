@@ -66,7 +66,7 @@ export const get = query({
       return null
     }
 
-    const expense = await ctx.db.get(args.id)
+    const expense = await ctx.db.get('expenses', args.id)
     if (!expense || expense.userId !== userId) {
       return null
     }
@@ -158,7 +158,7 @@ export const update = mutation({
       throw new Error('Not authenticated')
     }
 
-    const existing = await ctx.db.get(args.id)
+    const existing = await ctx.db.get('expenses', args.id)
     if (!existing || existing.userId !== userId) {
       throw new Error('Expense not found')
     }
@@ -181,7 +181,7 @@ export const update = mutation({
       await deleteUploadRecord(ctx, existing.attachmentId)
     }
 
-    await ctx.db.patch(args.id, {
+    await ctx.db.patch('expenses', args.id, {
       date,
       merchant,
       amount,
@@ -207,7 +207,7 @@ export const remove = mutation({
       throw new Error('Not authenticated')
     }
 
-    const expense = await ctx.db.get(args.id)
+    const expense = await ctx.db.get('expenses', args.id)
     if (!expense || expense.userId !== userId) {
       throw new Error('Expense not found')
     }
@@ -223,7 +223,7 @@ export const remove = mutation({
       await deleteUploadRecord(ctx, expense.attachmentId)
     }
 
-    await ctx.db.delete(args.id)
+    await ctx.db.delete('expenses', args.id)
     return args.id
   },
 })
@@ -239,7 +239,7 @@ export const removeAttachment = mutation({
       throw new Error('Not authenticated')
     }
 
-    const expense = await ctx.db.get(args.id)
+    const expense = await ctx.db.get('expenses', args.id)
     if (!expense || expense.userId !== userId) {
       throw new Error('Expense not found')
     }
@@ -251,7 +251,7 @@ export const removeAttachment = mutation({
         // File may have already been deleted
       }
       await deleteUploadRecord(ctx, expense.attachmentId)
-      await ctx.db.patch(args.id, { attachmentId: undefined })
+      await ctx.db.patch('expenses', args.id, { attachmentId: undefined })
     }
 
     return args.id
