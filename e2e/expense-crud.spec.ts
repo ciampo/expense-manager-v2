@@ -30,8 +30,15 @@ test.describe('Expense CRUD', () => {
 
     // Merchant
     await page.getByRole('combobox', { name: /merchant/i }).click()
-    await page.getByPlaceholder(/search or create/i).first().fill('Test Merchant')
-    await page.getByRole('button', { name: /use "test merchant"/i }).click()
+    await page
+      .getByPlaceholder(/search or create/i)
+      .first()
+      .fill('Test Merchant')
+    await page.getByRole('option', { name: /\+ Use "Test Merchant"/ }).click()
+
+    // Wait for the merchant popover to fully unmount (exit animation)
+    // before opening the category popover.
+    await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 
     // Category — pick the first predefined one
     await page.getByRole('combobox', { name: /category/i }).click()
@@ -65,10 +72,7 @@ test.describe('Expense CRUD', () => {
 
     await page.getByRole('button', { name: 'Delete' }).first().click()
 
-    await page
-      .getByRole('alertdialog')
-      .getByRole('button', { name: 'Delete' })
-      .click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
 
     await expect(page.getByText('Test Merchant')).not.toBeVisible()
     await expect(page.getByText(/haven't recorded any expenses/i)).toBeVisible()
