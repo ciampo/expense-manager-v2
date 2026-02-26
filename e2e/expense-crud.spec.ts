@@ -1,22 +1,21 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
-async function signUpFreshUser(page: import('@playwright/test').Page) {
-  const email = `test-crud-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`
-  const password = 'TestPass123!'
+const TEST_PASSWORD = 'TestPass123!'
+
+async function signUpFreshUser(page: Page) {
+  const uniqueEmail = `test-crud-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`
 
   await page.goto('/sign-up')
   await page.getByRole('heading', { name: /sign up/i }).waitFor()
   await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
 
-  await page.getByLabel('Email').fill(email)
-  await page.getByLabel('Password', { exact: true }).fill(password)
-  await page.getByLabel('Confirm password').fill(password)
+  await page.getByLabel('Email').fill(uniqueEmail)
+  await page.getByLabel('Password', { exact: true }).fill(TEST_PASSWORD)
+  await page.getByLabel('Confirm password').fill(TEST_PASSWORD)
   await page.getByRole('button', { name: 'Sign Up' }).click()
 
   await page.waitForURL('**/dashboard', { timeout: 15000 })
   await page.locator('header nav').waitFor()
-
-  return { email, password }
 }
 
 test.describe('Expense CRUD', () => {
@@ -48,7 +47,7 @@ test.describe('Expense CRUD', () => {
     await page.getByRole('option', { name: /coworking/i }).click()
 
     // Amount
-    await page.getByLabel(/amount/i).fill('25.50')
+    await page.getByLabel(/amount/i).fill('25,50')
 
     // Submit
     await page.getByRole('button', { name: /create expense/i }).click()
@@ -65,7 +64,7 @@ test.describe('Expense CRUD', () => {
 
     const amountInput = page.getByLabel(/amount/i)
     await amountInput.clear()
-    await amountInput.fill('50.00')
+    await amountInput.fill('50,00')
 
     await page.getByRole('button', { name: /save changes/i }).click()
     await page.waitForURL('**/dashboard', { timeout: 10000 })
