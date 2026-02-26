@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { signUpTestUser } from './utils'
+import { signUpTestUser } from '../shared/auth'
 
 test.describe('Visual Regression - Expense Form', () => {
   test.setTimeout(60_000)

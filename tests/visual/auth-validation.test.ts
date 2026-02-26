@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test'
+import { waitForHydration } from '../shared/page-readiness'
 
 test.describe('Visual Regression - Auth Form Validation States', () => {
   test('sign-in page — validation errors', async ({ page }) => {
     await page.goto('/sign-in')
     await page.getByRole('heading', { name: /sign in/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
+    await waitForHydration(page)
 
     await page.getByRole('button', { name: 'Sign In' }).click()
     await expect(page.getByText('Email is required.')).toBeVisible()
@@ -18,7 +19,7 @@ test.describe('Visual Regression - Auth Form Validation States', () => {
   test('sign-up page — validation errors', async ({ page }) => {
     await page.goto('/sign-up')
     await page.getByRole('heading', { name: /sign up/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
+    await waitForHydration(page)
 
     await page.getByRole('button', { name: 'Sign Up' }).click()
     await expect(page.getByText('Email is required.')).toBeVisible()
@@ -32,7 +33,7 @@ test.describe('Visual Regression - Auth Form Validation States', () => {
   test('sign-up page — password mismatch error', async ({ page }) => {
     await page.goto('/sign-up')
     await page.getByRole('heading', { name: /sign up/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
+    await waitForHydration(page)
 
     await page.getByLabel('Email').fill('user@example.com')
     await page.getByLabel('Password', { exact: true }).fill('validpass1')
@@ -49,7 +50,7 @@ test.describe('Visual Regression - Auth Form Validation States', () => {
   test('forgot-password page — email validation error', async ({ page }) => {
     await page.goto('/forgot-password')
     await page.getByRole('heading', { name: /forgot password/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
+    await waitForHydration(page)
 
     await page.getByRole('button', { name: 'Send verification code' }).click()
     await expect(page.getByText('Email is required.')).toBeVisible()

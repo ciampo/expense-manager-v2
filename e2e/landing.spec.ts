@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { waitForHydration } from '../tests/shared/page-readiness'
 
 test.describe('Landing Page', () => {
   test('should display the landing page', async ({ page }) => {
@@ -53,7 +54,7 @@ test.describe('Authentication Flow', () => {
 
   test('should show validation errors for empty form submission', async ({ page }) => {
     await page.goto('/sign-in')
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
+    await waitForHydration(page)
 
     await page.getByRole('button', { name: 'Sign In' }).click()
 

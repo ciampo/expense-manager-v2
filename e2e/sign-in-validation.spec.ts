@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { waitForHydration } from '../tests/shared/page-readiness'
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 
@@ -7,7 +8,7 @@ test.describe('Sign-in form validation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/sign-in')
     await page.getByRole('heading', { name: /sign in/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
+    await waitForHydration(page)
   })
 
   test('shows required-field errors when submitting empty form', async ({ page }) => {

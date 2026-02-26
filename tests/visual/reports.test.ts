@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { signUpTestUser } from './utils'
+import { signUpTestUser } from '../shared/auth'
 
 test.describe('Visual Regression - Reports', () => {
   test.setTimeout(60_000)
@@ -10,7 +10,8 @@ test.describe('Visual Regression - Reports', () => {
 
   test('empty state', async ({ page }) => {
     await page.goto('/reports')
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10_000 })
+    await page.getByRole('heading', { name: /reports/i }).waitFor()
+    await page.getByText(/no expense data yet/i).waitFor()
 
     await expect(page).toHaveScreenshot('reports-empty.png', {
       fullPage: true,

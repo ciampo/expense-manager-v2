@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { waitForHydration } from '../tests/shared/page-readiness'
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 
@@ -7,7 +8,7 @@ test.describe('Forgot-password form validation — email step', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/forgot-password')
     await page.getByRole('heading', { name: /forgot password/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
+    await waitForHydration(page)
   })
 
   test('shows required-email error when submitting empty form', async ({ page }) => {
