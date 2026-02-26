@@ -39,7 +39,7 @@ test.describe('Visual Regression - Dashboard', () => {
 
     await page.getByRole('combobox', { name: /merchant/i }).click()
     await page.getByPlaceholder(/search or create/i).fill(merchant)
-    await page.getByRole('option', { name: new RegExp(`\\+ Use "${merchant}"`) }).click()
+    await page.getByRole('option', { name: `+ Use "${merchant}"`, exact: true }).click()
     await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 
     await page.getByRole('combobox', { name: /category/i }).click()
@@ -64,7 +64,7 @@ test.describe('Visual Regression - Dashboard', () => {
   })
 
   test('with an expense', async ({ page }) => {
-    await createExpense(page, 'Visual Test Shop', '42')
+    await createExpense(page, 'Visual Test Shop', '42,00')
     await expect(page.getByText('Visual Test Shop')).toBeVisible()
 
     await expect(page).toHaveScreenshot('dashboard-with-expense.png', {
@@ -74,7 +74,7 @@ test.describe('Visual Regression - Dashboard', () => {
   })
 
   test('delete confirmation dialog', async ({ page }) => {
-    await createExpense(page, 'Delete Test', '10')
+    await createExpense(page, 'Delete Test', '10,00')
 
     await page.getByRole('button', { name: 'Delete' }).first().click()
     await expect(page.getByRole('alertdialog')).toBeVisible()
