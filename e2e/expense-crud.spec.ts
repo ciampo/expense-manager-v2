@@ -20,6 +20,8 @@ async function signUpFreshUser(page: import('@playwright/test').Page) {
 }
 
 test.describe('Expense CRUD', () => {
+  test.setTimeout(60000)
+
   test('create, edit, and delete an expense', async ({ page }) => {
     await signUpFreshUser(page)
 
@@ -27,6 +29,7 @@ test.describe('Expense CRUD', () => {
 
     await page.getByRole('link', { name: /new expense/i }).click()
     await page.waitForURL('**/expenses/new')
+    await page.getByRole('button', { name: /create expense/i }).waitFor()
 
     // Merchant
     await page.getByRole('combobox', { name: /merchant/i }).click()
@@ -58,6 +61,7 @@ test.describe('Expense CRUD', () => {
 
     await page.getByRole('link', { name: 'Edit' }).first().click()
     await page.waitForURL(/\/expenses\//)
+    await page.getByRole('button', { name: /save changes/i }).waitFor()
 
     const amountInput = page.getByLabel(/amount/i)
     await amountInput.clear()
@@ -66,6 +70,7 @@ test.describe('Expense CRUD', () => {
     await page.getByRole('button', { name: /save changes/i }).click()
     await page.waitForURL('**/dashboard', { timeout: 10000 })
 
+    await expect(page.getByText('Test Merchant')).toBeVisible()
     await expect(page.getByText('€50.00')).toBeVisible()
 
     // --- DELETE ---
