@@ -1,39 +1,13 @@
 import { test, expect } from '@playwright/test'
+import { signUpTestUser } from '../tests/shared/auth'
 
 test.describe('Mobile Navigation', () => {
-  const testPassword = 'TestPassword123!'
-
-  // Mobile viewport — iPhone 13 dimensions
   test.use({ viewport: { width: 390, height: 844 } })
 
-  // Allow extra time for sign-up + backend calls on CI
   test.setTimeout(45000)
 
-  // Sign up a fresh user before each test
   test.beforeEach(async ({ page }) => {
-    const uniqueEmail = `mobile-nav-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
-
-    await page.goto('/sign-up')
-    await page.getByRole('heading', { name: /sign up/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
-
-    await page.getByLabel('Email').fill(uniqueEmail)
-    await page.getByLabel('Password', { exact: true }).fill(testPassword)
-    await page.getByLabel('Confirm password').fill(testPassword)
-    await page.getByRole('button', { name: 'Sign Up' }).click()
-
-    try {
-      await page.waitForURL('**/dashboard', { timeout: 15000 })
-    } catch {
-      const url = page.url()
-      const bodyText = await page
-        .locator('body')
-        .innerText()
-        .catch(() => 'could not read body')
-      throw new Error(
-        `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
-      )
-    }
+    await signUpTestUser(page)
   })
 
   test('hamburger menu is visible and desktop nav is hidden on mobile', async ({ page }) => {

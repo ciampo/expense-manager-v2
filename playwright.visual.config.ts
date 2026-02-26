@@ -21,7 +21,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },
-  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{projectName}/{arg}{ext}',
   expect: {
     toHaveScreenshot: {
       maxDiffPixelRatio: 0.03,
@@ -33,6 +33,12 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 720 },
+      },
+    },
+    {
+      name: 'mobile-chromium',
+      use: {
+        ...devices['iPhone 14'],
       },
     },
   ],

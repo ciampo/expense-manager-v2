@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { signUpTestUser } from '../tests/shared/auth'
 
 test.describe('Auth Guards — unauthenticated redirects', () => {
   test('unauthenticated user navigating to /dashboard should redirect to /sign-in', async ({
@@ -37,74 +38,22 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
 })
 
 test.describe('Auth Guards — authenticated redirects', () => {
-  const testPassword = 'TestPassword123!'
-
   test('authenticated user navigating to /sign-in should redirect to /dashboard', async ({
     page,
   }) => {
-    // Sign up a fresh user to establish an authenticated session
-    const uniqueEmail = `auth-guard-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
+    await signUpTestUser(page)
 
-    await page.goto('/sign-up')
-    await page.getByRole('heading', { name: /sign up/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
-
-    await page.getByLabel('Email').fill(uniqueEmail)
-    await page.getByLabel('Password', { exact: true }).fill(testPassword)
-    await page.getByLabel('Confirm password').fill(testPassword)
-    await page.getByRole('button', { name: 'Sign Up' }).click()
-
-    try {
-      await page.waitForURL('**/dashboard', { timeout: 15000 })
-    } catch {
-      const url = page.url()
-      const bodyText = await page
-        .locator('body')
-        .innerText()
-        .catch(() => 'could not read body')
-      throw new Error(
-        `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
-      )
-    }
-    await page.locator('header nav').waitFor()
-
-    // Now try to navigate to an auth page — should redirect back to dashboard
     await page.goto('/sign-in')
     await page.waitForURL('**/dashboard')
 
-    // Dashboard should be visible, sign-in form should not
     await expect(page.getByRole('heading', { name: 'Sign In' })).not.toBeVisible()
   })
 
   test('authenticated user navigating to /sign-up should redirect to /dashboard', async ({
     page,
   }) => {
-    const uniqueEmail = `auth-guard-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
+    await signUpTestUser(page)
 
-    await page.goto('/sign-up')
-    await page.getByRole('heading', { name: /sign up/i }).waitFor()
-    await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10000 })
-
-    await page.getByLabel('Email').fill(uniqueEmail)
-    await page.getByLabel('Password', { exact: true }).fill(testPassword)
-    await page.getByLabel('Confirm password').fill(testPassword)
-    await page.getByRole('button', { name: 'Sign Up' }).click()
-
-    try {
-      await page.waitForURL('**/dashboard', { timeout: 15000 })
-    } catch {
-      const url = page.url()
-      const bodyText = await page
-        .locator('body')
-        .innerText()
-        .catch(() => 'could not read body')
-      throw new Error(
-        `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
-      )
-    }
-    await page.locator('header nav').waitFor()
-
-    // Navigate to sign-up — should redirect back to dashboard
     await page.goto('/sign-up')
     await page.waitForURL('**/dashboard')
 
