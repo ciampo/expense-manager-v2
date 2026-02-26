@@ -42,7 +42,7 @@ export const list = query({
 
     const expenses = await ctx.db
       .query('expenses')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
       .collect()
 
     // Sort by date descending (most recent first)

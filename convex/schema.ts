@@ -15,7 +15,6 @@ export default defineSchema({
     comment: v.optional(v.string()),
     createdAt: v.number(),
   })
-    .index('by_user', ['userId'])
     .index('by_user_and_date', ['userId', 'date'])
     .index('by_user_and_attachment', ['userId', 'attachmentId'])
     .index('by_attachment', ['attachmentId']),
@@ -24,9 +23,7 @@ export default defineSchema({
     name: v.string(),
     userId: v.optional(v.id('users')), // null/undefined = predefined, set = user custom
     icon: v.optional(v.string()),
-  })
-    .index('by_user', ['userId'])
-    .index('by_user_and_name', ['userId', 'name']),
+  }).index('by_user_and_name', ['userId', 'name']),
 
   merchants: defineTable({
     name: v.string(),
