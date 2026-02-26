@@ -33,6 +33,27 @@ export async function upsertCategory(
 }
 
 /**
+ * Resolve a category from either an existing ID or a new name.
+ * When a name is provided, upserts and returns the resulting ID.
+ * Verifies the caller owns (or can access) the resolved category.
+ */
+export async function resolveCategory(
+  ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'>,
+  args: { categoryId?: Id<'categories'>; newCategoryName?: string },
+): Promise<Id<'categories'>> {
+  let categoryId = args.categoryId
+  if (!categoryId && args.newCategoryName) {
+    categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
+  }
+  if (!categoryId) {
+    throw new Error('Category is required')
+  }
+  await verifyCategoryAccess(ctx, categoryId, userId)
+  return categoryId
+}
+
+/**
  * Verify that a category is accessible to the given user.
  * A category is accessible if it is predefined (no userId) or owned by the user.
  * Throws if the category doesn't exist or belongs to another user.

@@ -3,7 +3,7 @@ import type { MutationCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
-import { upsertCategory, verifyCategoryAccess } from './categories'
+import { resolveCategory } from './categories'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
 import { validateExpenseFields } from './validation'
 
@@ -115,15 +115,7 @@ export const create = mutation({
     }
 
     const { date, merchant, amount, comment } = validateExpenseFields(args)
-
-    let categoryId = args.categoryId
-    if (!categoryId && args.newCategoryName) {
-      categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
-    }
-    if (!categoryId) {
-      throw new Error('Category is required')
-    }
-    await verifyCategoryAccess(ctx, categoryId, userId)
+    const categoryId = await resolveCategory(ctx, userId, args)
 
     if (args.attachmentId) {
       await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
@@ -172,15 +164,7 @@ export const update = mutation({
     }
 
     const { date, merchant, amount, comment } = validateExpenseFields(args)
-
-    let categoryId = args.categoryId
-    if (!categoryId && args.newCategoryName) {
-      categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
-    }
-    if (!categoryId) {
-      throw new Error('Category is required')
-    }
-    await verifyCategoryAccess(ctx, categoryId, userId)
+    const categoryId = await resolveCategory(ctx, userId, args)
 
     if (args.attachmentId && args.attachmentId !== existing.attachmentId) {
       await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
