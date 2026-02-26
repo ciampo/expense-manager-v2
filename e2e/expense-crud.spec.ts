@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 
-const TEST_PASSWORD = 'TestPass123!'
+const TEST_PASSWORD = 'TestPassword123!'
 
 async function signUpFreshUser(page: Page) {
   const uniqueEmail = `test-crud-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`
@@ -14,7 +14,18 @@ async function signUpFreshUser(page: Page) {
   await page.getByLabel('Confirm password').fill(TEST_PASSWORD)
   await page.getByRole('button', { name: 'Sign Up' }).click()
 
-  await page.waitForURL('**/dashboard', { timeout: 15000 })
+  try {
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
+  } catch {
+    const url = page.url()
+    const bodyText = await page
+      .locator('body')
+      .innerText()
+      .catch(() => 'could not read body')
+    throw new Error(
+      `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
+    )
+  }
   await page.locator('header nav').waitFor()
 }
 
@@ -58,7 +69,7 @@ test.describe('Expense CRUD', () => {
 
     // --- EDIT ---
 
-    await page.getByRole('link', { name: 'Edit' }).first().click()
+    await page.getByRole('link', { name: /edit/i }).first().click()
     await page.waitForURL(/\/expenses\//)
     await page.getByRole('button', { name: /save changes/i }).waitFor()
 
