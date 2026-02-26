@@ -37,7 +37,7 @@ test.describe('Auth Guards — unauthenticated redirects', () => {
 })
 
 test.describe('Auth Guards — authenticated redirects', () => {
-  const testPassword = 'TestPass123!'
+  const testPassword = 'TestPassword123!'
 
   test('authenticated user navigating to /sign-in should redirect to /dashboard', async ({
     page,
@@ -54,8 +54,18 @@ test.describe('Auth Guards — authenticated redirects', () => {
     await page.getByLabel('Confirm password').fill(testPassword)
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
-    // Wait for sign-up (backend call) + redirect to dashboard.
-    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    try {
+      await page.waitForURL('**/dashboard', { timeout: 15000 })
+    } catch {
+      const url = page.url()
+      const bodyText = await page
+        .locator('body')
+        .innerText()
+        .catch(() => 'could not read body')
+      throw new Error(
+        `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
+      )
+    }
     await page.locator('header nav').waitFor()
 
     // Now try to navigate to an auth page — should redirect back to dashboard
@@ -80,7 +90,18 @@ test.describe('Auth Guards — authenticated redirects', () => {
     await page.getByLabel('Confirm password').fill(testPassword)
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
-    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    try {
+      await page.waitForURL('**/dashboard', { timeout: 15000 })
+    } catch {
+      const url = page.url()
+      const bodyText = await page
+        .locator('body')
+        .innerText()
+        .catch(() => 'could not read body')
+      throw new Error(
+        `Sign-up did not redirect to /dashboard. Stuck on: ${url}. Page: ${bodyText.slice(0, 500)}`,
+      )
+    }
     await page.locator('header nav').waitFor()
 
     // Navigate to sign-up — should redirect back to dashboard

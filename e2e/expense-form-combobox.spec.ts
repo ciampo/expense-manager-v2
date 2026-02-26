@@ -62,7 +62,7 @@ test.describe('Expense form — combobox UX', () => {
       // Fill out remaining required fields and submit
       await page.getByRole('combobox', { name: /category/i }).click()
       await page.getByRole('option', { name: /coworking/i }).click()
-      await page.getByLabel(/amount/i).fill('10')
+      await page.getByLabel(/amount/i).fill('10,00')
       await page.getByRole('button', { name: /create expense/i }).click()
       await page.waitForURL('**/dashboard', { timeout: 15000 })
 
@@ -173,7 +173,7 @@ test.describe('Expense form — combobox UX', () => {
       await page.getByRole('option', { name: /\+ Use "Brand New Cat"/ }).click()
 
       // Fill amount
-      await page.getByLabel(/amount/i).fill('25')
+      await page.getByLabel(/amount/i).fill('25,00')
 
       // Submit the form
       await page.getByRole('button', { name: /create expense/i }).click()
