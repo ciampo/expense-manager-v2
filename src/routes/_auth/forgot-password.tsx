@@ -1,9 +1,12 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useState } from 'react'
+import { useForm } from '@tanstack/react-form'
+import { z } from 'zod'
+import { emailSchema, passwordSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import {
   Card,
   CardContent,
@@ -18,238 +21,276 @@ export const Route = createFileRoute('/_auth/forgot-password')({
   component: ForgotPasswordPage,
 })
 
+const requestCodeSchema = z.object({
+  email: emailSchema,
+})
+
+const resetPasswordSchema = z
+  .object({
+    code: z.string().min(1, { message: 'Enter the verification code.' }),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, { message: 'Confirm your password.' }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  })
+
 function ForgotPasswordPage() {
   const { signIn } = useAuthActions()
   const navigate = useNavigate()
   const [step, setStep] = useState<'email' | 'code'>('email')
-  const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [errors, setErrors] = useState<{
-    email?: string
-    code?: string
-    password?: string
-    confirmPassword?: string
-    form?: string
-  }>({})
 
-  // Step 1: request a reset code
-  const handleRequestCode = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErrors({ email: 'Enter a valid email address' })
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const formData = new FormData()
-      formData.set('email', email)
-      formData.set('flow', 'reset')
-
-      await signIn('password', formData)
-    } catch (error) {
-      // Silently swallow -- never reveal whether the email exists
-      // to prevent account-enumeration attacks.
-      console.error('Password reset request error:', error)
-    } finally {
-      setIsLoading(false)
-      // Always advance to the code step and show the same message
-      // regardless of whether the account exists.
-      toast('If an account with that email exists, a verification code was sent.')
-      setStep('code')
-    }
+  if (step === 'email') {
+    return (
+      <EmailStep
+        signIn={signIn}
+        onSuccess={(e) => {
+          setEmail(e)
+          setStep('code')
+        }}
+      />
+    )
   }
 
-  // Step 2: verify code and set new password
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
+  return (
+    <CodeStep
+      signIn={signIn}
+      email={email}
+      onBack={() => setStep('email')}
+      onSuccess={() => navigate({ to: '/sign-in' })}
+    />
+  )
+}
 
-    const newErrors: typeof errors = {}
-    if (!code.trim()) {
-      newErrors.code = 'Enter the verification code'
-    }
-    if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters'
-    }
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match'
-    }
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const formData = new FormData()
-      formData.set('email', email)
-      formData.set('code', code)
-      formData.set('newPassword', password)
-      formData.set('flow', 'reset-verification')
-
-      await signIn('password', formData)
-      toast.success('Password reset successfully')
-      navigate({ to: '/sign-in' })
-    } catch (error) {
-      console.error('Password reset error:', error)
-      const message =
-        error instanceof Error && /expired|invalid/i.test(error.message)
-          ? 'Code is invalid or expired. Please request a new one.'
-          : 'Error resetting password. Please try again.'
-      setErrors({ form: message })
-      toast.error(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+function EmailStep({
+  signIn,
+  onSuccess,
+}: {
+  signIn: ReturnType<typeof useAuthActions>['signIn']
+  onSuccess: (email: string) => void
+}) {
+  const form = useForm({
+    defaultValues: { email: '' },
+    validators: { onSubmit: requestCodeSchema },
+    onSubmit: async ({ value }) => {
+      try {
+        const formData = new FormData()
+        formData.set('email', value.email)
+        formData.set('flow', 'reset')
+        await signIn('password', formData)
+      } catch (error) {
+        // Silently swallow — never reveal whether the email exists
+        // to prevent account-enumeration attacks.
+        console.error('Password reset request error:', error)
+      } finally {
+        toast('If an account with that email exists, a verification code was sent.')
+        onSuccess(value.email)
+      }
+    },
+  })
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{step === 'email' ? 'Forgot password?' : 'Reset password'}</CardTitle>
+        <CardTitle>Forgot password?</CardTitle>
         <CardDescription>
-          {step === 'email'
-            ? "Enter your email and we'll send you a verification code"
-            : `Enter the code sent to ${email} and your new password`}
+          Enter your email and we&apos;ll send you a verification code
         </CardDescription>
       </CardHeader>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          form.handleSubmit()
+        }}
+        noValidate
+      >
+        <CardContent className="space-y-4">
+          <form.Field name="email">
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="email"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'email-error' : undefined}
+                  />
+                  <FieldError id="email-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.Field>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+          <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+            {form.state.isSubmitting ? 'Sending...' : 'Send verification code'}
+          </Button>
+          <Link to="/sign-in" className="text-primary hover:text-primary/80 text-sm underline">
+            Back to sign in
+          </Link>
+        </CardFooter>
+      </form>
+    </Card>
+  )
+}
 
-      {step === 'email' ? (
-        <form onSubmit={handleRequestCode} noValidate>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="email"
-                aria-describedby={errors.email ? 'email-error' : undefined}
-                aria-invalid={!!errors.email}
-              />
-              {errors.email && (
-                <p id="email-error" role="alert" className="text-destructive text-sm">
-                  {errors.email}
-                </p>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            {errors.form && (
-              <p role="alert" className="text-destructive text-center text-sm">
-                {errors.form}
-              </p>
-            )}
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Sending...' : 'Send verification code'}
-            </Button>
-            <Link to="/sign-in" className="text-primary hover:text-primary/80 text-sm underline">
-              Back to sign in
-            </Link>
-          </CardFooter>
-        </form>
-      ) : (
-        <form onSubmit={handleResetPassword} noValidate>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Verification code</Label>
-              <Input
-                id="code"
-                type="text"
-                inputMode="numeric"
-                placeholder="8-digit code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="one-time-code"
-                aria-describedby={errors.code ? 'code-error' : undefined}
-                aria-invalid={!!errors.code}
-              />
-              {errors.code && (
-                <p id="code-error" role="alert" className="text-destructive text-sm">
-                  {errors.code}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">New password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Minimum 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                disabled={isLoading}
-                autoComplete="new-password"
-                aria-describedby={errors.password ? 'password-error' : undefined}
-                aria-invalid={!!errors.password}
-              />
-              {errors.password && (
-                <p id="password-error" role="alert" className="text-destructive text-sm">
-                  {errors.password}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm new password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Repeat the password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={8}
-                disabled={isLoading}
-                autoComplete="new-password"
-                aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
-                aria-invalid={!!errors.confirmPassword}
-              />
-              {errors.confirmPassword && (
-                <p id="confirm-password-error" role="alert" className="text-destructive text-sm">
-                  {errors.confirmPassword}
-                </p>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            {errors.form && (
-              <p role="alert" className="text-destructive text-center text-sm">
-                {errors.form}
-              </p>
-            )}
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Resetting...' : 'Reset password'}
-            </Button>
-            <button
-              type="button"
-              onClick={() => {
-                setStep('email')
-                setCode('')
-                setPassword('')
-                setConfirmPassword('')
-                setErrors({})
-              }}
-              className="text-primary hover:text-primary/80 text-sm underline"
-            >
-              Use a different email
-            </button>
-          </CardFooter>
-        </form>
-      )}
+function CodeStep({
+  signIn,
+  email,
+  onBack,
+  onSuccess,
+}: {
+  signIn: ReturnType<typeof useAuthActions>['signIn']
+  email: string
+  onBack: () => void
+  onSuccess: () => void
+}) {
+  const [serverError, setServerError] = useState('')
+
+  const form = useForm({
+    defaultValues: { code: '', password: '', confirmPassword: '' },
+    validators: { onSubmit: resetPasswordSchema },
+    onSubmit: async ({ value }) => {
+      setServerError('')
+
+      try {
+        const formData = new FormData()
+        formData.set('email', email)
+        formData.set('code', value.code)
+        formData.set('newPassword', value.password)
+        formData.set('flow', 'reset-verification')
+
+        await signIn('password', formData)
+        toast.success('Password reset successfully')
+        onSuccess()
+      } catch (error) {
+        console.error('Password reset error:', error)
+        const message =
+          error instanceof Error && /expired|invalid/i.test(error.message)
+            ? 'Code is invalid or expired. Please request a new one.'
+            : 'Error resetting password. Please try again.'
+        setServerError(message)
+        toast.error(message)
+      }
+    },
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Reset password</CardTitle>
+        <CardDescription>Enter the code sent to {email} and your new password</CardDescription>
+      </CardHeader>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          form.handleSubmit()
+        }}
+        noValidate
+      >
+        <CardContent className="space-y-4">
+          <form.Field name="code">
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="code">Verification code</FieldLabel>
+                  <Input
+                    id="code"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="8-digit code"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="one-time-code"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'code-error' : undefined}
+                  />
+                  <FieldError id="code-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.Field>
+          <form.Field name="password">
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="password">New password</FieldLabel>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="new-password"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'password-error' : undefined}
+                  />
+                  <FieldError id="password-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.Field>
+          <form.Field name="confirmPassword">
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="confirmPassword">Confirm new password</FieldLabel>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Repeat the password"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="new-password"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'confirm-password-error' : undefined}
+                  />
+                  <FieldError id="confirm-password-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.Field>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+          <FieldError
+            errors={serverError ? [{ message: serverError }] : undefined}
+            className="text-center"
+          />
+          <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+            {form.state.isSubmitting ? 'Resetting...' : 'Reset password'}
+          </Button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="text-primary hover:text-primary/80 text-sm underline"
+          >
+            Use a different email
+          </button>
+        </CardFooter>
+      </form>
     </Card>
   )
 }
