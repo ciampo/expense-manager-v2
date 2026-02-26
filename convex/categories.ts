@@ -63,7 +63,7 @@ export async function verifyCategoryAccess(
   categoryId: Id<'categories'>,
   userId: Id<'users'>,
 ) {
-  const category = await ctx.db.get(categoryId)
+  const category = await ctx.db.get('categories', categoryId)
   if (!category) {
     throw new Error('Category not found')
   }
@@ -111,7 +111,7 @@ export const list = query({
 export const get = query({
   args: { id: v.id('categories') },
   handler: async (ctx, args) => {
-    const category = await ctx.db.get(args.id)
+    const category = await ctx.db.get('categories', args.id)
     if (!category) {
       return null
     }

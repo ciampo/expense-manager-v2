@@ -130,7 +130,7 @@ export const cleanup = internalMutation({
           // File may have already been deleted
         }
       }
-      await ctx.db.delete(expense._id)
+      await ctx.db.delete('expenses', expense._id)
     }
 
     // Delete all upload tracking records and their storage files.
@@ -143,13 +143,13 @@ export const cleanup = internalMutation({
       } catch {
         // File may have already been deleted above (linked to an expense)
       }
-      await ctx.db.delete(upload._id)
+      await ctx.db.delete('uploads', upload._id)
     }
 
     // Delete all merchants
     const merchants = await ctx.db.query('merchants').collect()
     for (const merchant of merchants) {
-      await ctx.db.delete(merchant._id)
+      await ctx.db.delete('merchants', merchant._id)
     }
 
     // Delete user-created categories (keep predefined)
@@ -158,7 +158,7 @@ export const cleanup = internalMutation({
       .filter((q) => q.neq(q.field('userId'), undefined))
       .collect()
     for (const category of userCategories) {
-      await ctx.db.delete(category._id)
+      await ctx.db.delete('categories', category._id)
     }
 
     // Delete all auth-related records dynamically derived from the
@@ -169,7 +169,7 @@ export const cleanup = internalMutation({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = await ctx.db.query(table as any).collect()
       for (const row of rows) {
-        await ctx.db.delete(row._id)
+        await ctx.db.delete(table as any, row._id)
       }
     }
 
