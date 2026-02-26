@@ -32,9 +32,7 @@ export default defineSchema({
     name: v.string(),
     normalizedName: v.string(), // lowercased for case-insensitive dedup
     userId: v.id('users'),
-  })
-    .index('by_user', ['userId'])
-    .index('by_user_and_normalized_name', ['userId', 'normalizedName']),
+  }).index('by_user_and_normalized_name', ['userId', 'normalizedName']),
 
   /**
    * Tracks file uploads so we can verify ownership from the moment of upload,
