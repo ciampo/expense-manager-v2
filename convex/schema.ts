@@ -24,7 +24,9 @@ export default defineSchema({
     name: v.string(),
     userId: v.optional(v.id('users')), // null/undefined = predefined, set = user custom
     icon: v.optional(v.string()),
-  }).index('by_user', ['userId']),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_and_name', ['userId', 'name']),
 
   merchants: defineTable({
     name: v.string(),

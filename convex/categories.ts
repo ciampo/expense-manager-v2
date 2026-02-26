@@ -19,14 +19,13 @@ export async function upsertCategory(
 
   const existing = await ctx.db
     .query('categories')
-    .withIndex('by_user', (q) => q.eq('userId', userId))
-    .filter((q) => q.eq(q.field('name'), name))
+    .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', name))
     .first()
   if (existing) return existing._id
 
   const predefined = await ctx.db
     .query('categories')
-    .filter((q) => q.and(q.eq(q.field('userId'), undefined), q.eq(q.field('name'), name)))
+    .withIndex('by_user_and_name', (q) => q.eq('userId', undefined).eq('name', name))
     .first()
   if (predefined) return predefined._id
 
@@ -127,21 +126,18 @@ export const create = mutation({
 
     const { name, icon } = validateCategoryFields(args)
 
-    // Check if category with same name already exists for this user
     const existing = await ctx.db
       .query('categories')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('name'), name))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', name))
       .first()
 
     if (existing) {
       throw new Error('Category already exists')
     }
 
-    // Also check predefined categories
     const predefined = await ctx.db
       .query('categories')
-      .filter((q) => q.and(q.eq(q.field('userId'), undefined), q.eq(q.field('name'), name)))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined).eq('name', name))
       .first()
 
     if (predefined) {
