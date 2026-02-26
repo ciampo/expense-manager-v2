@@ -7,6 +7,7 @@ import {
   expenseSchema,
   categoryNameSchema,
   categoryIconSchema,
+  categorySchema,
   emailSchema,
   passwordSchema,
 } from '@/lib/schemas'
@@ -346,6 +347,51 @@ describe('categoryIconSchema', () => {
     const mixed = 'A😀B😁C😂D😃E😄'
     expect(mixed.length).toBe(15)
     expectSuccess(categoryIconSchema, mixed)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// categorySchema (composite)
+// ---------------------------------------------------------------------------
+
+describe('categorySchema', () => {
+  it('accepts a valid category with name and icon', () => {
+    const result = expectSuccess(categorySchema, { name: 'Food', icon: '🍕' })
+    expect(result.data).toEqual({ name: 'Food', icon: '🍕' })
+  })
+
+  it('accepts a valid category without icon', () => {
+    const result = expectSuccess(categorySchema, { name: 'Transport' })
+    expect(result.data).toEqual({ name: 'Transport', icon: undefined })
+  })
+
+  it('trims name and icon in output', () => {
+    const result = expectSuccess(categorySchema, {
+      name: '  Groceries  ',
+      icon: ' 🛒 ',
+    })
+    expect(result.data).toEqual({ name: 'Groceries', icon: '🛒' })
+  })
+
+  it('normalizes empty icon to undefined', () => {
+    const result = expectSuccess(categorySchema, { name: 'Bills', icon: '' })
+    expect(result.data).toEqual({ name: 'Bills', icon: undefined })
+  })
+
+  it('rejects when name is missing', () => {
+    expectFailure(categorySchema, { icon: '🎮' })
+  })
+
+  it('rejects when name is empty', () => {
+    expectFailure(categorySchema, { name: '', icon: '🎮' })
+  })
+
+  it('rejects when name exceeds limit', () => {
+    expectFailure(categorySchema, { name: 'A'.repeat(101) })
+  })
+
+  it('rejects when icon exceeds grapheme limit', () => {
+    expectFailure(categorySchema, { name: 'Valid', icon: '😀😁😂🤣😃😄😅😆😉😊😋' })
   })
 })
 
