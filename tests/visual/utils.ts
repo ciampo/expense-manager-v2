@@ -31,5 +31,5 @@ export async function signUpTestUser(page: Page): Promise<void> {
     )
   }
 
-  await page.locator('header nav').waitFor()
+  await page.locator('body[data-hydrated="true"]').waitFor({ timeout: 10_000 })
 }
