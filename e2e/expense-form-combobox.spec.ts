@@ -46,7 +46,10 @@ test.describe('Expense form — combobox UX', () => {
 
       await page.getByPlaceholder(/search or create/i).fill('Brand New Shop')
 
-      const useOption = listbox.getByRole('option', { name: /\+ Use "Brand New Shop"/ })
+      const useOption = listbox.getByRole('option', {
+        name: '+ Use "Brand New Shop"',
+        exact: true,
+      })
       await expect(useOption).toBeVisible()
     })
 
@@ -56,7 +59,7 @@ test.describe('Expense form — combobox UX', () => {
       // First, create an expense so we have a known merchant
       await page.getByRole('combobox', { name: /merchant/i }).click()
       await page.getByPlaceholder(/search or create/i).fill('TestMerchant')
-      await page.getByRole('option', { name: /\+ Use "TestMerchant"/ }).click()
+      await page.getByRole('option', { name: '+ Use "TestMerchant"', exact: true }).click()
       await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 
       // Fill out remaining required fields and submit
@@ -74,7 +77,10 @@ test.describe('Expense form — combobox UX', () => {
       await page.getByPlaceholder(/search or create/i).fill('TestMerchant')
 
       // The exact match exists, so "+ Use" should not appear
-      const useOption = page.getByRole('option', { name: /\+ Use "TestMerchant"/ })
+      const useOption = page.getByRole('option', {
+        name: '+ Use "TestMerchant"',
+        exact: true,
+      })
       await expect(useOption).not.toBeVisible()
 
       // But the existing merchant should be listed
@@ -85,7 +91,7 @@ test.describe('Expense form — combobox UX', () => {
       const trigger = page.getByRole('combobox', { name: /merchant/i })
       await trigger.click()
       await page.getByPlaceholder(/search or create/i).fill('My New Merchant')
-      await page.getByRole('option', { name: /\+ Use "My New Merchant"/ }).click()
+      await page.getByRole('option', { name: '+ Use "My New Merchant"', exact: true }).click()
 
       // Popover should be closed
       await expect(page.getByRole('listbox')).not.toBeVisible()
@@ -118,7 +124,8 @@ test.describe('Expense form — combobox UX', () => {
       await page.getByPlaceholder(/search or create/i).fill('My Custom Category')
 
       const createOption = listbox.getByRole('option', {
-        name: /\+ Use "My Custom Category"/,
+        name: '+ Use "My Custom Category"',
+        exact: true,
       })
       await expect(createOption).toBeVisible()
     })
@@ -130,7 +137,10 @@ test.describe('Expense form — combobox UX', () => {
       // "Coworking" is a predefined category
       await page.getByPlaceholder(/search or create/i).fill('Coworking')
 
-      const createOption = page.getByRole('option', { name: /\+ Use "Coworking"/ })
+      const createOption = page.getByRole('option', {
+        name: '+ Use "Coworking"',
+        exact: true,
+      })
       await expect(createOption).not.toBeVisible()
 
       // But the existing category should still be visible
@@ -141,7 +151,7 @@ test.describe('Expense form — combobox UX', () => {
       const trigger = page.getByRole('combobox', { name: /category/i })
       await trigger.click()
       await page.getByPlaceholder(/search or create/i).fill('Deferred Category')
-      await page.getByRole('option', { name: /\+ Use "Deferred Category"/ }).click()
+      await page.getByRole('option', { name: '+ Use "Deferred Category"', exact: true }).click()
 
       // Popover should be closed
       await expect(page.getByRole('listbox')).not.toBeVisible()
@@ -160,7 +170,7 @@ test.describe('Expense form — combobox UX', () => {
       // Set up merchant
       await page.getByRole('combobox', { name: /merchant/i }).click()
       await page.getByPlaceholder(/search or create/i).fill('SomeShop')
-      await page.getByRole('option', { name: /\+ Use "SomeShop"/ }).click()
+      await page.getByRole('option', { name: '+ Use "SomeShop"', exact: true }).click()
 
       // Wait for the merchant popover content to fully unmount (exit animation)
       // before opening the next popover — avoids two "Search or create..." inputs
@@ -170,7 +180,7 @@ test.describe('Expense form — combobox UX', () => {
       // Choose a new category via "+ Use"
       await page.getByRole('combobox', { name: /category/i }).click()
       await page.getByPlaceholder(/search or create/i).fill('Brand New Cat')
-      await page.getByRole('option', { name: /\+ Use "Brand New Cat"/ }).click()
+      await page.getByRole('option', { name: '+ Use "Brand New Cat"', exact: true }).click()
 
       // Fill amount
       await page.getByLabel(/amount/i).fill('25,00')
@@ -192,7 +202,10 @@ test.describe('Expense form — combobox UX', () => {
       await page.getByPlaceholder(/search or create/i).fill('zzzzzznonexistent')
 
       // The "+ Use" item is the only visible option (existing categories are filtered out)
-      const useOption = page.getByRole('option', { name: /\+ Use "zzzzzznonexistent"/ })
+      const useOption = page.getByRole('option', {
+        name: '+ Use "zzzzzznonexistent"',
+        exact: true,
+      })
       await expect(useOption).toBeVisible()
 
       // Predefined categories should be filtered away

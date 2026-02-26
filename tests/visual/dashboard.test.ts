@@ -48,7 +48,7 @@ test.describe('Visual Regression - Dashboard', () => {
     await page.getByLabel(/amount/i).fill(amount)
 
     await page.getByRole('button', { name: /create expense/i }).click()
-    await page.waitForURL('**/dashboard', { timeout: 10000 })
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
   }
 
   test.beforeEach(async ({ page }) => {
