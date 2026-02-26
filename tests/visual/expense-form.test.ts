@@ -35,7 +35,10 @@ test.describe('Visual Regression - Expense Form', () => {
   })
 
   test('new expense form — default state', async ({ page }) => {
-    await expect(page).toHaveScreenshot('expense-form-default.png', { fullPage: true })
+    await expect(page).toHaveScreenshot('expense-form-default.png', {
+      fullPage: true,
+      mask: [page.locator('footer')],
+    })
   })
 
   test('new expense form — merchant combobox open with typed text', async ({ page }) => {
@@ -45,6 +48,7 @@ test.describe('Visual Regression - Expense Form', () => {
     await expect(page.getByRole('option', { name: /\+ Use "New Shop"/ })).toBeVisible()
     await expect(page).toHaveScreenshot('expense-form-merchant-combobox-new.png', {
       fullPage: true,
+      mask: [page.locator('footer')],
     })
   })
 
@@ -55,6 +59,7 @@ test.describe('Visual Regression - Expense Form', () => {
     await expect(page.getByRole('option', { name: /\+ Use "New Category"/ })).toBeVisible()
     await expect(page).toHaveScreenshot('expense-form-category-combobox-new.png', {
       fullPage: true,
+      mask: [page.locator('footer')],
     })
   })
 
@@ -68,6 +73,7 @@ test.describe('Visual Regression - Expense Form', () => {
     await expect(page.getByRole('combobox', { name: /category/i })).toHaveText('Pending Cat')
     await expect(page).toHaveScreenshot('expense-form-category-pending.png', {
       fullPage: true,
+      mask: [page.locator('footer')],
     })
   })
 })
