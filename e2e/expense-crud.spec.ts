@@ -43,10 +43,7 @@ test.describe('Expense CRUD', () => {
 
     // Merchant
     await page.getByRole('combobox', { name: /merchant/i }).click()
-    await page
-      .getByPlaceholder(/search or create/i)
-      .first()
-      .fill('Test Merchant')
+    await page.getByPlaceholder(/search or create/i).fill('Test Merchant')
     await page.getByRole('option', { name: /\+ Use "Test Merchant"/ }).click()
 
     // Wait for the merchant popover to fully unmount (exit animation)
