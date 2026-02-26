@@ -1,9 +1,57 @@
 import { v } from 'convex/values'
-import type { QueryCtx } from './_generated/server'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 import { validateCategoryFields } from './validation'
+
+/**
+ * Find an existing category by name or create a new one for the user.
+ * Checks both user-created and predefined categories for dedup.
+ * Returns the category ID in all cases.
+ */
+export async function upsertCategory(
+  ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'>,
+  categoryName: string,
+): Promise<Id<'categories'>> {
+  const { name } = validateCategoryFields({ name: categoryName })
+
+  const existing = await ctx.db
+    .query('categories')
+    .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', name))
+    .first()
+  if (existing) return existing._id
+
+  const predefined = await ctx.db
+    .query('categories')
+    .withIndex('by_user_and_name', (q) => q.eq('userId', undefined).eq('name', name))
+    .first()
+  if (predefined) return predefined._id
+
+  return ctx.db.insert('categories', { name, userId })
+}
+
+/**
+ * Resolve a category from either an existing ID or a new name.
+ * When a name is provided, upserts and returns the resulting ID.
+ * Verifies the caller owns (or can access) the resolved category.
+ */
+export async function resolveCategory(
+  ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'>,
+  args: { categoryId?: Id<'categories'>; newCategoryName?: string },
+): Promise<Id<'categories'>> {
+  let categoryId = args.categoryId
+  if (!categoryId && args.newCategoryName) {
+    categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
+  }
+  if (!categoryId) {
+    throw new Error('Category is required')
+  }
+  await verifyCategoryAccess(ctx, categoryId, userId)
+  return categoryId
+}
 
 /**
  * Verify that a category is accessible to the given user.
@@ -99,21 +147,18 @@ export const create = mutation({
 
     const { name, icon } = validateCategoryFields(args)
 
-    // Check if category with same name already exists for this user
     const existing = await ctx.db
       .query('categories')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .filter((q) => q.eq(q.field('name'), name))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', name))
       .first()
 
     if (existing) {
       throw new Error('Category already exists')
     }
 
-    // Also check predefined categories
     const predefined = await ctx.db
       .query('categories')
-      .filter((q) => q.and(q.eq(q.field('userId'), undefined), q.eq(q.field('name'), name)))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined).eq('name', name))
       .first()
 
     if (predefined) {

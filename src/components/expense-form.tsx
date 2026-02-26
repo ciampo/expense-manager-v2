@@ -44,6 +44,7 @@ import {
   parseLocalDate,
   toISODateString,
 } from '@/lib/format'
+import { shouldShowCreateOption } from '@/lib/combobox'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
@@ -203,18 +204,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     },
   })
 
-  const createCategory = useMutation({
-    mutationFn: useConvexMutation(api.categories.create),
-    onSuccess: (newId: Id<'categories'>) => {
-      setCategoryId(newId)
-      setNewCategoryName('')
-      toast.success('Category created')
-    },
-    onError: () => {
-      toast.error('Error creating category')
-    },
-  })
-
   const { mutateAsync: generateUploadUrlAsync } = useMutation({
     mutationFn: useConvexMutation(api.storage.generateUploadUrl),
   })
@@ -280,13 +269,14 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     [generateUploadUrlAsync, confirmUploadAsync],
   )
 
-  // Handle form submit
+  const needsNewCategory = !categoryId && !!newCategoryName.trim()
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
 
     const newErrors: typeof errors = {}
-    if (!categoryId) {
+    if (!categoryId && !newCategoryName.trim()) {
       newErrors.category = 'Select a category'
     }
     const amountCents = parseCurrencyToCents(amount)
@@ -296,10 +286,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     if (!merchant.trim()) {
       newErrors.merchant = 'Enter the merchant'
     }
-    // The `|| !categoryId` is redundant with the check above but is required
-    // so TypeScript can narrow `categoryId` from `Id | null` to `Id` after
-    // this guard — without it the `data` object below would have a type error.
-    if (Object.keys(newErrors).length > 0 || !categoryId) {
+    if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       const firstError = Object.values(newErrors)[0]
       if (firstError) toast.error(firstError)
@@ -310,7 +297,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       date,
       merchant: merchant.trim(),
       amount: amountCents,
-      categoryId,
+      ...(categoryId ? { categoryId } : { newCategoryName: newCategoryName.trim() }),
       attachmentId,
       comment: comment.trim() || undefined,
     }
@@ -336,12 +323,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       setAttachmentId(undefined)
     }
     setShowDeleteAttachment(false)
-  }
-
-  const handleCreateCategory = () => {
-    if (newCategoryName.trim()) {
-      createCategory.mutate({ name: newCategoryName.trim() })
-    }
   }
 
   const isLoading = createExpense.isPending || updateExpense.isPending || deleteExpense.isPending
@@ -412,18 +393,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 onValueChange={setMerchant}
               />
               <CommandList>
-                <CommandEmpty>
-                  {merchant && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={() => setIsMerchantOpen(false)}
-                    >
-                      + Use &quot;{merchant}&quot;
-                    </Button>
-                  )}
-                </CommandEmpty>
+                <CommandEmpty>No merchants found</CommandEmpty>
                 <CommandGroup heading="Recent merchants">
                   {merchants?.map((m) => (
                     <CommandItem
@@ -438,6 +408,16 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
+                {shouldShowCreateOption(merchants ?? [], merchant) && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup forceMount>
+                      <CommandItem forceMount onSelect={() => setIsMerchantOpen(false)}>
+                        + Use &quot;{merchant}&quot;
+                      </CommandItem>
+                    </CommandGroup>
+                  </>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
@@ -471,6 +451,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 {selectedCategory.icon && <span className="mr-2">{selectedCategory.icon}</span>}
                 {selectedCategory.name}
               </>
+            ) : needsNewCategory ? (
+              newCategoryName.trim()
             ) : (
               'Select category...'
             )}
@@ -483,19 +465,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 onValueChange={setNewCategoryName}
               />
               <CommandList>
-                <CommandEmpty>
-                  {newCategoryName && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={handleCreateCategory}
-                      disabled={createCategory.isPending}
-                    >
-                      + Create &quot;{newCategoryName}&quot;
-                    </Button>
-                  )}
-                </CommandEmpty>
+                <CommandEmpty>No categories found</CommandEmpty>
                 <CommandGroup heading="Categories">
                   {categories?.map((category) => (
                     <CommandItem
@@ -515,19 +485,25 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
-                {newCategoryName &&
-                  !categories?.some(
-                    (c) => c.name.toLowerCase() === newCategoryName.toLowerCase(),
-                  ) && (
-                    <>
-                      <CommandSeparator />
-                      <CommandGroup>
-                        <CommandItem onSelect={handleCreateCategory}>
-                          + Create &quot;{newCategoryName}&quot;
-                        </CommandItem>
-                      </CommandGroup>
-                    </>
-                  )}
+                {shouldShowCreateOption(
+                  (categories ?? []).map((c) => c.name),
+                  newCategoryName,
+                ) && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup forceMount>
+                      <CommandItem
+                        forceMount
+                        onSelect={() => {
+                          setCategoryId(null)
+                          setIsCategoryOpen(false)
+                        }}
+                      >
+                        + Use &quot;{newCategoryName}&quot;
+                      </CommandItem>
+                    </CommandGroup>
+                  </>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
