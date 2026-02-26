@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useState } from 'react'
+import { useForm } from '@tanstack/react-form'
+import { z } from 'zod'
+import { emailSchema, passwordSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import {
   Card,
   CardContent,
@@ -18,64 +21,52 @@ export const Route = createFileRoute('/_auth/sign-up')({
   component: SignUpPage,
 })
 
+const signUpSchema = z
+  .object({
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, { message: 'Confirm your password.' }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  })
+
 function SignUpPage() {
   const { signIn } = useAuthActions()
-  const [isLoading, setIsLoading] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [errors, setErrors] = useState<{
-    email?: string
-    password?: string
-    confirmPassword?: string
-    form?: string
-  }>({})
+  const [serverError, setServerError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
+  const form = useForm({
+    defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+    validators: {
+      onSubmit: signUpSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setServerError('')
 
-    const newErrors: typeof errors = {}
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Enter a valid email address'
-    }
-    if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters'
-    }
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match'
-    }
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
-    }
+      try {
+        const formData = new FormData()
+        formData.set('email', value.email)
+        formData.set('password', value.password)
+        formData.set('flow', 'signUp')
 
-    setIsLoading(true)
-
-    try {
-      const formData = new FormData()
-      formData.set('email', email)
-      formData.set('password', password)
-      formData.set('flow', 'signUp')
-
-      await signIn('password', formData)
-      toast.success('Account created successfully')
-      // No explicit navigate() needed: AuthBridge detects the auth state
-      // change and calls router.invalidate(), which re-runs _auth's
-      // beforeLoad — that guard sees isAuthenticated: true and redirects
-      // to /dashboard automatically.
-    } catch (error) {
-      console.error('Sign up error:', error)
-      const message =
-        error instanceof Error && /already exists/i.test(error.message)
-          ? 'An account with this email already exists. Try signing in instead.'
-          : 'Error during registration. Please try again.'
-      setErrors({ form: message })
-      toast.error(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+        await signIn('password', formData)
+        toast.success('Account created successfully')
+      } catch (error) {
+        console.error('Sign up error:', error)
+        const message =
+          error instanceof Error && /already exists/i.test(error.message)
+            ? 'An account with this email already exists. Try signing in instead.'
+            : 'Error during registration. Please try again.'
+        setServerError(message)
+        toast.error(message)
+      }
+    },
+  })
 
   return (
     <Card>
@@ -83,79 +74,94 @@ function SignUpPage() {
         <CardTitle>Sign Up</CardTitle>
         <CardDescription>Create a new account to start managing your expenses</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit} noValidate>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          form.handleSubmit()
+        }}
+        noValidate
+      >
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading}
-              autoComplete="email"
-              aria-describedby={errors.email ? 'email-error' : undefined}
-              aria-invalid={!!errors.email}
-            />
-            {errors.email && (
-              <p id="email-error" role="alert" className="text-destructive text-sm">
-                {errors.email}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Minimum 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              disabled={isLoading}
-              autoComplete="new-password"
-              aria-describedby={errors.password ? 'password-error' : undefined}
-              aria-invalid={!!errors.password}
-            />
-            {errors.password && (
-              <p id="password-error" role="alert" className="text-destructive text-sm">
-                {errors.password}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="Repeat the password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={8}
-              disabled={isLoading}
-              autoComplete="new-password"
-              aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
-              aria-invalid={!!errors.confirmPassword}
-            />
-            {errors.confirmPassword && (
-              <p id="confirm-password-error" role="alert" className="text-destructive text-sm">
-                {errors.confirmPassword}
-              </p>
-            )}
-          </div>
+          <form.Field name="email">
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="email"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'email-error' : undefined}
+                  />
+                  <FieldError id="email-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.Field>
+          <form.Field name="password">
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="new-password"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'password-error' : undefined}
+                  />
+                  <FieldError id="password-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.Field>
+          <form.Field name="confirmPassword">
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="confirmPassword">Confirm password</FieldLabel>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Repeat the password"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                    disabled={form.state.isSubmitting}
+                    autoComplete="new-password"
+                    aria-invalid={hasErrors}
+                    aria-describedby={hasErrors ? 'confirm-password-error' : undefined}
+                  />
+                  <FieldError id="confirm-password-error" errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.Field>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          {errors.form && (
-            <p role="alert" className="text-destructive text-center text-sm">
-              {errors.form}
-            </p>
-          )}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing up...' : 'Sign Up'}
+          <FieldError
+            errors={serverError ? [{ message: serverError }] : undefined}
+            className="text-center"
+          />
+          <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+            {form.state.isSubmitting ? 'Signing up...' : 'Sign Up'}
           </Button>
           <p className="text-muted-foreground text-center text-sm">
             Already have an account?{' '}
