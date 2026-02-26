@@ -1,10 +1,12 @@
 /**
  * Case-insensitive exact match check for combobox items.
- * Returns true when `query` matches any item in the list, ignoring case.
+ * Trims and lowercases both sides so accidental whitespace doesn't
+ * prevent a match (consistent with backend validation which trims names).
  */
 export function hasExactMatch(items: string[], query: string): boolean {
-  const normalised = query.toLowerCase()
-  return items.some((item) => item.toLowerCase() === normalised)
+  const normalised = query.trim().toLowerCase()
+  if (!normalised) return false
+  return items.some((item) => item.trim().toLowerCase() === normalised)
 }
 
 /**

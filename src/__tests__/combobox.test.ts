@@ -26,6 +26,18 @@ describe('hasExactMatch', () => {
   it('handles empty query against non-empty list', () => {
     expect(hasExactMatch(['Apple'], '')).toBe(false)
   })
+
+  it('matches when query has leading/trailing whitespace', () => {
+    expect(hasExactMatch(['Apple', 'Banana'], '  Apple  ')).toBe(true)
+  })
+
+  it('matches when item has leading/trailing whitespace', () => {
+    expect(hasExactMatch(['  Apple  ', 'Banana'], 'Apple')).toBe(true)
+  })
+
+  it('returns false for whitespace-only query', () => {
+    expect(hasExactMatch(['Apple'], '   ')).toBe(false)
+  })
 })
 
 describe('shouldShowCreateOption', () => {
@@ -47,6 +59,10 @@ describe('shouldShowCreateOption', () => {
 
   it('returns true for a non-matching query with leading/trailing spaces', () => {
     expect(shouldShowCreateOption(['Apple'], ' Cherry ')).toBe(true)
+  })
+
+  it('returns false when query matches after trimming', () => {
+    expect(shouldShowCreateOption(['Apple'], '  Apple  ')).toBe(false)
   })
 
   it('returns false for an empty list with an empty query', () => {
