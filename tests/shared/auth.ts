@@ -34,5 +34,5 @@ export async function signUpTestUser(page: Page): Promise<void> {
     )
   }
 
-  await waitForHydration(page)
+  await page.getByRole('heading', { name: /dashboard/i }).waitFor({ timeout: 10_000 })
 }
