@@ -426,11 +426,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                       placeholder="Search or create..."
                       value={field.state.value}
                       onValueChange={(v) => field.handleChange(v)}
+                      disabled={isLoading}
                     />
                     <CommandList>
                       <CommandEmpty>No merchants found</CommandEmpty>
                       <CommandGroup heading="Recent merchants">
-                        disabled={isLoading}
                         {merchants?.map((m) => (
                           <CommandItem
                             key={m}
@@ -519,11 +519,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                           placeholder="Search or create..."
                           value={newCatField.state.value}
                           onValueChange={(v) => newCatField.handleChange(v)}
+                          disabled={isLoading}
                         />
                         <CommandList>
                           <CommandEmpty>No categories found</CommandEmpty>
                           <CommandGroup heading="Categories">
-                            disabled={isLoading}
                             {categories?.map((category) => (
                               <CommandItem
                                 key={category._id}
