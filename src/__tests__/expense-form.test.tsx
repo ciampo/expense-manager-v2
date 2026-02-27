@@ -65,10 +65,6 @@ describe('expenseFormSchema', () => {
     expectSuccess({ ...validData, comment: 'Business lunch' })
   })
 
-  it('trims merchant before length validation', () => {
-    expectSuccess({ ...validData, merchant: '  Cafe  ' })
-  })
-
   // ---- Merchant validation ----
 
   it('rejects empty merchant', () => {
@@ -79,6 +75,11 @@ describe('expenseFormSchema', () => {
   it('rejects whitespace-only merchant', () => {
     const issues = getIssuesForPath({ ...validData, merchant: '   ' }, 'merchant')
     expect(issues.length).toBeGreaterThan(0)
+  })
+
+  it('trims merchant before length validation', () => {
+    // 200 chars + surrounding whitespace = 202 raw chars, but 200 after trim
+    expectSuccess({ ...validData, merchant: ` ${'A'.repeat(200)} ` })
   })
 
   it('rejects merchant longer than 200 chars', () => {
@@ -93,6 +94,11 @@ describe('expenseFormSchema', () => {
 
   it('rejects zero amount', () => {
     const issues = getIssuesForPath({ ...validData, amount: '0' }, 'amount')
+    expect(issues.length).toBeGreaterThan(0)
+  })
+
+  it('rejects negative amount', () => {
+    const issues = getIssuesForPath({ ...validData, amount: '-42.00' }, 'amount')
     expect(issues.length).toBeGreaterThan(0)
   })
 
@@ -158,7 +164,7 @@ describe('expenseFormSchema', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Component rendering tests
+// Component rendering & interaction tests
 // ---------------------------------------------------------------------------
 
 const mockCategories = [
@@ -195,38 +201,38 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-async function importMocks() {
+async function setupQueryMocks() {
   const rq = await import('@tanstack/react-query')
-  return { useSuspenseQuery: rq.useSuspenseQuery as Mock }
+  const useSuspenseQuery = rq.useSuspenseQuery as Mock
+  useSuspenseQuery
+    .mockReturnValueOnce({ data: mockCategories })
+    .mockReturnValueOnce({ data: mockMerchants })
+  return { useSuspenseQuery }
+}
+
+async function renderForm(mode: 'create' | 'edit' = 'create') {
+  await setupQueryMocks()
+  const { ExpenseForm } = await import('@/components/expense-form')
+
+  const expense =
+    mode === 'edit'
+      ? {
+          _id: 'exp1' as never,
+          date: '2025-06-15',
+          merchant: 'Test Merchant',
+          amount: 4200,
+          categoryId: 'cat1' as never,
+          comment: 'Test comment',
+        }
+      : undefined
+
+  return render(<ExpenseForm mode={mode} expense={expense} />)
 }
 
 describe('ExpenseForm component', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks()
-
-    const { useSuspenseQuery } = await importMocks()
-    useSuspenseQuery
-      .mockReturnValueOnce({ data: mockCategories })
-      .mockReturnValueOnce({ data: mockMerchants })
   })
-
-  async function renderForm(mode: 'create' | 'edit' = 'create') {
-    const { ExpenseForm } = await import('@/components/expense-form')
-
-    const expense =
-      mode === 'edit'
-        ? {
-            _id: 'exp1' as never,
-            date: '2025-06-15',
-            merchant: 'Test Merchant',
-            amount: 4200,
-            categoryId: 'cat1' as never,
-            comment: 'Test comment',
-          }
-        : undefined
-
-    return render(<ExpenseForm mode={mode} expense={expense} />)
-  }
 
   // ---- Create mode ----
 
@@ -273,12 +279,6 @@ describe('ExpenseForm component', () => {
   // ---- Edit mode ----
 
   it('renders edit mode with save and delete buttons', async () => {
-    const { useSuspenseQuery } = await importMocks()
-    useSuspenseQuery
-      .mockReset()
-      .mockReturnValueOnce({ data: mockCategories })
-      .mockReturnValueOnce({ data: mockMerchants })
-
     await renderForm('edit')
 
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy()
@@ -286,12 +286,6 @@ describe('ExpenseForm component', () => {
   })
 
   it('renders edit mode with pre-filled merchant value', async () => {
-    const { useSuspenseQuery } = await importMocks()
-    useSuspenseQuery
-      .mockReset()
-      .mockReturnValueOnce({ data: mockCategories })
-      .mockReturnValueOnce({ data: mockMerchants })
-
     await renderForm('edit')
 
     const merchantButton = screen.getByRole('combobox', { name: 'Merchant' })
@@ -299,12 +293,6 @@ describe('ExpenseForm component', () => {
   })
 
   it('renders edit mode with pre-filled amount value', async () => {
-    const { useSuspenseQuery } = await importMocks()
-    useSuspenseQuery
-      .mockReset()
-      .mockReturnValueOnce({ data: mockCategories })
-      .mockReturnValueOnce({ data: mockMerchants })
-
     await renderForm('edit')
 
     const amountInput = screen.getByLabelText('Amount (EUR)') as HTMLInputElement
@@ -312,12 +300,6 @@ describe('ExpenseForm component', () => {
   })
 
   it('renders edit mode with pre-filled comment value', async () => {
-    const { useSuspenseQuery } = await importMocks()
-    useSuspenseQuery
-      .mockReset()
-      .mockReturnValueOnce({ data: mockCategories })
-      .mockReturnValueOnce({ data: mockMerchants })
-
     await renderForm('edit')
 
     const commentInput = screen.getByLabelText('Notes (optional)') as HTMLInputElement
@@ -330,7 +312,6 @@ describe('ExpenseForm component', () => {
     const { container } = await renderForm('create')
 
     const groups = container.querySelectorAll('[data-slot="field"]')
-    // date, merchant, category, amount, comment = 5 Field-wrapped groups
     expect(groups.length).toBe(5)
   })
 
@@ -338,20 +319,56 @@ describe('ExpenseForm component', () => {
     const { container } = await renderForm('create')
 
     const fieldLabels = container.querySelectorAll('[data-slot="field-label"]')
-    // date, merchant, category, amount, attachment, comment = 6 labels
     expect(fieldLabels.length).toBeGreaterThanOrEqual(5)
   })
 
-  // ---- Form submission shows validation errors ----
+  // ---- User interactions ----
+
+  it('updates amount input value when user types', async () => {
+    const user = userEvent.setup()
+    await renderForm('create')
+
+    const amountInput = screen.getByLabelText('Amount (EUR)') as HTMLInputElement
+    await user.type(amountInput, '12,50')
+
+    expect(amountInput.value).toBe('12,50')
+  })
+
+  it('shows formatted currency preview when a valid amount is entered', async () => {
+    const user = userEvent.setup()
+    await renderForm('create')
+
+    const amountInput = screen.getByLabelText('Amount (EUR)')
+    await user.type(amountInput, '12.50')
+
+    expect(screen.getByText('€12.50')).toBeTruthy()
+  })
+
+  it('updates comment input value when user types', async () => {
+    const user = userEvent.setup()
+    await renderForm('create')
+
+    const commentInput = screen.getByLabelText('Notes (optional)') as HTMLInputElement
+    await user.type(commentInput, 'Team dinner')
+
+    expect(commentInput.value).toBe('Team dinner')
+  })
+
+  it('clears and replaces comment value when user edits', async () => {
+    const user = userEvent.setup()
+    await renderForm('edit')
+
+    const commentInput = screen.getByLabelText('Notes (optional)') as HTMLInputElement
+    expect(commentInput.value).toBe('Test comment')
+
+    await user.clear(commentInput)
+    await user.type(commentInput, 'Updated note')
+
+    expect(commentInput.value).toBe('Updated note')
+  })
 
   it('shows validation errors after submitting empty form fields', async () => {
     const user = userEvent.setup()
-    const { useSuspenseQuery } = await importMocks()
-    useSuspenseQuery
-      .mockReset()
-      .mockReturnValueOnce({ data: mockCategories })
-      .mockReturnValueOnce({ data: mockMerchants })
-
     await renderForm('create')
 
     const submitButton = screen.getByRole('button', { name: 'Create expense' })
@@ -359,5 +376,17 @@ describe('ExpenseForm component', () => {
 
     const alerts = screen.queryAllByRole('alert')
     expect(alerts.length).toBeGreaterThan(0)
+  })
+
+  it('shows merchant and category errors but not date error on empty submit', async () => {
+    const user = userEvent.setup()
+    await renderForm('create')
+
+    await user.click(screen.getByRole('button', { name: 'Create expense' }))
+
+    expect(screen.getByText('Merchant name is required.')).toBeTruthy()
+    expect(screen.getByText('Select or create a category.')).toBeTruthy()
+    // Date is pre-filled with today, so no date error
+    expect(screen.queryByText(/Invalid date/)).toBeNull()
   })
 })
