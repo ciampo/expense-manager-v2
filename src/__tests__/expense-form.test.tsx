@@ -239,41 +239,41 @@ describe('ExpenseForm component', () => {
   it('renders create mode with correct labels and buttons', async () => {
     await renderForm('create')
 
-    expect(screen.getByLabelText('Date')).toBeTruthy()
-    expect(screen.getByLabelText('Merchant')).toBeTruthy()
-    expect(screen.getByLabelText('Category')).toBeTruthy()
-    expect(screen.getByLabelText('Amount (EUR)')).toBeTruthy()
-    expect(screen.getByLabelText('Notes (optional)')).toBeTruthy()
-    expect(screen.getByLabelText('Attachment (optional)')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Create expense' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy()
+    expect(screen.getByLabelText('Date')).toBeInTheDocument()
+    expect(screen.getByLabelText('Merchant')).toBeInTheDocument()
+    expect(screen.getByLabelText('Category')).toBeInTheDocument()
+    expect(screen.getByLabelText('Amount (EUR)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Notes (optional)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Attachment (optional)')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create expense' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
   })
 
   it('does not show delete button in create mode', async () => {
     await renderForm('create')
 
-    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
   it('renders date picker with today date (not placeholder)', async () => {
     await renderForm('create')
 
     const datePicker = screen.getByLabelText('Date')
-    expect(datePicker.textContent).toBeTruthy()
-    expect(datePicker.textContent).not.toBe('Select date')
+    expect(datePicker).toHaveTextContent(/.+/)
+    expect(datePicker).not.toHaveTextContent('Select date')
   })
 
   it('shows no validation errors before submission', async () => {
     await renderForm('create')
 
-    expect(screen.queryAllByRole('alert')).toHaveLength(0)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('has noValidate on the form element', async () => {
     const { container } = await renderForm('create')
 
     const form = container.querySelector('form')
-    expect(form?.hasAttribute('novalidate')).toBe(true)
+    expect(form).toHaveAttribute('novalidate')
   })
 
   // ---- Edit mode ----
@@ -281,29 +281,26 @@ describe('ExpenseForm component', () => {
   it('renders edit mode with save and delete buttons', async () => {
     await renderForm('edit')
 
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
   it('renders edit mode with pre-filled merchant value', async () => {
     await renderForm('edit')
 
-    const merchantButton = screen.getByRole('combobox', { name: 'Merchant' })
-    expect(merchantButton.textContent).toBe('Test Merchant')
+    expect(screen.getByRole('combobox', { name: 'Merchant' })).toHaveTextContent('Test Merchant')
   })
 
   it('renders edit mode with pre-filled amount value', async () => {
     await renderForm('edit')
 
-    const amountInput = screen.getByLabelText('Amount (EUR)') as HTMLInputElement
-    expect(amountInput.value).toBe('42.00')
+    expect(screen.getByLabelText('Amount (EUR)')).toHaveValue('42.00')
   })
 
   it('renders edit mode with pre-filled comment value', async () => {
     await renderForm('edit')
 
-    const commentInput = screen.getByLabelText('Notes (optional)') as HTMLInputElement
-    expect(commentInput.value).toBe('Test comment')
+    expect(screen.getByLabelText('Notes (optional)')).toHaveValue('Test comment')
   })
 
   // ---- User interactions ----
@@ -312,54 +309,51 @@ describe('ExpenseForm component', () => {
     const user = userEvent.setup()
     await renderForm('create')
 
-    const amountInput = screen.getByLabelText('Amount (EUR)') as HTMLInputElement
+    const amountInput = screen.getByLabelText('Amount (EUR)')
     await user.type(amountInput, '12,50')
 
-    expect(amountInput.value).toBe('12,50')
+    expect(amountInput).toHaveValue('12,50')
   })
 
   it('shows formatted currency preview when a valid amount is entered', async () => {
     const user = userEvent.setup()
     await renderForm('create')
 
-    const amountInput = screen.getByLabelText('Amount (EUR)')
-    await user.type(amountInput, '12.50')
+    await user.type(screen.getByLabelText('Amount (EUR)'), '12.50')
 
-    expect(screen.getByText('€12.50')).toBeTruthy()
+    expect(screen.getByText('€12.50')).toBeInTheDocument()
   })
 
   it('updates comment input value when user types', async () => {
     const user = userEvent.setup()
     await renderForm('create')
 
-    const commentInput = screen.getByLabelText('Notes (optional)') as HTMLInputElement
+    const commentInput = screen.getByLabelText('Notes (optional)')
     await user.type(commentInput, 'Team dinner')
 
-    expect(commentInput.value).toBe('Team dinner')
+    expect(commentInput).toHaveValue('Team dinner')
   })
 
   it('clears and replaces comment value when user edits', async () => {
     const user = userEvent.setup()
     await renderForm('edit')
 
-    const commentInput = screen.getByLabelText('Notes (optional)') as HTMLInputElement
-    expect(commentInput.value).toBe('Test comment')
+    const commentInput = screen.getByLabelText('Notes (optional)')
+    expect(commentInput).toHaveValue('Test comment')
 
     await user.clear(commentInput)
     await user.type(commentInput, 'Updated note')
 
-    expect(commentInput.value).toBe('Updated note')
+    expect(commentInput).toHaveValue('Updated note')
   })
 
   it('shows validation errors after submitting empty form fields', async () => {
     const user = userEvent.setup()
     await renderForm('create')
 
-    const submitButton = screen.getByRole('button', { name: 'Create expense' })
-    await user.click(submitButton)
+    await user.click(screen.getByRole('button', { name: 'Create expense' }))
 
-    const alerts = screen.queryAllByRole('alert')
-    expect(alerts.length).toBeGreaterThan(0)
+    expect(screen.queryAllByRole('alert').length).toBeGreaterThan(0)
   })
 
   it('shows merchant and category errors but not date error on empty submit', async () => {
@@ -368,9 +362,8 @@ describe('ExpenseForm component', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create expense' }))
 
-    expect(screen.getByText('Merchant name is required.')).toBeTruthy()
-    expect(screen.getByText('Select or create a category.')).toBeTruthy()
-    // Date is pre-filled with today, so no date error
-    expect(screen.queryByText(/Invalid date/)).toBeNull()
+    expect(screen.getByText('Merchant name is required.')).toBeInTheDocument()
+    expect(screen.getByText('Select or create a category.')).toBeInTheDocument()
+    expect(screen.queryByText(/Invalid date/)).not.toBeInTheDocument()
   })
 })

@@ -4,26 +4,26 @@ import { FieldError } from '@/components/ui/field'
 
 describe('FieldError', () => {
   it('renders nothing when errors is undefined', () => {
-    const { container } = render(<FieldError />)
-    expect(container.innerHTML).toBe('')
+    render(<FieldError />)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('renders nothing when errors is an empty array', () => {
-    const { container } = render(<FieldError errors={[]} />)
-    expect(container.innerHTML).toBe('')
+    render(<FieldError errors={[]} />)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('renders nothing when errors contains only undefined entries', () => {
-    const { container } = render(<FieldError errors={[undefined, undefined]} />)
-    expect(container.innerHTML).toBe('')
+    render(<FieldError errors={[undefined, undefined]} />)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('renders a single error as plain text with role="alert"', () => {
     render(<FieldError errors={[{ message: 'Email is required.' }]} />)
 
     const alert = screen.getByRole('alert')
-    expect(alert.textContent).toBe('Email is required.')
-    expect(within(alert).queryByRole('list')).toBeNull()
+    expect(alert).toHaveTextContent('Email is required.')
+    expect(within(alert).queryByRole('list')).not.toBeInTheDocument()
   })
 
   it('renders multiple unique errors as a list', () => {
@@ -34,8 +34,8 @@ describe('FieldError', () => {
     const alert = screen.getByRole('alert')
     const items = within(alert).getAllByRole('listitem')
     expect(items).toHaveLength(2)
-    expect(items[0].textContent).toBe('Too short.')
-    expect(items[1].textContent).toBe('Must contain a number.')
+    expect(items[0]).toHaveTextContent('Too short.')
+    expect(items[1]).toHaveTextContent('Must contain a number.')
   })
 
   it('deduplicates errors with identical messages', () => {
@@ -46,8 +46,8 @@ describe('FieldError', () => {
     )
 
     const alert = screen.getByRole('alert')
-    expect(alert.textContent).toBe('Required.')
-    expect(within(alert).queryByRole('list')).toBeNull()
+    expect(alert).toHaveTextContent('Required.')
+    expect(within(alert).queryByRole('list')).not.toBeInTheDocument()
   })
 
   it('prefers children over errors prop', () => {
@@ -58,8 +58,8 @@ describe('FieldError', () => {
     )
 
     const alert = screen.getByRole('alert')
-    expect(alert.textContent).toBe('Custom content')
-    expect(alert.textContent).not.toContain('Ignored.')
+    expect(alert).toHaveTextContent('Custom content')
+    expect(alert).not.toHaveTextContent('Ignored.')
   })
 
   it('filters out errors with undefined messages in a list', () => {
@@ -76,7 +76,7 @@ describe('FieldError', () => {
     const alert = screen.getByRole('alert')
     const items = within(alert).getAllByRole('listitem')
     expect(items).toHaveLength(2)
-    expect(items[0].textContent).toBe('Visible error.')
-    expect(items[1].textContent).toBe('Another error.')
+    expect(items[0]).toHaveTextContent('Visible error.')
+    expect(items[1]).toHaveTextContent('Another error.')
   })
 })

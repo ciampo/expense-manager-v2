@@ -14,6 +14,7 @@ export default defineConfig({
     exclude: ['tests/visual/**'],
     environment: 'jsdom',
     globals: true,
+    setupFiles: ['./vitest-setup.ts'],
     // Run all tests under a negative UTC offset so timezone-sensitive date
     // tests (e.g. parseLocalDate vs new Date('YYYY-MM-DD')) are deterministic
     // and actually catch regressions. Without this, CI (typically UTC) would
