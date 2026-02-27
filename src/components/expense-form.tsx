@@ -319,6 +319,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         form.handleSubmit()
       }}
       noValidate
+      aria-label="Expense form"
       className="max-w-2xl space-y-6"
     >
       {/* Date */}

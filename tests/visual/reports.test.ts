@@ -15,7 +15,7 @@ test.describe('Visual Regression - Reports', () => {
 
     await expect(page).toHaveScreenshot('reports-empty.png', {
       fullPage: true,
-      mask: [page.locator('footer')],
+      mask: [page.getByRole('contentinfo')],
     })
   })
 })

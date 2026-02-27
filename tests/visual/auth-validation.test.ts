@@ -12,7 +12,7 @@ test.describe('Visual Regression - Auth Form Validation States', () => {
 
     await expect(page).toHaveScreenshot('sign-in-validation-errors.png', {
       fullPage: true,
-      mask: [page.locator('footer')],
+      mask: [page.getByRole('contentinfo')],
     })
   })
 
@@ -26,7 +26,7 @@ test.describe('Visual Regression - Auth Form Validation States', () => {
 
     await expect(page).toHaveScreenshot('sign-up-validation-errors.png', {
       fullPage: true,
-      mask: [page.locator('footer')],
+      mask: [page.getByRole('contentinfo')],
     })
   })
 
@@ -43,7 +43,7 @@ test.describe('Visual Regression - Auth Form Validation States', () => {
 
     await expect(page).toHaveScreenshot('sign-up-password-mismatch.png', {
       fullPage: true,
-      mask: [page.locator('footer')],
+      mask: [page.getByRole('contentinfo')],
     })
   })
 
@@ -57,7 +57,7 @@ test.describe('Visual Regression - Auth Form Validation States', () => {
 
     await expect(page).toHaveScreenshot('forgot-password-validation-error.png', {
       fullPage: true,
-      mask: [page.locator('footer')],
+      mask: [page.getByRole('contentinfo')],
     })
   })
 })

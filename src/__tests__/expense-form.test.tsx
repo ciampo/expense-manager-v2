@@ -270,10 +270,9 @@ describe('ExpenseForm component', () => {
   })
 
   it('has noValidate on the form element', async () => {
-    const { container } = await renderForm('create')
+    await renderForm('create')
 
-    const form = container.querySelector('form')
-    expect(form).toHaveAttribute('novalidate')
+    expect(screen.getByRole('form', { name: 'Expense form' })).toHaveAttribute('novalidate')
   })
 
   // ---- Edit mode ----
