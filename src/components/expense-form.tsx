@@ -8,8 +8,7 @@ import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { FieldError } from '@/components/ui/field'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -343,9 +342,10 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       <form.Field name="date">
         {(field) => {
           const selectedDate = field.state.value ? parseLocalDate(field.state.value) : undefined
+          const hasErrors = field.state.meta.errors.length > 0
           return (
-            <div className="space-y-2">
-              <Label htmlFor="date-picker">Date</Label>
+            <Field data-invalid={hasErrors || undefined}>
+              <FieldLabel htmlFor="date-picker">Date</FieldLabel>
               <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
                 <PopoverTrigger
                   render={
@@ -355,6 +355,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                       variant="outline"
                       className="w-full justify-start text-left font-normal"
                       disabled={isLoading}
+                      aria-invalid={hasErrors}
+                      aria-describedby={hasErrors ? 'date-error' : undefined}
                     />
                   }
                 >
@@ -374,7 +376,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                   />
                 </PopoverContent>
               </Popover>
-            </div>
+              <FieldError id="date-error" errors={field.state.meta.errors} />
+            </Field>
           )
         }}
       </form.Field>
@@ -384,8 +387,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         {(field) => {
           const hasErrors = field.state.meta.errors.length > 0
           return (
-            <div className="space-y-2">
-              <Label htmlFor="merchant-combobox">Merchant</Label>
+            <Field data-invalid={hasErrors || undefined}>
+              <FieldLabel htmlFor="merchant-combobox">Merchant</FieldLabel>
               <Popover
                 open={isMerchantOpen}
                 onOpenChange={(open) => {
@@ -447,7 +450,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 </PopoverContent>
               </Popover>
               <FieldError id="merchant-error" errors={field.state.meta.errors} />
-            </div>
+            </Field>
           )
         }}
       </form.Field>
@@ -465,8 +468,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 !categoryIdField.state.value && !!newCatField.state.value.trim()
 
               return (
-                <div className="space-y-2">
-                  <Label htmlFor="category-combobox">Category</Label>
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="category-combobox">Category</FieldLabel>
                   <Popover
                     open={isCategoryOpen}
                     onOpenChange={(open) => {
@@ -555,7 +558,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     </PopoverContent>
                   </Popover>
                   <FieldError id="category-error" errors={categoryIdField.state.meta.errors} />
-                </div>
+                </Field>
               )
             }}
           </form.Field>
@@ -568,8 +571,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           const hasErrors = field.state.meta.errors.length > 0
           const parsedAmount = parseCurrencyToCents(field.state.value)
           return (
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (EUR)</Label>
+            <Field data-invalid={hasErrors || undefined}>
+              <FieldLabel htmlFor="amount">Amount (EUR)</FieldLabel>
               <InputGroup>
                 <InputGroupAddon align="inline-start">
                   <InputGroupText>€</InputGroupText>
@@ -591,14 +594,14 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 <p className="text-muted-foreground text-sm">{formatCurrency(parsedAmount)}</p>
               )}
               <FieldError id="amount-error" errors={field.state.meta.errors} />
-            </div>
+            </Field>
           )
         }}
       </form.Field>
 
       {/* Attachment */}
       <div className="space-y-2">
-        <Label htmlFor="attachment-input">Attachment (optional)</Label>
+        <FieldLabel htmlFor="attachment-input">Attachment (optional)</FieldLabel>
         {attachmentId ? (
           <div className="space-y-3 rounded-md border p-3">
             <AttachmentPreview attachmentId={attachmentId} />
@@ -651,8 +654,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       {/* Comment */}
       <form.Field name="comment">
         {(field) => (
-          <div className="space-y-2">
-            <Label htmlFor="comment">Notes (optional)</Label>
+          <Field>
+            <FieldLabel htmlFor="comment">Notes (optional)</FieldLabel>
             <Input
               id="comment"
               type="text"
@@ -662,7 +665,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               onBlur={field.handleBlur}
               disabled={isLoading}
             />
-          </div>
+          </Field>
         )}
       </form.Field>
 
