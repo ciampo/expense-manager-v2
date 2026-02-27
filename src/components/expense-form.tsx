@@ -430,6 +430,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                     <CommandList>
                       <CommandEmpty>No merchants found</CommandEmpty>
                       <CommandGroup heading="Recent merchants">
+                        disabled={isLoading}
                         {merchants?.map((m) => (
                           <CommandItem
                             key={m}
@@ -522,6 +523,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                         <CommandList>
                           <CommandEmpty>No categories found</CommandEmpty>
                           <CommandGroup heading="Categories">
+                            disabled={isLoading}
                             {categories?.map((category) => (
                               <CommandItem
                                 key={category._id}
