@@ -7,7 +7,7 @@ test.describe('Visual Regression - Public Pages', () => {
     await page.getByRole('heading', { name: /manage your work expenses/i }).waitFor()
     await expect(page).toHaveScreenshot('landing-page.png', {
       fullPage: true,
-      mask: [page.getByRole('contentinfo')],
+      mask: [page.locator('footer')],
     })
   })
 
@@ -17,7 +17,7 @@ test.describe('Visual Regression - Public Pages', () => {
     await waitForHydration(page)
     await expect(page).toHaveScreenshot('sign-in-page.png', {
       fullPage: true,
-      mask: [page.getByRole('contentinfo')],
+      mask: [page.locator('footer')],
     })
   })
 
@@ -27,7 +27,7 @@ test.describe('Visual Regression - Public Pages', () => {
     await waitForHydration(page)
     await expect(page).toHaveScreenshot('sign-up-page.png', {
       fullPage: true,
-      mask: [page.getByRole('contentinfo')],
+      mask: [page.locator('footer')],
     })
   })
 
@@ -37,7 +37,7 @@ test.describe('Visual Regression - Public Pages', () => {
     await waitForHydration(page)
     await expect(page).toHaveScreenshot('forgot-password-page.png', {
       fullPage: true,
-      mask: [page.getByRole('contentinfo')],
+      mask: [page.locator('footer')],
     })
   })
 })

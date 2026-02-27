@@ -31,7 +31,7 @@ test.describe('Visual Regression - Dashboard', () => {
     await expect(page.getByText(/haven't recorded any expenses/i)).toBeVisible()
     await expect(page).toHaveScreenshot('dashboard-empty.png', {
       fullPage: true,
-      mask: [page.getByRole('contentinfo')],
+      mask: [page.locator('footer')],
     })
   })
 
@@ -41,7 +41,7 @@ test.describe('Visual Regression - Dashboard', () => {
 
     await expect(page).toHaveScreenshot('dashboard-with-expense.png', {
       fullPage: true,
-      mask: [page.getByRole('contentinfo'), page.locator('table tbody td:first-child')],
+      mask: [page.locator('footer'), page.locator('table tbody td:first-child')],
     })
   })
 
@@ -53,7 +53,7 @@ test.describe('Visual Regression - Dashboard', () => {
 
     await expect(page).toHaveScreenshot('dashboard-delete-dialog.png', {
       fullPage: true,
-      mask: [page.getByRole('contentinfo'), page.locator('table tbody td:first-child')],
+      mask: [page.locator('footer'), page.locator('table tbody td:first-child')],
     })
   })
 })
