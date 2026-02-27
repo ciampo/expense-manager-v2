@@ -91,7 +91,7 @@ export const list = query({
     if (userId) {
       userCategories = await ctx.db
         .query('categories')
-        .withIndex('by_user', (q) => q.eq('userId', userId))
+        .withIndex('by_user_and_name', (q) => q.eq('userId', userId))
         .collect()
     }
 

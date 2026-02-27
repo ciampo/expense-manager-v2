@@ -2,6 +2,15 @@ import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { auth } from './auth'
 
+export function validateYearMonth(year: number, month: number): void {
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error(`Invalid month: ${month}. Must be an integer between 1 and 12.`)
+  }
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+    throw new Error(`Invalid year: ${year}. Must be an integer between 2000 and 2100.`)
+  }
+}
+
 /**
  * Convert "YYYY-MM" keys into { year, month } objects sorted newest first.
  */
@@ -82,6 +91,8 @@ export const monthlyData = query({
       return { expenses: [], categories: {}, total: 0 }
     }
 
+    validateYearMonth(args.year, args.month)
+
     // Format month with leading zero
     const monthStr = args.month.toString().padStart(2, '0')
     const startDate = `${args.year}-${monthStr}-01`
@@ -153,6 +164,8 @@ export const monthlyAttachments = query({
     if (!userId) {
       return []
     }
+
+    validateYearMonth(args.year, args.month)
 
     const monthStr = args.month.toString().padStart(2, '0')
     const startDate = `${args.year}-${monthStr}-01`
