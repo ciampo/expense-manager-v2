@@ -69,8 +69,12 @@ const expenseFormSchema = z
       message: 'Enter a valid amount.',
     }),
     categoryId: z.union([z.string(), z.null()]),
-    newCategoryName: z.string(),
-    comment: z.string(),
+    newCategoryName: z.string().max(100, {
+      message: 'Category name must be 100 characters or less.',
+    }),
+    comment: z.string().max(1000, {
+      message: 'Comment must be 1000 characters or less.',
+    }),
   })
   .refine((data) => data.categoryId !== null || data.newCategoryName.trim().length > 0, {
     message: 'Select or create a category.',
@@ -653,20 +657,26 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       {/* Comment */}
       <form.Field name="comment">
-        {(field) => (
-          <Field>
-            <FieldLabel htmlFor="comment">Notes (optional)</FieldLabel>
-            <Input
-              id="comment"
-              type="text"
-              placeholder="Add a note..."
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-              disabled={isLoading}
-            />
-          </Field>
-        )}
+        {(field) => {
+          const hasErrors = field.state.meta.errors.length > 0
+          return (
+            <Field data-invalid={hasErrors || undefined}>
+              <FieldLabel htmlFor="comment">Notes (optional)</FieldLabel>
+              <Input
+                id="comment"
+                type="text"
+                placeholder="Add a note..."
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                disabled={isLoading}
+                aria-invalid={hasErrors}
+                aria-describedby={hasErrors ? 'comment-error' : undefined}
+              />
+              <FieldError id="comment-error" errors={field.state.meta.errors} />
+            </Field>
+          )
+        }}
       </form.Field>
 
       {/* Actions */}
