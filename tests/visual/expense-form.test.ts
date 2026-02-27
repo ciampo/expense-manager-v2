@@ -41,6 +41,16 @@ test.describe('Visual Regression - Expense Form', () => {
     })
   })
 
+  test('new expense form — validation errors', async ({ page }) => {
+    await page.getByRole('button', { name: /create expense/i }).click()
+    await expect(page.getByText('Merchant name is required.')).toBeVisible()
+
+    await expect(page).toHaveScreenshot('expense-form-validation-errors.png', {
+      fullPage: true,
+      mask: [page.locator('footer'), page.locator('#date-picker')],
+    })
+  })
+
   test('new expense form — pending new category shown in trigger', async ({ page }) => {
     await page.getByRole('combobox', { name: /category/i }).click()
     await page.getByPlaceholder(/search or create/i).fill('Pending Cat')

@@ -2,11 +2,13 @@ import { useState, useCallback } from 'react'
 import { useSuspenseQuery, useQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
+import { useForm } from '@tanstack/react-form'
+import { z } from 'zod'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -44,12 +46,12 @@ import {
   parseLocalDate,
   toISODateString,
 } from '@/lib/format'
+import { expenseDateSchema, expenseMerchantSchema, expenseAmountSchema } from '@/lib/schemas'
 import { shouldShowCreateOption } from '@/lib/combobox'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
 
-// Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -58,6 +60,30 @@ const ACCEPTED_FILE_TYPES = [
   'image/webp',
   'application/pdf',
 ]
+
+const expenseFormSchema = z
+  .object({
+    date: expenseDateSchema,
+    merchant: expenseMerchantSchema,
+    amount: z.string().transform(parseCurrencyToCents).pipe(expenseAmountSchema),
+    categoryId: z.union([z.string(), z.null()]),
+    // categoryNameSchema enforces min(1), which would wrongly fail when
+    // an existing category is selected. The cross-field refine handles
+    // the "required" case; the max mirrors categoryNameSchema.
+    newCategoryName: z.string().max(100, {
+      message: 'Category name must be 100 characters or less.',
+    }),
+    // expenseCommentSchema is .optional() (accepts undefined), which is
+    // incompatible with the form's always-string value. Mirror its
+    // max-length constraint inline.
+    comment: z.string().max(1000, {
+      message: 'Comment must be 1000 characters or less.',
+    }),
+  })
+  .refine((data) => data.categoryId !== null || data.newCategoryName.trim().length > 0, {
+    message: 'Select or create a category.',
+    path: ['categoryId'],
+  })
 
 interface ExpenseFormProps {
   expense?: {
@@ -142,27 +168,15 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
 export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const navigate = useNavigate()
 
-  // Fetch data
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
   const { data: merchants } = useSuspenseQuery(convexQuery(api.expenses.getMerchants, {}))
 
-  // Form state
-  const [date, setDate] = useState(expense?.date || getTodayISO())
-  const [merchant, setMerchant] = useState(expense?.merchant || '')
-  const [amount, setAmount] = useState(expense ? centsToInputValue(expense.amount) : '')
-  const [categoryId, setCategoryId] = useState<Id<'categories'> | null>(expense?.categoryId || null)
-  const [comment, setComment] = useState(expense?.comment || '')
+  // Attachment state lives outside the form — upload is an independent async flow
   const [attachmentId, setAttachmentId] = useState<Id<'_storage'> | undefined>(
     expense?.attachmentId,
   )
-  const [newCategoryName, setNewCategoryName] = useState('')
 
-  // Validation errors
-  const [errors, setErrors] = useState<{ category?: string; amount?: string; merchant?: string }>(
-    {},
-  )
-
-  // UI state
+  // UI state (popover/dialog open states are not form data)
   const [isDateOpen, setIsDateOpen] = useState(false)
   const [isMerchantOpen, setIsMerchantOpen] = useState(false)
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
@@ -170,7 +184,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const [showDeleteAttachment, setShowDeleteAttachment] = useState(false)
   const [showDeleteExpense, setShowDeleteExpense] = useState(false)
 
-  // Mutations
   const createExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.create),
     onSuccess: () => {
@@ -223,19 +236,54 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     },
   })
 
-  // File upload handler
+  const form = useForm({
+    defaultValues: {
+      date: expense?.date || getTodayISO(),
+      merchant: expense?.merchant || '',
+      amount: expense ? centsToInputValue(expense.amount) : '',
+      categoryId: (expense?.categoryId ?? null) as string | null,
+      newCategoryName: '',
+      comment: expense?.comment || '',
+    },
+    validators: {
+      onSubmit: expenseFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const amountCents = parseCurrencyToCents(value.amount)
+
+      const data = {
+        date: value.date,
+        merchant: value.merchant.trim(),
+        amount: amountCents,
+        ...(value.categoryId
+          ? { categoryId: value.categoryId as Id<'categories'> }
+          : { newCategoryName: value.newCategoryName.trim() }),
+        attachmentId,
+        comment: value.comment.trim() || undefined,
+      }
+
+      try {
+        if (mode === 'create') {
+          await createExpense.mutateAsync(data)
+        } else if (expense) {
+          await updateExpense.mutateAsync({ id: expense._id, ...data })
+        }
+      } catch {
+        // Error toast shown by mutation onError callbacks
+      }
+    },
+  })
+
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
 
-      // Validate file type
       if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
         toast.error('Unsupported file type. Use images or PDF.')
         return
       }
 
-      // Validate file size
       if (file.size > MAX_FILE_SIZE) {
         toast.error('File too large. Maximum 10MB.')
         return
@@ -256,7 +304,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         }
 
         const { storageId } = await response.json()
-        // Register ownership so getUrl/expense mutations can verify it
         await confirmUploadAsync({ storageId })
         setAttachmentId(storageId)
         toast.success('File uploaded')
@@ -269,46 +316,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     [generateUploadUrlAsync, confirmUploadAsync],
   )
 
-  const needsNewCategory = !categoryId && !!newCategoryName.trim()
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-
-    const newErrors: typeof errors = {}
-    if (!categoryId && !newCategoryName.trim()) {
-      newErrors.category = 'Select a category'
-    }
-    const amountCents = parseCurrencyToCents(amount)
-    if (amountCents <= 0) {
-      newErrors.amount = 'Enter a valid amount'
-    }
-    if (!merchant.trim()) {
-      newErrors.merchant = 'Enter the merchant'
-    }
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      const firstError = Object.values(newErrors)[0]
-      if (firstError) toast.error(firstError)
-      return
-    }
-
-    const data = {
-      date,
-      merchant: merchant.trim(),
-      amount: amountCents,
-      ...(categoryId ? { categoryId } : { newCategoryName: newCategoryName.trim() }),
-      attachmentId,
-      comment: comment.trim() || undefined,
-    }
-
-    if (mode === 'create') {
-      createExpense.mutate(data)
-    } else if (expense) {
-      updateExpense.mutate({ id: expense._id, ...data })
-    }
-  }
-
   const handleDeleteExpense = () => {
     if (expense) {
       deleteExpense.mutate({ id: expense._id })
@@ -319,243 +326,311 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     if (expense && attachmentId) {
       removeAttachment.mutate({ id: expense._id })
     } else {
-      // If not saved yet, just clear the state
       setAttachmentId(undefined)
     }
     setShowDeleteAttachment(false)
   }
 
-  const isLoading = createExpense.isPending || updateExpense.isPending || deleteExpense.isPending
-
-  // Find selected category name
-  const selectedCategory = categories?.find((c) => c._id === categoryId)
-
-  const selectedDate = date ? parseLocalDate(date) : undefined
+  const isLoading =
+    form.state.isSubmitting ||
+    createExpense.isPending ||
+    updateExpense.isPending ||
+    deleteExpense.isPending
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        form.handleSubmit()
+      }}
+      noValidate
+      className="max-w-2xl space-y-6"
+    >
       {/* Date */}
-      <div className="space-y-2">
-        <Label htmlFor="date-picker">Date</Label>
-        <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
-          <PopoverTrigger
-            render={
-              <Button
-                id="date-picker"
-                type="button"
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-              />
-            }
-          >
-            {selectedDate ? format(selectedDate, 'PPP', { locale: enUS }) : 'Select date'}
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(d) => {
-                if (d) {
-                  setDate(toISODateString(d))
-                  setIsDateOpen(false)
-                }
-              }}
-              locale={enUS}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
+      <form.Field name="date">
+        {(field) => {
+          const selectedDate = field.state.value ? parseLocalDate(field.state.value) : undefined
+          const hasErrors = field.state.meta.errors.length > 0
+          return (
+            <Field data-invalid={hasErrors || undefined}>
+              <FieldLabel htmlFor="date-picker">Date</FieldLabel>
+              <Popover
+                open={isDateOpen && !isLoading}
+                onOpenChange={(open) => {
+                  setIsDateOpen(open)
+                  if (!open) field.handleBlur()
+                }}
+              >
+                <PopoverTrigger
+                  render={
+                    <Button
+                      id="date-picker"
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                      disabled={isLoading}
+                      aria-invalid={hasErrors}
+                      aria-describedby={hasErrors ? 'date-error' : undefined}
+                    />
+                  }
+                >
+                  {selectedDate ? format(selectedDate, 'PPP', { locale: enUS }) : 'Select date'}
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(d) => {
+                      if (d) {
+                        field.handleChange(toISODateString(d))
+                        setIsDateOpen(false)
+                      }
+                    }}
+                    locale={enUS}
+                  />
+                </PopoverContent>
+              </Popover>
+              <FieldError id="date-error" errors={field.state.meta.errors} />
+            </Field>
+          )
+        }}
+      </form.Field>
 
-      {/* Merchant (combobox) */}
-      <div className="space-y-2">
-        <Label htmlFor="merchant-combobox">Merchant</Label>
-        <Popover open={isMerchantOpen} onOpenChange={setIsMerchantOpen}>
-          <PopoverTrigger
-            render={
-              <Button
-                id="merchant-combobox"
-                type="button"
-                variant="outline"
-                role="combobox"
-                aria-describedby={errors.merchant ? 'merchant-error' : undefined}
-                aria-invalid={!!errors.merchant}
-                className="w-full justify-start text-left font-normal"
-              />
-            }
-          >
-            {merchant || 'Select or type...'}
-          </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start">
-            <Command>
-              <CommandInput
-                placeholder="Search or create..."
-                value={merchant}
-                onValueChange={setMerchant}
-              />
-              <CommandList>
-                <CommandEmpty>No merchants found</CommandEmpty>
-                <CommandGroup heading="Recent merchants">
-                  {merchants?.map((m) => (
-                    <CommandItem
-                      key={m}
-                      value={m}
-                      onSelect={() => {
-                        setMerchant(m)
-                        setIsMerchantOpen(false)
-                      }}
-                    >
-                      {m}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-                {shouldShowCreateOption(merchants ?? [], merchant) && (
-                  <>
-                    <CommandSeparator />
-                    <CommandGroup forceMount>
-                      <CommandItem forceMount onSelect={() => setIsMerchantOpen(false)}>
-                        + Use &quot;{merchant}&quot;
-                      </CommandItem>
-                    </CommandGroup>
-                  </>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        {errors.merchant && (
-          <p id="merchant-error" role="alert" className="text-destructive text-sm">
-            {errors.merchant}
-          </p>
-        )}
-      </div>
-
-      {/* Category (combobox) */}
-      <div className="space-y-2">
-        <Label htmlFor="category-combobox">Category</Label>
-        <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
-          <PopoverTrigger
-            render={
-              <Button
-                id="category-combobox"
-                type="button"
-                variant="outline"
-                role="combobox"
-                aria-describedby={errors.category ? 'category-error' : undefined}
-                aria-invalid={!!errors.category}
-                className="w-full justify-start text-left font-normal"
-              />
-            }
-          >
-            {selectedCategory ? (
-              <>
-                {selectedCategory.icon && <span className="mr-2">{selectedCategory.icon}</span>}
-                {selectedCategory.name}
-              </>
-            ) : needsNewCategory ? (
-              newCategoryName.trim()
-            ) : (
-              'Select category...'
-            )}
-          </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start">
-            <Command>
-              <CommandInput
-                placeholder="Search or create..."
-                value={newCategoryName}
-                onValueChange={setNewCategoryName}
-              />
-              <CommandList>
-                <CommandEmpty>No categories found</CommandEmpty>
-                <CommandGroup heading="Categories">
-                  {categories?.map((category) => (
-                    <CommandItem
-                      key={category._id}
-                      value={category.name}
-                      onSelect={() => {
-                        setCategoryId(category._id)
-                        setIsCategoryOpen(false)
-                        setNewCategoryName('')
-                      }}
-                    >
-                      {category.icon && <span className="mr-2">{category.icon}</span>}
-                      {category.name}
-                      {category.isPredefined && (
-                        <span className="text-muted-foreground ml-auto text-xs">predefined</span>
+      {/* Merchant */}
+      <form.Field name="merchant">
+        {(field) => {
+          const hasErrors = field.state.meta.errors.length > 0
+          return (
+            <Field data-invalid={hasErrors || undefined}>
+              <FieldLabel htmlFor="merchant-combobox">Merchant</FieldLabel>
+              <Popover
+                open={isMerchantOpen && !isLoading}
+                onOpenChange={(open) => {
+                  setIsMerchantOpen(open)
+                  if (!open) field.handleBlur()
+                }}
+              >
+                <PopoverTrigger
+                  render={
+                    <Button
+                      id="merchant-combobox"
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-describedby={hasErrors ? 'merchant-error' : undefined}
+                      aria-invalid={hasErrors}
+                      className="w-full justify-start text-left font-normal"
+                      disabled={isLoading}
+                    />
+                  }
+                >
+                  {field.state.value || 'Select or type...'}
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      placeholder="Search or create..."
+                      value={field.state.value}
+                      onValueChange={(v) => field.handleChange(v)}
+                      disabled={isLoading}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No merchants found</CommandEmpty>
+                      <CommandGroup heading="Recent merchants">
+                        {merchants?.map((m) => (
+                          <CommandItem
+                            key={m}
+                            value={m}
+                            onSelect={() => {
+                              field.handleChange(m)
+                              setIsMerchantOpen(false)
+                            }}
+                          >
+                            {m}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      {shouldShowCreateOption(merchants ?? [], field.state.value) && (
+                        <>
+                          <CommandSeparator />
+                          <CommandGroup forceMount>
+                            <CommandItem forceMount onSelect={() => setIsMerchantOpen(false)}>
+                              + Use &quot;{field.state.value}&quot;
+                            </CommandItem>
+                          </CommandGroup>
+                        </>
                       )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-                {shouldShowCreateOption(
-                  (categories ?? []).map((c) => c.name),
-                  newCategoryName,
-                ) && (
-                  <>
-                    <CommandSeparator />
-                    <CommandGroup forceMount>
-                      <CommandItem
-                        forceMount
-                        onSelect={() => {
-                          setCategoryId(null)
-                          setIsCategoryOpen(false)
-                        }}
-                      >
-                        + Use &quot;{newCategoryName}&quot;
-                      </CommandItem>
-                    </CommandGroup>
-                  </>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        {errors.category && (
-          <p id="category-error" role="alert" className="text-destructive text-sm">
-            {errors.category}
-          </p>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <FieldError id="merchant-error" errors={field.state.meta.errors} />
+            </Field>
+          )
+        }}
+      </form.Field>
+
+      {/* Category */}
+      <form.Field name="categoryId">
+        {(categoryIdField) => (
+          <form.Field name="newCategoryName">
+            {(newCatField) => {
+              const hasErrors = categoryIdField.state.meta.errors.length > 0
+              const selectedCategory = categories?.find(
+                (c) => c._id === categoryIdField.state.value,
+              )
+              const needsNewCategory =
+                !categoryIdField.state.value && !!newCatField.state.value.trim()
+
+              return (
+                <Field data-invalid={hasErrors || undefined}>
+                  <FieldLabel htmlFor="category-combobox">Category</FieldLabel>
+                  <Popover
+                    open={isCategoryOpen && !isLoading}
+                    onOpenChange={(open) => {
+                      setIsCategoryOpen(open)
+                      if (!open) categoryIdField.handleBlur()
+                    }}
+                  >
+                    <PopoverTrigger
+                      render={
+                        <Button
+                          id="category-combobox"
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-describedby={hasErrors ? 'category-error' : undefined}
+                          aria-invalid={hasErrors}
+                          className="w-full justify-start text-left font-normal"
+                          disabled={isLoading}
+                        />
+                      }
+                    >
+                      {selectedCategory ? (
+                        <>
+                          {selectedCategory.icon && (
+                            <span className="mr-2">{selectedCategory.icon}</span>
+                          )}
+                          {selectedCategory.name}
+                        </>
+                      ) : needsNewCategory ? (
+                        newCatField.state.value.trim()
+                      ) : (
+                        'Select category...'
+                      )}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search or create..."
+                          value={newCatField.state.value}
+                          onValueChange={(v) => newCatField.handleChange(v)}
+                          disabled={isLoading}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No categories found</CommandEmpty>
+                          <CommandGroup heading="Categories">
+                            {categories?.map((category) => (
+                              <CommandItem
+                                key={category._id}
+                                value={category.name}
+                                onSelect={() => {
+                                  categoryIdField.handleChange(category._id)
+                                  newCatField.handleChange('')
+                                  setIsCategoryOpen(false)
+                                }}
+                              >
+                                {category.icon && <span className="mr-2">{category.icon}</span>}
+                                {category.name}
+                                {category.isPredefined && (
+                                  <span className="text-muted-foreground ml-auto text-xs">
+                                    predefined
+                                  </span>
+                                )}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                          {shouldShowCreateOption(
+                            (categories ?? []).map((c) => c.name),
+                            newCatField.state.value,
+                          ) && (
+                            <>
+                              <CommandSeparator />
+                              <CommandGroup forceMount>
+                                <CommandItem
+                                  forceMount
+                                  onSelect={() => {
+                                    categoryIdField.handleChange(null)
+                                    setIsCategoryOpen(false)
+                                  }}
+                                >
+                                  + Use &quot;{newCatField.state.value}&quot;
+                                </CommandItem>
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FieldError id="category-error" errors={categoryIdField.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.Field>
         )}
-      </div>
+      </form.Field>
 
       {/* Amount */}
-      <div className="space-y-2">
-        <Label htmlFor="amount">Amount (EUR)</Label>
-        <InputGroup>
-          <InputGroupAddon align="inline-start">
-            <InputGroupText>€</InputGroupText>
-          </InputGroupAddon>
-          <InputGroupInput
-            id="amount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0,00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-            aria-describedby={errors.amount ? 'amount-error' : undefined}
-            aria-invalid={!!errors.amount}
-          />
-        </InputGroup>
-        {amount && parseCurrencyToCents(amount) > 0 && (
-          <p className="text-muted-foreground text-sm">
-            {formatCurrency(parseCurrencyToCents(amount))}
-          </p>
-        )}
-        {errors.amount && (
-          <p id="amount-error" role="alert" className="text-destructive text-sm">
-            {errors.amount}
-          </p>
-        )}
-      </div>
+      <form.Field name="amount">
+        {(field) => {
+          const hasErrors = field.state.meta.errors.length > 0
+          const parsedAmount = parseCurrencyToCents(field.state.value)
+          return (
+            <Field data-invalid={hasErrors || undefined}>
+              <FieldLabel htmlFor="amount">Amount (EUR)</FieldLabel>
+              <InputGroup>
+                <InputGroupAddon align="inline-start">
+                  <InputGroupText>€</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="amount"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isLoading}
+                  aria-describedby={hasErrors ? 'amount-error' : undefined}
+                  aria-invalid={hasErrors}
+                />
+              </InputGroup>
+              {field.state.value && parsedAmount > 0 && (
+                <p className="text-muted-foreground text-sm">{formatCurrency(parsedAmount)}</p>
+              )}
+              <FieldError id="amount-error" errors={field.state.meta.errors} />
+            </Field>
+          )
+        }}
+      </form.Field>
 
       {/* Attachment */}
       <div className="space-y-2">
-        <Label htmlFor="attachment-input">Attachment (optional)</Label>
+        <FieldLabel htmlFor="attachment-input">Attachment (optional)</FieldLabel>
         {attachmentId ? (
           <div className="space-y-3 rounded-md border p-3">
             <AttachmentPreview attachmentId={attachmentId} />
             <AlertDialog open={showDeleteAttachment} onOpenChange={setShowDeleteAttachment}>
               <AlertDialogTrigger
                 render={
-                  <Button type="button" variant="ghost" size="sm" className="text-destructive" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    disabled={isLoading}
+                  />
                 }
               >
                 Remove attachment
@@ -585,7 +660,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             type="file"
             accept={ACCEPTED_FILE_TYPES.join(',')}
             onChange={handleFileChange}
-            disabled={isUploading}
+            disabled={isUploading || isLoading}
           />
         )}
         {isUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
@@ -593,21 +668,37 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       </div>
 
       {/* Comment */}
-      <div className="space-y-2">
-        <Label htmlFor="comment">Notes (optional)</Label>
-        <Input
-          id="comment"
-          type="text"
-          placeholder="Add a note..."
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-      </div>
+      <form.Field name="comment">
+        {(field) => {
+          const hasErrors = field.state.meta.errors.length > 0
+          return (
+            <Field data-invalid={hasErrors || undefined}>
+              <FieldLabel htmlFor="comment">Notes (optional)</FieldLabel>
+              <Input
+                id="comment"
+                type="text"
+                placeholder="Add a note..."
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                disabled={isLoading}
+                aria-invalid={hasErrors}
+                aria-describedby={hasErrors ? 'comment-error' : undefined}
+              />
+              <FieldError id="comment-error" errors={field.state.meta.errors} />
+            </Field>
+          )
+        }}
+      </form.Field>
 
       {/* Actions */}
       <div className="flex gap-4">
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Saving...' : mode === 'create' ? 'Create expense' : 'Save changes'}
+          {form.state.isSubmitting
+            ? 'Saving...'
+            : mode === 'create'
+              ? 'Create expense'
+              : 'Save changes'}
         </Button>
         <Button type="button" variant="outline" onClick={() => navigate({ to: '/dashboard' })}>
           Cancel
@@ -616,7 +707,14 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         {mode === 'edit' && expense && (
           <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
             <AlertDialogTrigger
-              render={<Button type="button" variant="destructive" className="ml-auto" />}
+              render={
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="ml-auto"
+                  disabled={isLoading}
+                />
+              }
             >
               Delete
             </AlertDialogTrigger>
