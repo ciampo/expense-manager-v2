@@ -354,7 +354,13 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           return (
             <Field data-invalid={hasErrors || undefined}>
               <FieldLabel htmlFor="date-picker">Date</FieldLabel>
-              <Popover open={isDateOpen && !isLoading} onOpenChange={setIsDateOpen}>
+              <Popover
+                open={isDateOpen && !isLoading}
+                onOpenChange={(open) => {
+                  setIsDateOpen(open)
+                  if (!open) field.handleBlur()
+                }}
+              >
                 <PopoverTrigger
                   render={
                     <Button
