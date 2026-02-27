@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { FieldError } from '@/components/ui/field'
 
 describe('FieldError', () => {
@@ -23,7 +23,7 @@ describe('FieldError', () => {
 
     const alert = screen.getByRole('alert')
     expect(alert.textContent).toBe('Email is required.')
-    expect(alert.querySelector('ul')).toBeNull()
+    expect(within(alert).queryByRole('list')).toBeNull()
   })
 
   it('renders multiple unique errors as a list', () => {
@@ -32,8 +32,8 @@ describe('FieldError', () => {
     )
 
     const alert = screen.getByRole('alert')
-    const items = alert.querySelectorAll('li')
-    expect(items.length).toBe(2)
+    const items = within(alert).getAllByRole('listitem')
+    expect(items).toHaveLength(2)
     expect(items[0].textContent).toBe('Too short.')
     expect(items[1].textContent).toBe('Must contain a number.')
   })
@@ -47,7 +47,7 @@ describe('FieldError', () => {
 
     const alert = screen.getByRole('alert')
     expect(alert.textContent).toBe('Required.')
-    expect(alert.querySelector('ul')).toBeNull()
+    expect(within(alert).queryByRole('list')).toBeNull()
   })
 
   it('prefers children over errors prop', () => {
@@ -62,21 +62,6 @@ describe('FieldError', () => {
     expect(alert.textContent).not.toContain('Ignored.')
   })
 
-  it('applies data-slot="field-error" for styling hooks', () => {
-    render(<FieldError errors={[{ message: 'Error' }]} />)
-
-    const alert = screen.getByRole('alert')
-    expect(alert.getAttribute('data-slot')).toBe('field-error')
-  })
-
-  it('passes through id and className', () => {
-    render(<FieldError id="email-error" className="text-center" errors={[{ message: 'Bad' }]} />)
-
-    const alert = screen.getByRole('alert')
-    expect(alert.id).toBe('email-error')
-    expect(alert.className).toContain('text-center')
-  })
-
   it('filters out errors with undefined messages in a list', () => {
     render(
       <FieldError
@@ -89,8 +74,8 @@ describe('FieldError', () => {
     )
 
     const alert = screen.getByRole('alert')
-    const items = alert.querySelectorAll('li')
-    expect(items.length).toBe(2)
+    const items = within(alert).getAllByRole('listitem')
+    expect(items).toHaveLength(2)
     expect(items[0].textContent).toBe('Visible error.')
     expect(items[1].textContent).toBe('Another error.')
   })

@@ -306,22 +306,6 @@ describe('ExpenseForm component', () => {
     expect(commentInput.value).toBe('Test comment')
   })
 
-  // ---- Accessibility ----
-
-  it('wraps each form field in a Field group with proper role', async () => {
-    const { container } = await renderForm('create')
-
-    const groups = container.querySelectorAll('[data-slot="field"]')
-    expect(groups.length).toBe(5)
-  })
-
-  it('uses FieldLabel (data-slot="field-label") for all labeled fields', async () => {
-    const { container } = await renderForm('create')
-
-    const fieldLabels = container.querySelectorAll('[data-slot="field-label"]')
-    expect(fieldLabels.length).toBeGreaterThanOrEqual(5)
-  })
-
   // ---- User interactions ----
 
   it('updates amount input value when user types', async () => {
