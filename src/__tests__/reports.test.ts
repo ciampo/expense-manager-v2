@@ -11,29 +11,45 @@ describe('validateYearMonth', () => {
   })
 
   it('rejects month below 1', () => {
-    expect(() => validateYearMonth(2026, 0)).toThrow('Invalid month: 0')
-    expect(() => validateYearMonth(2026, -1)).toThrow('Invalid month: -1')
+    expect(() => validateYearMonth(2026, 0)).toThrow(
+      'Invalid month: 0. Must be an integer between 1 and 12.',
+    )
+    expect(() => validateYearMonth(2026, -1)).toThrow(
+      'Invalid month: -1. Must be an integer between 1 and 12.',
+    )
   })
 
   it('rejects month above 12', () => {
-    expect(() => validateYearMonth(2026, 13)).toThrow('Invalid month: 13')
-    expect(() => validateYearMonth(2026, 99)).toThrow('Invalid month: 99')
+    expect(() => validateYearMonth(2026, 13)).toThrow(
+      'Invalid month: 13. Must be an integer between 1 and 12.',
+    )
+    expect(() => validateYearMonth(2026, 99)).toThrow(
+      'Invalid month: 99. Must be an integer between 1 and 12.',
+    )
   })
 
   it('rejects non-integer month', () => {
-    expect(() => validateYearMonth(2026, 1.5)).toThrow('Invalid month: 1.5')
+    expect(() => validateYearMonth(2026, 1.5)).toThrow(
+      'Invalid month: 1.5. Must be an integer between 1 and 12.',
+    )
   })
 
   it('rejects year below 2000', () => {
-    expect(() => validateYearMonth(1999, 6)).toThrow('Invalid year: 1999')
+    expect(() => validateYearMonth(1999, 6)).toThrow(
+      'Invalid year: 1999. Must be an integer between 2000 and 2100.',
+    )
   })
 
   it('rejects year above 2100', () => {
-    expect(() => validateYearMonth(2101, 6)).toThrow('Invalid year: 2101')
+    expect(() => validateYearMonth(2101, 6)).toThrow(
+      'Invalid year: 2101. Must be an integer between 2000 and 2100.',
+    )
   })
 
   it('rejects non-integer year', () => {
-    expect(() => validateYearMonth(2026.5, 6)).toThrow('Invalid year: 2026.5')
+    expect(() => validateYearMonth(2026.5, 6)).toThrow(
+      'Invalid year: 2026.5. Must be an integer between 2000 and 2100.',
+    )
   })
 })
 
