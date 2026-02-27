@@ -354,7 +354,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           return (
             <Field data-invalid={hasErrors || undefined}>
               <FieldLabel htmlFor="date-picker">Date</FieldLabel>
-              <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
+              <Popover open={isDateOpen && !isLoading} onOpenChange={setIsDateOpen}>
                 <PopoverTrigger
                   render={
                     <Button
@@ -398,7 +398,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             <Field data-invalid={hasErrors || undefined}>
               <FieldLabel htmlFor="merchant-combobox">Merchant</FieldLabel>
               <Popover
-                open={isMerchantOpen}
+                open={isMerchantOpen && !isLoading}
                 onOpenChange={(open) => {
                   setIsMerchantOpen(open)
                   if (!open) field.handleBlur()
@@ -480,7 +480,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
                 <Field data-invalid={hasErrors || undefined}>
                   <FieldLabel htmlFor="category-combobox">Category</FieldLabel>
                   <Popover
-                    open={isCategoryOpen}
+                    open={isCategoryOpen && !isLoading}
                     onOpenChange={(open) => {
                       setIsCategoryOpen(open)
                       if (!open) categoryIdField.handleBlur()
