@@ -17,7 +17,7 @@ test.describe('Expense form validation', () => {
     await page.getByRole('button', { name: /create expense/i }).click()
 
     await expect(page.getByText('Merchant name is required.')).toBeVisible()
-    await expect(page.getByText('Enter a valid amount.')).toBeVisible()
+    await expect(page.getByText('Amount must be positive.')).toBeVisible()
     await expect(page.getByText('Select or create a category.')).toBeVisible()
   })
 
@@ -30,7 +30,7 @@ test.describe('Expense form validation', () => {
     await page.getByRole('button', { name: /create expense/i }).click()
 
     await expect(page.getByText('Merchant name is required.')).not.toBeVisible()
-    await expect(page.getByText('Enter a valid amount.')).toBeVisible()
+    await expect(page.getByText('Amount must be positive.')).toBeVisible()
     await expect(page.getByText('Select or create a category.')).toBeVisible()
   })
 
