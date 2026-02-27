@@ -18,3 +18,34 @@ export {
   passwordSchema,
   isValidCalendarDate,
 } from '../../convex/zodSchemas'
+
+import { z } from 'zod'
+import {
+  expenseDateSchema,
+  expenseMerchantSchema,
+  expenseAmountSchema,
+} from '../../convex/zodSchemas'
+import { parseCurrencyToCents } from '@/lib/format'
+
+/**
+ * Client-side form schema for the expense form. Composes shared server
+ * schemas with form-specific transforms (string amount → cents via
+ * transform/pipe, category union: existing ID or new name).
+ */
+export const expenseFormSchema = z
+  .object({
+    date: expenseDateSchema,
+    merchant: expenseMerchantSchema,
+    amount: z.string().transform(parseCurrencyToCents).pipe(expenseAmountSchema),
+    categoryId: z.union([z.string(), z.null()]),
+    newCategoryName: z.string().max(100, {
+      message: 'Category name must be 100 characters or less.',
+    }),
+    comment: z.string().max(1000, {
+      message: 'Comment must be 1000 characters or less.',
+    }),
+  })
+  .refine((data) => data.categoryId !== null || data.newCategoryName.trim().length > 0, {
+    message: 'Select or create a category.',
+    path: ['categoryId'],
+  })
