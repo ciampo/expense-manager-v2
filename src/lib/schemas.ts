@@ -5,7 +5,7 @@
  * the schemas themselves live alongside the Convex mutations so both
  * client and server share a single source of truth.
  */
-export {
+import {
   expenseDateSchema,
   expenseAmountSchema,
   expenseMerchantSchema,
@@ -19,12 +19,21 @@ export {
   isValidCalendarDate,
 } from '../../convex/zodSchemas'
 
-import { z } from 'zod'
-import {
+export {
   expenseDateSchema,
-  expenseMerchantSchema,
   expenseAmountSchema,
-} from '../../convex/zodSchemas'
+  expenseMerchantSchema,
+  expenseCommentSchema,
+  expenseSchema,
+  categoryNameSchema,
+  categoryIconSchema,
+  categorySchema,
+  emailSchema,
+  passwordSchema,
+  isValidCalendarDate,
+}
+
+import { z } from 'zod'
 import { parseCurrencyToCents } from '@/lib/format'
 
 /**
