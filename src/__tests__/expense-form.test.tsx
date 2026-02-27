@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { Id } from '../../convex/_generated/dataModel'
 import { expenseFormSchema } from '@/lib/schemas'
 
 // ---------------------------------------------------------------------------
@@ -217,11 +218,11 @@ async function renderForm(mode: 'create' | 'edit' = 'create') {
   const expense =
     mode === 'edit'
       ? {
-          _id: 'exp1' as never,
+          _id: 'exp1' as Id<'expenses'>,
           date: '2025-06-15',
           merchant: 'Test Merchant',
           amount: 4200,
-          categoryId: 'cat1' as never,
+          categoryId: 'cat1' as Id<'categories'>,
           comment: 'Test comment',
         }
       : undefined

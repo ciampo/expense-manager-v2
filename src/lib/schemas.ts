@@ -47,10 +47,10 @@ export const expenseFormSchema = z
     merchant: expenseMerchantSchema,
     amount: z.string().transform(parseCurrencyToCents).pipe(expenseAmountSchema),
     categoryId: z.union([z.string(), z.null()]),
-    newCategoryName: z.string().max(100, {
+    newCategoryName: z.string().trim().max(100, {
       message: 'Category name must be 100 characters or less.',
     }),
-    comment: z.string().max(1000, {
+    comment: z.string().trim().max(1000, {
       message: 'Comment must be 1000 characters or less.',
     }),
   })
