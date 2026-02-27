@@ -239,14 +239,14 @@ describe('ExpenseForm component', () => {
   it('renders create mode with correct labels and buttons', async () => {
     await renderForm('create')
 
-    expect(screen.getByLabelText('Date')).toBeInTheDocument()
-    expect(screen.getByLabelText('Merchant')).toBeInTheDocument()
-    expect(screen.getByLabelText('Category')).toBeInTheDocument()
-    expect(screen.getByLabelText('Amount (EUR)')).toBeInTheDocument()
-    expect(screen.getByLabelText('Notes (optional)')).toBeInTheDocument()
-    expect(screen.getByLabelText('Attachment (optional)')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Create expense' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Date')).toBeVisible()
+    expect(screen.getByLabelText('Merchant')).toBeVisible()
+    expect(screen.getByLabelText('Category')).toBeVisible()
+    expect(screen.getByLabelText('Amount (EUR)')).toBeVisible()
+    expect(screen.getByLabelText('Notes (optional)')).toBeVisible()
+    expect(screen.getByLabelText('Attachment (optional)')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Create expense' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeVisible()
   })
 
   it('does not show delete button in create mode', async () => {
@@ -281,8 +281,8 @@ describe('ExpenseForm component', () => {
   it('renders edit mode with save and delete buttons', async () => {
     await renderForm('edit')
 
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeVisible()
   })
 
   it('renders edit mode with pre-filled merchant value', async () => {
@@ -321,7 +321,7 @@ describe('ExpenseForm component', () => {
 
     await user.type(screen.getByLabelText('Amount (EUR)'), '12.50')
 
-    expect(screen.getByText('€12.50')).toBeInTheDocument()
+    expect(screen.getByText('€12.50')).toBeVisible()
   })
 
   it('updates comment input value when user types', async () => {
@@ -362,8 +362,8 @@ describe('ExpenseForm component', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create expense' }))
 
-    expect(screen.getByText('Merchant name is required.')).toBeInTheDocument()
-    expect(screen.getByText('Select or create a category.')).toBeInTheDocument()
+    expect(screen.getByText('Merchant name is required.')).toBeVisible()
+    expect(screen.getByText('Select or create a category.')).toBeVisible()
     expect(screen.queryByText(/Invalid date/)).not.toBeInTheDocument()
   })
 })
