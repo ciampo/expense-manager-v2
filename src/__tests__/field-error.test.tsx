@@ -62,6 +62,14 @@ describe('FieldError', () => {
     expect(alert).not.toHaveTextContent('Ignored.')
   })
 
+  it('forwards id and className to the rendered alert element', () => {
+    render(<FieldError id="err-1" className="custom-class" errors={[{ message: 'Oops.' }]} />)
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveAttribute('id', 'err-1')
+    expect(alert).toHaveClass('custom-class')
+  })
+
   it('filters out errors with undefined messages in a list', () => {
     render(
       <FieldError

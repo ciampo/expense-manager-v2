@@ -1,8 +1,9 @@
 /**
- * Re-exports from the shared Zod schemas in `convex/zodSchemas.ts`.
+ * Shared Zod schemas (re-exported from `convex/zodSchemas.ts`) and
+ * client-only form schemas used by React components.
  *
  * Client code imports from here via the `@/lib/schemas` alias, while
- * the schemas themselves live alongside the Convex mutations so both
+ * the shared schemas live alongside the Convex mutations so both
  * client and server share a single source of truth.
  */
 import {
