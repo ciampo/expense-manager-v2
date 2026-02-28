@@ -1,9 +1,32 @@
 /**
+ * Cache module-level Intl formatters for performance.
+ * Intl formatter construction is relatively expensive (parses locale data, resolves options).
+ */
+const eurFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'EUR',
+})
+
+const dateFormatter = new Intl.DateTimeFormat('en-US')
+
+const dateLongFormatter = new Intl.DateTimeFormat('en-US', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})
+
+const monthNameFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric',
+})
+
+/**
  * Format cents to EUR display using English locale
  * @param cents - Amount in cents (e.g., 1250 = €12.50)
  */
 export const formatCurrency = (cents: number): string =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(cents / 100)
+  eurFormatter.format(cents / 100)
 
 /**
  * Parse a YYYY-MM-DD string as a **local** date.
@@ -38,19 +61,14 @@ export function parseLocalDate(isoDate: string): Date {
  * @param isoDate - ISO date string (YYYY-MM-DD)
  */
 export const formatDate = (isoDate: string): string =>
-  new Intl.DateTimeFormat('en-US').format(parseLocalDate(isoDate))
+  dateFormatter.format(parseLocalDate(isoDate))
 
 /**
  * Format date for display with day of week
  * @param isoDate - ISO date string (YYYY-MM-DD)
  */
 export const formatDateLong = (isoDate: string): string =>
-  new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(parseLocalDate(isoDate))
+  dateLongFormatter.format(parseLocalDate(isoDate))
 
 /**
  * Parse EUR input to cents
@@ -95,5 +113,5 @@ export const getTodayISO = (): string => toISODateString(new Date())
  */
 export const getMonthName = (month: number, year: number): string => {
   const date = new Date(year, month - 1, 1)
-  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date)
+  return monthNameFormatter.format(date)
 }
