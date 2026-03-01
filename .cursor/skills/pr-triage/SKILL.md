@@ -124,7 +124,7 @@ Resolved via #<other-pr> (<brief description>).
 Cleanup:
 
 ```bash
-git checkout "<base>" && git branch -D "<branch-name>"
+git checkout -- "<base>" && git branch -D -- "<branch-name>"
 ```
 
 ### If still needed
