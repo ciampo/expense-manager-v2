@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useSuspenseQuery, useQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -183,6 +183,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [showDeleteAttachment, setShowDeleteAttachment] = useState(false)
   const [showDeleteExpense, setShowDeleteExpense] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const createExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.create),
@@ -311,6 +312,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         toast.error('Error uploading file')
       } finally {
         setIsUploading(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
       }
     },
     [generateUploadUrlAsync, confirmUploadAsync],
@@ -349,7 +353,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       {/* Date */}
       <form.Field name="date">
         {(field) => {
-          const selectedDate = field.state.value ? parseLocalDate(field.state.value) : undefined
+          const parsed = field.state.value ? parseLocalDate(field.state.value) : undefined
+          const selectedDate = parsed && !isNaN(parsed.getTime()) ? parsed : undefined
           const hasErrors = field.state.meta.errors.length > 0
           return (
             <Field data-invalid={hasErrors || undefined}>
@@ -656,6 +661,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           </div>
         ) : (
           <Input
+            ref={fileInputRef}
             id="attachment-input"
             type="file"
             accept={ACCEPTED_FILE_TYPES.join(',')}
