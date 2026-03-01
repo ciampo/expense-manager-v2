@@ -8,6 +8,7 @@ description: Address PR review feedback with granular commits, push changes, and
 > Throughout this skill:
 >
 > - `<number>` refers to the PR number.
+> - `<issue-number>` refers to the linked issue number (from the PR body or linked issues).
 > - `<base>` refers to the PR's target branch (from `gh pr view --json baseRefName`). Do not assume `main`.
 > - `<branch-name>` refers to the PR's head branch (from `gh pr view --json headRefName`).
 

@@ -105,15 +105,15 @@ This PR's scope (<summary>) was completed by <description> in #<other-pr>.
 | ----- | ------ |
 | ...   | ...    |
 
-Closing in favor of #<other-pr>. Issue #<N> can be closed as resolved.
+Closing in favor of #<other-pr>. Issue #<issue-number> can be closed as resolved.
 ```
 
 Issue closing comment template:
 
 ```markdown
-Resolved via #<pr-number> (<brief description>).
+Resolved via #<other-pr> (<brief description>).
 
-<1-2 sentences summarizing what was verified.> See #<triage-pr> for the detailed audit.
+<1-2 sentences summarizing what was verified.> See #<number> for the detailed audit.
 ```
 
 Cleanup:
