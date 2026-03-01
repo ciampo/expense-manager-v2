@@ -26,9 +26,11 @@ gh pr view <number> --json title,body,headRefName,baseRefName,state,reviews,comm
 # Review status and checks
 gh pr view <number> --json reviewRequests,reviewDecision,statusCheckRollup
 
-# Linked issue details (skip if no linked issue)
-# Discover linked issues via: gh pr view <number> --json closingIssuesReferences
-gh issue view <issue-number> --json title,body,labels,state
+# Linked issue details (skip if none)
+ISSUE=$(gh pr view <number> --json closingIssuesReferences --jq '.closingIssuesReferences[0].number // empty')
+if [ -n "$ISSUE" ]; then
+  gh issue view "$ISSUE" --json title,body,labels,state
+fi
 ```
 
 ## Step 2: Check out and rebase
@@ -58,6 +60,7 @@ git rebase --abort
 If you need to start fresh on top of the base (e.g., the changes will be redone from scratch against a newer version), reset explicitly. This discards all local commits on the branch:
 
 ```bash
+git branch backup/<branch-name> HEAD
 git reset --hard origin/<base>
 ```
 
