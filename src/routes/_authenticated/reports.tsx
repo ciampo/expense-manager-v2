@@ -17,8 +17,8 @@ import { centsToInputValue, formatCurrency, getMonthName } from '@/lib/format'
 import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 import { toast } from 'sonner'
 import { Suspense, useState } from 'react'
-import JSZip from 'jszip'
-import { saveAs } from 'file-saver'
+const loadFileSaver = () => import('file-saver').then((m) => m.saveAs)
+const loadJSZip = () => import('jszip').then((m) => m.default)
 
 export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
@@ -187,6 +187,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       // Download
       const blob = new Blob([CSV_BOM + csv], { type: 'text/csv;charset=utf-8;' })
       const monthName = getMonthName(month, year).replace(' ', '-')
+      const saveAs = await loadFileSaver()
       saveAs(blob, `expenses-${monthName}.csv`)
 
       toast.success('CSV downloaded')
@@ -205,6 +206,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
     setIsDownloadingZip(true)
     try {
+      const JSZip = await loadJSZip()
       const zip = new JSZip()
 
       toast.info('Downloading attachments...')
@@ -273,6 +275,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
       const content = await zip.generateAsync({ type: 'blob' })
       const monthName = getMonthName(month, year).replace(' ', '-')
+      const saveAs = await loadFileSaver()
       saveAs(content, `attachments-${monthName}.zip`)
 
       const fileLabel = successfulDownloads === 1 ? 'file' : 'files'
