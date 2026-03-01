@@ -158,8 +158,11 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       // Get all unique categories
       const allCategories = [...new Set(data.expenses.map((e) => e.categoryName))].sort()
 
-      // Build CSV (using semicolon as delimiter for European locale compatibility)
-      let csv = 'Date;' + allCategories.join(';') + ';Total\n'
+      const formatAmount = (cents: number) => (cents / 100).toFixed(2)
+      const csvEscape = (value: string) =>
+        value.includes(',') || value.includes('"') ? `"${value.replace(/"/g, '""')}"` : value
+
+      let csv = ['Date', ...allCategories, 'Total'].map(csvEscape).join(',') + '\n'
 
       const dates = Object.keys(grouped).sort()
       for (const date of dates) {
@@ -168,22 +171,21 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
         for (const category of allCategories) {
           const amount = grouped[date][category] || 0
-          row.push((amount / 100).toFixed(2).replace('.', ','))
+          row.push(formatAmount(amount))
           dayTotal += amount
         }
 
-        row.push((dayTotal / 100).toFixed(2).replace('.', ','))
-        csv += row.join(';') + '\n'
+        row.push(formatAmount(dayTotal))
+        csv += row.map(csvEscape).join(',') + '\n'
       }
 
-      // Add totals row
       const totalsRow = ['TOTAL']
       for (const category of allCategories) {
         const categoryTotal = data.categories[category]?.total || 0
-        totalsRow.push((categoryTotal / 100).toFixed(2).replace('.', ','))
+        totalsRow.push(formatAmount(categoryTotal))
       }
-      totalsRow.push((data.total / 100).toFixed(2).replace('.', ','))
-      csv += totalsRow.join(';') + '\n'
+      totalsRow.push(formatAmount(data.total))
+      csv += totalsRow.map(csvEscape).join(',') + '\n'
 
       // Download
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
