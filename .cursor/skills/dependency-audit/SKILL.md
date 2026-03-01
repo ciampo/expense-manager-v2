@@ -29,9 +29,9 @@ If the latest version is newer than what the PR targets, update to the latest.
 
 Check the release notes for every minor/major version between the old and new version. Use multiple sources:
 
-In the URLs below, `<org>/<repo>` and `<version>` refer to the **upstream package's** GitHub repository and release version, not our own.
+In the URLs and searches below, `<org>/<repo>`, `<version>`, and `<default-branch>` refer to the **upstream package's** GitHub repository, release version, and default branch (typically `main`), not our own.
 
-1. **Web search** for "<package> <version> release notes" or "<package> changelog <year>"
+1. **Web search** for "<package-name> <version> release notes" or "<package-name> changelog <year>"
 2. **GitHub releases page**: `https://github.com/<org>/<repo>/releases/tag/v<version>`
 3. **CHANGELOG.md** in the repo: `https://github.com/<org>/<repo>/blob/<default-branch>/CHANGELOG.md`
 
