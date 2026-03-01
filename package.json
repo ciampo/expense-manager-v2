@@ -28,6 +28,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
     "setup": "bash scripts/setup.sh",
     "setup:e2e": "bash scripts/setup-e2e.sh",
     "prepare": "husky"
