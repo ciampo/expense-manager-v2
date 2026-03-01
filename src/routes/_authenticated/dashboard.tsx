@@ -47,6 +47,10 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
   head: () => ({
     meta: [{ title: 'Dashboard — Expense Manager' }],
   }),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(convexQuery(api.expenses.list, {}))
+    context.queryClient.ensureQueryData(convexQuery(api.categories.list, {}))
+  },
 })
 
 function DashboardPage() {

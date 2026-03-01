@@ -27,6 +27,9 @@ export const Route = createFileRoute('/_authenticated/reports')({
   head: () => ({
     meta: [{ title: 'Reports — Expense Manager' }],
   }),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(convexQuery(api.reports.availableMonths, {}))
+  },
 })
 
 function ReportsPage() {
