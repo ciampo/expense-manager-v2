@@ -5,7 +5,10 @@ description: Systematic triage of GitHub Pull Requests — check out, rebase, as
 
 # PR Triage
 
-> Throughout this skill, `<base>` refers to the PR's target branch (from `gh pr view --json baseRefName`). Do not assume `main`.
+> Throughout this skill:
+>
+> - `<base>` refers to the PR's target branch (from `gh pr view --json baseRefName`). Do not assume `main`.
+> - `<branch-name>` refers to the PR's head branch (from `gh pr view --json headRefName`).
 
 ## Step 1: Gather context
 
@@ -23,20 +26,20 @@ gh pr view <number> --json reviewRequests,reviewDecision,statusCheckRollup
 
 # Linked issue details
 gh issue view <issue-number> --json title,body,labels,state
-
-# Recent base branch history (to spot batch updates that may have superseded this PR)
-git log --oneline -15 origin/<base>
 ```
 
 ## Step 2: Check out and rebase
 
 ```bash
 git fetch origin <base> <branch-name>
+
+# Check base branch history after fetch (to spot batch updates that may have superseded this PR)
+git log --oneline -15 origin/<base>
 git checkout <branch-name>
 git rebase origin/<base>
 ```
 
-If the rebase conflicts and the changes need to be redone anyway (e.g., updating to a newer version than the PR targeted), abort and reset:
+If the rebase conflicts and the changes need to be redone anyway (e.g., updating to a newer version than the PR targeted), abort and reset. The original branch is still on the remote, so no work is lost:
 
 ```bash
 git rebase --abort
