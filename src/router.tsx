@@ -94,6 +94,7 @@ function initRouter() {
     createRouter({
       routeTree,
       defaultPreload: 'intent',
+      defaultViewTransition: true,
       context: { queryClient, authStore },
       scrollRestoration: true,
       Wrap: ({ children }) => (
