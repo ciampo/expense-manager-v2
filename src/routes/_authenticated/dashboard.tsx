@@ -23,10 +23,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { toast } from 'sonner'
-import { Suspense, useMemo, useState } from 'react'
+import { Suspense, useMemo, useState, useTransition } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
+const PAGINATION_THRESHOLD = Math.min(...PAGE_SIZE_OPTIONS)
+const DEFAULT_PAGE_SIZE = 25
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
@@ -95,24 +106,39 @@ function TableSkeleton() {
 
 function ExpenseTable() {
   const queryClient = useQueryClient()
-  const { data: expensesPage } = useSuspenseQuery(convexQuery(api.expenses.list, {}))
-  const expenses = expensesPage?.expenses
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
 
   const [deletingId, setDeletingId] = useState<Id<'expenses'> | null>(null)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  // Cursor stack: index 0 is always null (first page). Navigating forward
+  // pushes the server's continueCursor; navigating backward pops.
+  const [cursors, setCursors] = useState<(string | null)[]>([null])
+  const [isPending, startTransition] = useTransition()
 
-  const expensesQueryKey = convexQuery(api.expenses.list, {}).queryKey
+  const currentCursor = cursors[cursors.length - 1]
+  const pageNumber = cursors.length
+
+  const queryArgs = { cursor: currentCursor, limit: pageSize }
+  const { data: expensesPage } = useSuspenseQuery(convexQuery(api.expenses.list, queryArgs))
+  const expenses = expensesPage?.expenses ?? []
+  const canGoNext = !expensesPage?.isDone
+  const canGoPrevious = cursors.length > 1
+
+  // Auto-navigate backwards when the current page becomes empty (e.g. after
+  // deleting the last item on a non-first page).
+  if (expenses.length === 0 && canGoPrevious) {
+    setCursors((prev) => prev.slice(0, -1))
+  }
+
+  const expensesQueryKey = convexQuery(api.expenses.list, queryArgs).queryKey
 
   const deleteExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.remove),
     onMutate: async (args: { id: Id<'expenses'> }) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: expensesQueryKey })
 
-      // Snapshot current value
       const previousExpenses = queryClient.getQueryData(expensesQueryKey)
 
-      // Optimistically remove from cache
       queryClient.setQueryData(expensesQueryKey, (old: typeof expensesPage) =>
         old ? { ...old, expenses: old.expenses.filter((e) => e._id !== args.id) } : old,
       )
@@ -120,7 +146,6 @@ function ExpenseTable() {
       return { previousExpenses }
     },
     onError: (_err, _args, context) => {
-      // Rollback on error
       if (context?.previousExpenses) {
         queryClient.setQueryData(expensesQueryKey, context.previousExpenses)
       }
@@ -130,7 +155,11 @@ function ExpenseTable() {
       toast.success('Expense deleted')
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: expensesQueryKey })
+      // Invalidate all expense list queries (deleting shifts data across pages)
+      queryClient.invalidateQueries({
+        queryKey: convexQuery(api.expenses.list, {}).queryKey,
+        exact: false,
+      })
     },
   })
 
@@ -144,7 +173,7 @@ function ExpenseTable() {
     [categories],
   )
 
-  if (!expenses || expenses.length === 0) {
+  if (expenses.length === 0 && !canGoPrevious) {
     return (
       <div className="rounded-md border p-8 text-center">
         <p className="text-muted-foreground mb-4">You haven&apos;t recorded any expenses yet</p>
@@ -154,88 +183,155 @@ function ExpenseTable() {
   }
 
   return (
-    <div className="rounded-md border">
-      <Table aria-label="Expenses">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Merchant</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead>Attachment</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {expenses.map((expense) => (
-            <TableRow key={expense._id}>
-              <TableCell>{formatDate(expense.date)}</TableCell>
-              <TableCell>{expense.merchant}</TableCell>
-              <TableCell>{categoryMap.get(expense.categoryId) || 'N/A'}</TableCell>
-              <TableCell className="text-right font-medium">
-                {formatCurrency(expense.amount)}
-              </TableCell>
-              <TableCell>
-                {expense.attachmentId ? (
-                  <>
-                    <span aria-hidden="true">📎</span>
-                    <span className="sr-only">Has attachment</span>
-                  </>
-                ) : (
-                  '-'
-                )}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`Edit ${expense.merchant} expense`}
-                    render={<Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} />}
-                  >
-                    Edit
-                  </Button>
-                  <AlertDialog
-                    open={deletingId === expense._id}
-                    onOpenChange={(open) => setDeletingId(open ? expense._id : null)}
-                  >
-                    <AlertDialogTrigger
+    <div className="space-y-4">
+      <div
+        className="rounded-md border transition-opacity"
+        style={{ opacity: isPending ? 0.6 : 1 }}
+      >
+        <Table aria-label="Expenses">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Merchant</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Attachment</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {expenses.map((expense) => (
+              <TableRow key={expense._id}>
+                <TableCell>{formatDate(expense.date)}</TableCell>
+                <TableCell>{expense.merchant}</TableCell>
+                <TableCell>{categoryMap.get(expense.categoryId) || 'N/A'}</TableCell>
+                <TableCell className="text-right font-medium">
+                  {formatCurrency(expense.amount)}
+                </TableCell>
+                <TableCell>
+                  {expense.attachmentId ? (
+                    <>
+                      <span aria-hidden="true">📎</span>
+                      <span className="sr-only">Has attachment</span>
+                    </>
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Edit ${expense.merchant} expense`}
                       render={
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          aria-label={`Delete ${expense.merchant} expense`}
-                        />
+                        <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} />
                       }
                     >
-                      Delete
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. The expense and any attachment will be
-                          permanently deleted.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDelete(expense._id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                      Edit
+                    </Button>
+                    <AlertDialog
+                      open={deletingId === expense._id}
+                      onOpenChange={(open) => setDeletingId(open ? expense._id : null)}
+                    >
+                      <AlertDialogTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            aria-label={`Delete ${expense.merchant} expense`}
+                          />
+                        }
+                      >
+                        Delete
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. The expense and any attachment will be
+                            permanently deleted.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(expense._id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {(expenses.length >= PAGINATION_THRESHOLD || canGoPrevious) && (
+        <nav aria-label="Table pagination" className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">Rows per page</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => {
+                startTransition(() => {
+                  setPageSize(Number(value))
+                  setCursors([null])
+                })
+              }}
+            >
+              <SelectTrigger size="sm" aria-label="Rows per page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(canGoNext || canGoPrevious) && (
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm" aria-live="polite">
+                Page {pageNumber}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => startTransition(() => setCursors(cursors.slice(0, -1)))}
+                  disabled={!canGoPrevious}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    startTransition(() => {
+                      if (expensesPage?.continueCursor) {
+                        setCursors([...cursors, expensesPage.continueCursor])
+                      }
+                    })
+                  }
+                  disabled={!canGoNext}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </nav>
+      )}
     </div>
   )
 }

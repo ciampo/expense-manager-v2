@@ -33,8 +33,7 @@ export async function upsertMerchant(
  * List expenses for the current user, sorted by date (most recent first).
  * Supports cursor-based pagination; defaults to 50 items per page (max 100).
  *
- * Returns `{ expenses, continueCursor, isDone }`. The dashboard currently
- * fetches only the first page; client-side pagination UI is in PR #163.
+ * Returns `{ expenses, continueCursor, isDone }`.
  */
 export const list = query({
   args: {
