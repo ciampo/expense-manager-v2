@@ -1,0 +1,69 @@
+---
+description: Workflow for working on GitHub Pull Requests. Apply when the user asks to "work on", review, triage, iterate on, or address feedback on a PR.
+alwaysApply: false
+---
+
+# PR Workflow
+
+When asked to work on a PR, follow this systematic process.
+
+When asked to iterate on new feedback ("new feedback on PR xxx"):
+1. Check out the branch and rebase on the base branch if behind (see pr-triage Step 2).
+2. Then skip to step 4.
+
+## 1. Triage
+
+Read and follow `.cursor/skills/pr-triage/SKILL.md`:
+- Fetch PR metadata, linked issues, and CI status
+- Check out the branch, rebase on the base branch
+- Determine if the PR is superseded or still needs work
+
+## 2. Audit changes
+
+If the PR involves dependency updates — detected by changes to `package.json` or lockfiles, or by labels/title containing "deps", "dependencies", "bump", or "update" — also read `.cursor/skills/dependency-audit/SKILL.md`:
+- Verify latest available versions
+- Review changelogs for breaking changes and deprecations
+- Audit codebase for affected patterns
+- Verify ecosystem compatibility
+
+## 3. Self-review and fix
+
+Read and follow `.cursor/skills/pr-self-review/SKILL.md`:
+- Delegate an independent review to a readonly subagent to reduce confirmation bias
+- Present the structured review report to the user
+- Address every finding with granular commits — elegant, not over-engineered
+- Run the verification suite after fixes
+
+## 4. Address external feedback and ship
+
+Read `.cursor/skills/pr-feedback/SKILL.md`:
+- Assess whether each review comment is still valid against the current branch state
+- Address review comments with granular, well-scoped commits
+- Run the verification suite, push changes
+- Request reviews from previous reviewers and GitHub Copilot
+
+## Verification suite
+
+Run at every quality gate. Reference as "the verification suite" from skills.
+
+**Core** (always run):
+
+```bash
+pnpm lint
+pnpm build          # includes tsc --noEmit
+pnpm test:unit
+```
+
+**Conditional** (run when there are UI/CSS/component changes):
+
+```bash
+pnpm test:visual:docker
+```
+
+## Principles
+
+- Be thorough: verify everything before declaring work complete.
+- Keep PR metadata current: after every iteration, assess whether the PR title and description still accurately reflect the changes. Update them if the scope, approach, or intent has shifted.
+- Document clearly: every PR closure or update includes a detailed explanation of what was checked and why.
+- Close linked issues with context when resolving PRs.
+- Present trade-offs to the user before pushing back on human reviewers.
