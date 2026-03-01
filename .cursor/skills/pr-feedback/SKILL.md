@@ -5,7 +5,10 @@ description: Address PR review feedback with granular commits, push changes, and
 
 # PR Feedback
 
-> Throughout this skill, `<base>` refers to the PR's target branch (from `gh pr view --json baseRefName`). Do not assume `main`.
+> Throughout this skill:
+>
+> - `<base>` refers to the PR's target branch (from `gh pr view --json baseRefName`). Do not assume `main`.
+> - `<branch-name>` refers to the PR's head branch (from `gh pr view --json headRefName`).
 
 ## Step 1: Understand the feedback
 
@@ -78,10 +81,11 @@ git log --oneline origin/<base>..HEAD
 
 If `git push origin HEAD` is rejected (branch diverged):
 
-1. Fetch base and PR branch: `git fetch origin <base> <branch-name> && git rebase origin/<base>`
-2. Resolve any conflicts and continue: `git rebase --continue`
-3. Re-run the verification suite after resolving.
-4. Push with `--force-with-lease`: `git push --force-with-lease origin HEAD`
+1. Ensure the PR branch is checked out (handles fork-based PRs): `gh pr checkout <number>`
+2. Fetch and rebase onto the base: `git fetch origin <base> && git rebase origin/<base>`
+3. Resolve any conflicts and continue: `git rebase --continue`
+4. Re-run the verification suite after resolving.
+5. Push with `--force-with-lease`: `git push --force-with-lease origin HEAD`
 
 ## Step 4: Push and update PR
 
