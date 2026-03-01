@@ -95,9 +95,13 @@ If the PR is a draft, mark it as ready for review:
 gh pr ready <number>
 ```
 
-Update the PR description if the scope changed. Use `gh pr edit`:
+Assess whether the PR title and description still accurately reflect the changes. Update them if the scope, approach, or intent has shifted. Use `gh pr edit`:
 
 ```bash
+# Update title if needed
+gh pr edit <number> --title "<new title>"
+
+# Update description
 gh pr edit <number> --body "$(cat <<'EOF'
 ## Summary
 - <bullet points describing what changed>
@@ -114,9 +118,10 @@ EOF
 )"
 ```
 
-**When updating the description:**
+**When updating title and description:**
 
-- Reflect what the PR actually does now (not what it originally intended if scope changed)
+- The title should concisely describe what the PR does now (not what it originally intended if scope changed)
+- The description should reflect the current state of changes
 - Keep the test plan as a checklist with concrete commands
 - Reference the linked issue
 

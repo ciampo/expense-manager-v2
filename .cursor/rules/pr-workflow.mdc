@@ -39,7 +39,7 @@ Read and follow `.cursor/skills/pr-self-review/SKILL.md`:
 Read `.cursor/skills/pr-feedback/SKILL.md`:
 - Assess whether each review comment is still valid against the current branch state
 - Address review comments with granular, well-scoped commits
-- Run the verification suite, push changes, update the PR description
+- Run the verification suite, push changes
 - Request reviews from previous reviewers and GitHub Copilot
 
 ## Verification suite
@@ -63,6 +63,7 @@ pnpm test:visual:docker
 ## Principles
 
 - Be thorough: verify everything before declaring work complete.
+- Keep PR metadata current: after every iteration, assess whether the PR title and description still accurately reflect the changes. Update them if the scope, approach, or intent has shifted.
 - Document clearly: every PR closure or update includes a detailed explanation of what was checked and why.
 - Close linked issues with context when resolving PRs.
 - Present trade-offs to the user before pushing back on human reviewers.
