@@ -58,12 +58,15 @@ export const formatDateLong = (isoDate: string): string =>
  * @returns Number of cents
  */
 export const parseCurrencyToCents = (value: string): number => {
-  // Normalize commas to dots, then decide whether the last dot is a decimal
-  // separator based on trailing digit count: 1–2 digits → decimal, 3+ → thousands.
+  // Normalize commas to dots, then decide how to interpret separators.
+  // With multiple separators the non-last ones are unambiguously thousands
+  // grouping; the last one is decimal if it has 1–2 trailing digits, otherwise
+  // it is also thousands.  A single separator is always treated as decimal to
+  // preserve sub-cent rounding inputs like "12.555".
   const withDots = value.replaceAll(',', '.')
   const parts = withDots.split('.')
   let normalized: string
-  if (parts.length > 1) {
+  if (parts.length > 2) {
     const lastPart = parts[parts.length - 1]
     if (lastPart.length >= 1 && lastPart.length <= 2) {
       normalized = parts.slice(0, -1).join('') + '.' + lastPart

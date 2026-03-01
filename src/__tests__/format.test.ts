@@ -69,9 +69,9 @@ describe('parseCurrencyToCents', () => {
     expect(parseCurrencyToCents('1,234.56')).toBe(123456)
   })
 
-  it('parses thousands-only values without decimals', () => {
-    expect(parseCurrencyToCents('1.234')).toBe(123400)
-    expect(parseCurrencyToCents('1,234')).toBe(123400)
+  it('treats single separator as decimal even with 3 trailing digits', () => {
+    expect(parseCurrencyToCents('1.234')).toBe(123)
+    expect(parseCurrencyToCents('1,234')).toBe(123)
   })
 
   it('parses multiple thousands groups without decimals', () => {
