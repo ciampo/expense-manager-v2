@@ -6,6 +6,14 @@ import { auth } from './auth'
 
 const ORPHAN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const CLEANUP_BATCH_SIZE = 100
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+const ALLOWED_CONTENT_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+])
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 //
@@ -107,10 +115,19 @@ export const confirmUpload = mutation({
       throw new Error('Not authenticated')
     }
 
-    // Verify the storage file actually exists
     const fileRecord = await ctx.db.system.get(args.storageId)
     if (!fileRecord) {
       throw new Error('Storage file does not exist')
+    }
+
+    if (fileRecord.size != null && fileRecord.size > MAX_FILE_SIZE) {
+      await ctx.storage.delete(args.storageId)
+      throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB`)
+    }
+
+    if (fileRecord.contentType && !ALLOWED_CONTENT_TYPES.has(fileRecord.contentType)) {
+      await ctx.storage.delete(args.storageId)
+      throw new Error('Unsupported file type. Use images (JPEG, PNG, GIF, WebP) or PDF.')
     }
 
     // Reject if another user already claimed via uploads table

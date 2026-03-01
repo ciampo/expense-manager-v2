@@ -36,7 +36,7 @@ export const ResendOTPPasswordReset = Resend({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Expense Manager <onboarding@resend.dev>',
+        from: process.env.AUTH_RESEND_FROM || 'Expense Manager <onboarding@resend.dev>',
         to: [email],
         subject: 'Reset your Expense Manager password',
         text: [
