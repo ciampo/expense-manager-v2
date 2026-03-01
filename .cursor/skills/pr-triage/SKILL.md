@@ -39,10 +39,15 @@ git checkout <branch-name>
 git rebase origin/<base>
 ```
 
-If the rebase conflicts and the changes need to be redone anyway (e.g., updating to a newer version than the PR targeted), abort and reset. The original branch is still on the remote, so no work is lost:
+If the rebase conflicts, abort the rebase to return to the pre-rebase state:
 
 ```bash
 git rebase --abort
+```
+
+If you need to start fresh on top of the base (e.g., the changes will be redone from scratch against a newer version), reset explicitly. This discards all local commits on the branch:
+
+```bash
 git reset --hard origin/<base>
 ```
 
