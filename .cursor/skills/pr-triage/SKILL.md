@@ -26,7 +26,8 @@ gh pr view <number> --json title,body,headRefName,baseRefName,state,reviews,comm
 # Review status and checks
 gh pr view <number> --json reviewRequests,reviewDecision,statusCheckRollup
 
-# Linked issue details
+# Linked issue details (skip if no linked issue)
+# Discover linked issues via: gh pr view <number> --json closingIssuesReferences
 gh issue view <issue-number> --json title,body,labels,state
 ```
 
