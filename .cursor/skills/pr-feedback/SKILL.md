@@ -79,18 +79,18 @@ git log --oneline origin/<base>..HEAD
 
 ### Handling push failures
 
-If `git push origin HEAD` is rejected (branch diverged):
+If `git push` is rejected (branch diverged):
 
 1. Ensure the PR branch is checked out (handles fork-based PRs): `gh pr checkout <number>`
 2. Fetch and rebase onto the base: `git fetch origin <base> && git rebase origin/<base>`
 3. Resolve any conflicts and continue: `git rebase --continue`
 4. Re-run the verification suite after resolving.
-5. Push with `--force-with-lease`: `git push --force-with-lease origin HEAD`
+5. Push with `--force-with-lease`: `git push --force-with-lease`
 
 ## Step 4: Push and update PR
 
 ```bash
-git push origin HEAD
+git push
 ```
 
 If the PR is a draft, mark it as ready for review:

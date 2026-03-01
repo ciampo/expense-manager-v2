@@ -59,7 +59,7 @@ git reset --hard origin/<base>
 After a successful rebase, force-push to update the remote branch:
 
 ```bash
-git push --force-with-lease origin <branch-name>
+git push --force-with-lease
 ```
 
 ## Step 3: Assess current state
