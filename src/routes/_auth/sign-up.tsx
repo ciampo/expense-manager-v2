@@ -63,7 +63,6 @@ function SignUpPage() {
             ? 'An account with this email already exists. Try signing in instead.'
             : 'Error during registration. Please try again.'
         setServerError(message)
-        toast.error(message)
       }
     },
   })

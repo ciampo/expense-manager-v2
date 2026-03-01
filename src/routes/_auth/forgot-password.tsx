@@ -181,7 +181,6 @@ function CodeStep({
             ? 'Code is invalid or expired. Please request a new one.'
             : 'Error resetting password. Please try again.'
         setServerError(message)
-        toast.error(message)
       }
     },
   })

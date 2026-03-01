@@ -56,7 +56,6 @@ function SignInPage() {
       } catch (error) {
         console.error('Sign in error:', error)
         setServerError('Invalid email or password')
-        toast.error('Invalid email or password')
       }
     },
   })
