@@ -46,11 +46,13 @@ Search the codebase for usage of anything deprecated or changed:
 ```bash
 # Example: Tailwind 4.2 deprecated start-*/end-* positioning utilities
 # App and config sources (respects .gitignore / default ignores)
-rg '\bstart-\d|\bend-\d' --glob '*.{tsx,ts,css}'
+rg '\b(start|end)-\S+' --glob '*.{tsx,ts,css}'
 
 # Third-party CSS in node_modules (ignored by default, needs -uuu)
-rg '\bstart-\d|\bend-\d' node_modules/<package>/dist/ -uuu --glob '*.css'
+rg '\b(start|end)-\S+' node_modules/<package-name>/dist/ -uuu --glob '*.css'
 ```
+
+Adapt the pattern to match the specific deprecation. The examples above are intentionally broad — narrow them based on changelog findings.
 
 Check all layers:
 
