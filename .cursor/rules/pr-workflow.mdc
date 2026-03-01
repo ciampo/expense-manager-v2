@@ -44,13 +44,20 @@ Read `.cursor/skills/pr-feedback/SKILL.md`:
 
 ## Verification suite
 
-Run these checks at every quality gate. Reference as "the verification suite" from skills.
+Run at every quality gate. Reference as "the verification suite" from skills.
+
+**Core** (always run):
 
 ```bash
 pnpm lint
 pnpm build          # includes tsc --noEmit
 pnpm test:unit
-pnpm test:visual:docker   # skip if no UI/CSS/component changes
+```
+
+**Conditional** (run when there are UI/CSS/component changes):
+
+```bash
+pnpm test:visual:docker
 ```
 
 ## Principles
