@@ -30,28 +30,31 @@ export async function upsertMerchant(
 }
 
 /**
- * List all expenses for the current user, sorted by date (most recent first)
+ * List expenses for the current user, sorted by date (most recent first).
+ * Supports cursor-based pagination; defaults to 50 items per page.
  */
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    cursor: v.optional(v.union(v.string(), v.null())),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx)
     if (!userId) {
-      return []
+      return { expenses: [], continueCursor: '', isDone: true }
     }
 
-    const expenses = await ctx.db
+    const result = await ctx.db
       .query('expenses')
       .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
-      .collect()
+      .order('desc')
+      .paginate({ numItems: args.limit ?? 50, cursor: args.cursor ?? null })
 
-    // Sort by date descending (most recent first)
-    return expenses.sort((a, b) => {
-      const dateCompare = b.date.localeCompare(a.date)
-      if (dateCompare !== 0) return dateCompare
-      // If same date, sort by createdAt descending
-      return b.createdAt - a.createdAt
-    })
+    return {
+      expenses: result.page,
+      continueCursor: result.continueCursor,
+      isDone: result.isDone,
+    }
   },
 })
 

@@ -43,7 +43,10 @@ export function distinctMonthsFromDates(dates: string[]): { year: number; month:
  * Get the distinct months for which the user has expense data.
  * Returns an array of { year, month } objects sorted newest first.
  *
- * Uses pagination to avoid loading all expense documents into memory at once.
+ * Leverages the by_user_and_date index ordering: instead of reading every
+ * expense, we fetch only the latest expense in each month and then skip
+ * ahead to the previous month boundary. This makes the query O(M) where
+ * M = number of distinct months, rather than O(N) for total expenses.
  */
 export const availableMonths = query({
   args: {},
@@ -54,23 +57,23 @@ export const availableMonths = query({
     }
 
     const monthSet = new Set<string>()
-    let isDone = false
-    let cursor: string | null = null
+    let upperBound: string | undefined = undefined
 
-    while (!isDone) {
-      const page = await ctx.db
+    while (true) {
+      const expense = await ctx.db
         .query('expenses')
-        .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+        .withIndex('by_user_and_date', (q) => {
+          const base = q.eq('userId', userId)
+          return upperBound ? base.lt('date', upperBound) : base
+        })
         .order('desc')
-        .paginate({ numItems: 100, cursor })
+        .first()
 
-      for (const expense of page.page) {
-        const [year, month] = expense.date.split('-')
-        monthSet.add(`${year}-${month}`)
-      }
+      if (!expense) break
 
-      isDone = page.isDone
-      cursor = page.continueCursor
+      const [year, month] = expense.date.split('-')
+      monthSet.add(`${year}-${month}`)
+      upperBound = `${year}-${month}-01`
     }
 
     return sortedMonthsFromKeys(monthSet)
