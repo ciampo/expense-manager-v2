@@ -16,17 +16,21 @@ export async function upsertCategory(
   categoryName: string,
 ): Promise<Id<'categories'>> {
   const { name } = validateCategoryFields({ name: categoryName })
+  const normalized = name.toLowerCase()
 
-  const existing = await ctx.db
+  // Case-insensitive dedup: query by userId prefix and compare lowercased
+  const userCategories = await ctx.db
     .query('categories')
-    .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', name))
-    .first()
+    .withIndex('by_user_and_name', (q) => q.eq('userId', userId))
+    .collect()
+  const existing = userCategories.find((c) => c.name.toLowerCase() === normalized)
   if (existing) return existing._id
 
-  const predefined = await ctx.db
+  const predefinedCategories = await ctx.db
     .query('categories')
-    .withIndex('by_user_and_name', (q) => q.eq('userId', undefined).eq('name', name))
-    .first()
+    .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
+    .collect()
+  const predefined = predefinedCategories.find((c) => c.name.toLowerCase() === normalized)
   if (predefined) return predefined._id
 
   return ctx.db.insert('categories', { name, userId })
@@ -80,10 +84,10 @@ export const list = query({
   handler: async (ctx) => {
     const userId = await auth.getUserId(ctx)
 
-    // Get all predefined categories (userId is undefined)
+    // Get all predefined categories (userId is undefined) using index
     const predefinedCategories = await ctx.db
       .query('categories')
-      .filter((q) => q.eq(q.field('userId'), undefined))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
       .collect()
 
     // Get user's custom categories if authenticated
@@ -146,22 +150,22 @@ export const create = mutation({
     }
 
     const { name, icon } = validateCategoryFields(args)
+    const normalized = name.toLowerCase()
 
-    const existing = await ctx.db
+    // Case-insensitive dedup: query by userId prefix and compare lowercased
+    const userCategories = await ctx.db
       .query('categories')
-      .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', name))
-      .first()
-
-    if (existing) {
+      .withIndex('by_user_and_name', (q) => q.eq('userId', userId))
+      .collect()
+    if (userCategories.some((c) => c.name.toLowerCase() === normalized)) {
       throw new Error('Category already exists')
     }
 
-    const predefined = await ctx.db
+    const predefinedCategories = await ctx.db
       .query('categories')
-      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined).eq('name', name))
-      .first()
-
-    if (predefined) {
+      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
+      .collect()
+    if (predefinedCategories.some((c) => c.name.toLowerCase() === normalized)) {
       throw new Error('Category already exists')
     }
 
