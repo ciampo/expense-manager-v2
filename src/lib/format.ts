@@ -1,9 +1,10 @@
+const eurFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' })
+
 /**
  * Format cents to EUR display using English locale
  * @param cents - Amount in cents (e.g., 1250 = €12.50)
  */
-export const formatCurrency = (cents: number): string =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(cents / 100)
+export const formatCurrency = (cents: number): string => eurFormatter.format(cents / 100)
 
 /**
  * Parse a YYYY-MM-DD string as a **local** date.
@@ -33,6 +34,14 @@ export function parseLocalDate(isoDate: string): Date {
   return date
 }
 
+const dateFormatter = new Intl.DateTimeFormat('en-US')
+const dateLongFormatter = new Intl.DateTimeFormat('en-US', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})
+
 /**
  * Like parseLocalDate, but returns undefined instead of Invalid Date.
  */
@@ -48,7 +57,7 @@ export function tryParseLocalDate(isoDate: string): Date | undefined {
  */
 export const formatDate = (isoDate: string): string => {
   const d = tryParseLocalDate(isoDate)
-  return d ? new Intl.DateTimeFormat('en-US').format(d) : '—'
+  return d ? dateFormatter.format(d) : '—'
 }
 
 /**
@@ -58,14 +67,7 @@ export const formatDate = (isoDate: string): string => {
  */
 export const formatDateLong = (isoDate: string): string => {
   const d = tryParseLocalDate(isoDate)
-  return d
-    ? new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }).format(d)
-    : '—'
+  return d ? dateLongFormatter.format(d) : '—'
 }
 
 /**
@@ -125,6 +127,8 @@ export function toISODateString(d: Date): string {
  */
 export const getTodayISO = (): string => toISODateString(new Date())
 
+const monthYearFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' })
+
 /**
  * Get month name in English
  * @param month - Month number (1-12)
@@ -132,5 +136,5 @@ export const getTodayISO = (): string => toISODateString(new Date())
  */
 export const getMonthName = (month: number, year: number): string => {
   const date = new Date(year, month - 1, 1)
-  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date)
+  return monthYearFormatter.format(date)
 }
