@@ -5,6 +5,8 @@ description: Audit dependency updates for breaking changes, deprecations, and ec
 
 # Dependency Audit
 
+> Throughout this skill, `<package-name>` refers to the npm package being audited (e.g., `tailwindcss`, `@tanstack/react-router`).
+
 ## Step 1: Version check
 
 Compare three things in parallel:
