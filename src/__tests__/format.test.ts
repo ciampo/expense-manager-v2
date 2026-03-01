@@ -60,6 +60,37 @@ describe('parseCurrencyToCents', () => {
   it('handles multiple commas (European thousands + decimal)', () => {
     expect(parseCurrencyToCents('1,234,56')).toBe(123456)
   })
+
+  it('parses European thousands and decimal separators', () => {
+    expect(parseCurrencyToCents('1.234,56')).toBe(123456)
+  })
+
+  it('parses US thousands and decimal separators', () => {
+    expect(parseCurrencyToCents('1,234.56')).toBe(123456)
+  })
+
+  it('parses thousands-only values without decimals', () => {
+    expect(parseCurrencyToCents('1.234')).toBe(123400)
+    expect(parseCurrencyToCents('1,234')).toBe(123400)
+  })
+
+  it('parses multiple thousands groups without decimals', () => {
+    expect(parseCurrencyToCents('1,234,567')).toBe(123456700)
+  })
+
+  it('parses multiple thousands groups with decimals', () => {
+    expect(parseCurrencyToCents('1,234,567.89')).toBe(123456789)
+  })
+
+  it('parses sub-unit amounts', () => {
+    expect(parseCurrencyToCents('0.99')).toBe(99)
+    expect(parseCurrencyToCents('0,99')).toBe(99)
+  })
+
+  it('parses single-digit decimal', () => {
+    expect(parseCurrencyToCents('5.5')).toBe(550)
+    expect(parseCurrencyToCents('5,5')).toBe(550)
+  })
 })
 
 describe('centsToInputValue', () => {
