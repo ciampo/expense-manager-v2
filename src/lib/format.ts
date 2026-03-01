@@ -58,8 +58,13 @@ export const formatDateLong = (isoDate: string): string =>
  * @returns Number of cents
  */
 export const parseCurrencyToCents = (value: string): number => {
-  // Replace comma with dot for parsing
-  const normalized = value.replace(',', '.')
+  // Normalize commas to dots, then keep only the last dot as the decimal separator.
+  // This handles both "12,50" (European decimal) and "1.234,56" or "1,234.56"
+  // (thousands-separated) inputs correctly.
+  const withDots = value.replaceAll(',', '.')
+  const parts = withDots.split('.')
+  const normalized =
+    parts.length > 1 ? parts.slice(0, -1).join('') + '.' + parts[parts.length - 1] : withDots
   const parsed = parseFloat(normalized)
   if (isNaN(parsed)) return 0
   return Math.round(parsed * 100)

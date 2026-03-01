@@ -56,6 +56,10 @@ describe('parseCurrencyToCents', () => {
   it('rounds to nearest cent', () => {
     expect(parseCurrencyToCents('12.555')).toBe(1256)
   })
+
+  it('handles multiple commas (European thousands + decimal)', () => {
+    expect(parseCurrencyToCents('1,234,56')).toBe(123456)
+  })
 })
 
 describe('centsToInputValue', () => {

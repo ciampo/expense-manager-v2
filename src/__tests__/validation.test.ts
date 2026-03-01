@@ -221,7 +221,7 @@ describe('validateCategoryFields', () => {
   })
 
   it('rejects very large name via pre-trim hard cap', () => {
-    expect(() => validateCategoryFields({ name: 'A'.repeat(1001) })).toThrow('100 characters')
+    expect(() => validateCategoryFields({ name: 'A'.repeat(1001) })).toThrow('Input too long')
   })
 
   // -- icon -----------------------------------------------------------------
@@ -285,7 +285,7 @@ describe('validateCategoryFields', () => {
 
   it('rejects very large icon via pre-trim hard cap', () => {
     expect(() => validateCategoryFields({ name: 'Food', icon: 'x'.repeat(101) })).toThrow(
-      '10 characters',
+      'Input too long',
     )
   })
 })
