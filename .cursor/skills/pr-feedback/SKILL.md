@@ -13,7 +13,7 @@ Gather all review comments and CI feedback:
 
 ```bash
 # Review comments (inline on diffs)
-gh api repos/{owner}/{repo}/pulls/{number}/comments
+gh api repos/{owner}/{repo}/pulls/<number>/comments
 
 # PR review summaries
 gh pr view <number> --json reviews
