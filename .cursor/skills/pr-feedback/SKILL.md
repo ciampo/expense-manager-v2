@@ -13,7 +13,7 @@ Gather all review comments and CI feedback:
 
 ```bash
 # Review comments (inline on diffs)
-gh api repos/{owner}/{repo}/pulls/<number>/comments
+gh api repos/{owner}/{repo}/pulls/<number>/comments --paginate
 
 # PR review summaries
 gh pr view <number> --json reviews
@@ -78,7 +78,7 @@ git log --oneline origin/<base>..HEAD
 
 If `git push origin HEAD` is rejected (branch diverged):
 
-1. Fetch and rebase: `git fetch origin <base> && git rebase origin/<base>`
+1. Fetch base and PR branch: `git fetch origin <base> <branch-name> && git rebase origin/<base>`
 2. Resolve any conflicts and continue: `git rebase --continue`
 3. Re-run the verification suite after resolving.
 4. Push with `--force-with-lease`: `git push --force-with-lease origin HEAD`
