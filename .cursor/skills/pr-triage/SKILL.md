@@ -31,11 +31,16 @@ gh issue view <issue-number> --json title,body,labels,state
 ## Step 2: Check out and rebase
 
 ```bash
-git fetch origin <base> <branch-name>
+# Check out the PR branch (handles both same-repo and fork-based PRs)
+gh pr checkout <number>
+
+# Update base branch ref
+git fetch origin <base>
 
 # Check base branch history after fetch (to spot batch updates that may have superseded this PR)
 git log --oneline -15 origin/<base>
-git checkout <branch-name>
+
+# Rebase onto the updated base
 git rebase origin/<base>
 ```
 
