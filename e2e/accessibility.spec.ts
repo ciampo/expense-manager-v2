@@ -59,7 +59,7 @@ test.describe('Accessibility Audit — Public Pages', () => {
   test('landing page header should contain a nav landmark', async ({ page }) => {
     await page.goto('/')
 
-    const nav = page.locator('header nav')
+    const nav = page.locator('header').getByRole('navigation')
     await expect(nav).toHaveCount(1)
   })
 })
@@ -101,7 +101,7 @@ test.describe('Accessibility Audit — Authenticated Pages', () => {
   })
 
   test('authenticated layout should have a nav landmark', async ({ page }) => {
-    const nav = page.locator('header nav')
+    const nav = page.locator('header').getByRole('navigation')
     await expect(nav).toHaveCount(1)
   })
 })

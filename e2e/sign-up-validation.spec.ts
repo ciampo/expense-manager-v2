@@ -53,14 +53,13 @@ test.describe('Sign-up form validation', () => {
   test('error messages use role="alert" for screen readers', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign Up' }).click()
 
-    const emailError = page.locator('#email-error')
-    await expect(emailError).toHaveAttribute('role', 'alert')
-
-    const passwordError = page.locator('#password-error')
-    await expect(passwordError).toHaveAttribute('role', 'alert')
-
-    const confirmError = page.locator('#confirm-password-error')
-    await expect(confirmError).toHaveAttribute('role', 'alert')
+    await expect(page.getByRole('alert').filter({ hasText: 'Email is required.' })).toBeVisible()
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Password must be at least 8 characters.' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Confirm your password.' }),
+    ).toBeVisible()
   })
 
   test('invalid fields have aria-invalid="true"', async ({ page }) => {

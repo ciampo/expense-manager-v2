@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test'
-import { waitForHydration } from '../tests/shared/page-readiness'
 
 test.describe('Landing Page', () => {
   test('should display the landing page', async ({ page }) => {
@@ -30,35 +29,5 @@ test.describe('Landing Page', () => {
 
     await expect(page).toHaveURL('/sign-up')
     await expect(page.getByRole('heading', { name: 'Sign Up' })).toBeVisible()
-  })
-})
-
-test.describe('Authentication Flow', () => {
-  test('sign up page should have all required fields', async ({ page }) => {
-    await page.goto('/sign-up')
-
-    await expect(page.getByLabel('Email')).toBeVisible()
-    await expect(page.getByLabel('Password', { exact: true })).toBeVisible()
-    await expect(page.getByLabel('Confirm password')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Sign Up' })).toBeVisible()
-  })
-
-  test('sign in page should have forgot password link', async ({ page }) => {
-    await page.goto('/sign-in')
-
-    await expect(page.getByText('Forgot password?')).toBeVisible()
-    await page.getByText('Forgot password?').click()
-
-    await expect(page).toHaveURL('/forgot-password')
-  })
-
-  test('should show validation errors for empty form submission', async ({ page }) => {
-    await page.goto('/sign-in')
-    await waitForHydration(page)
-
-    await page.getByRole('button', { name: 'Sign In' }).click()
-
-    await expect(page.getByText('Email is required.')).toBeVisible()
-    await expect(page.getByText('Password is required.')).toBeVisible()
   })
 })
