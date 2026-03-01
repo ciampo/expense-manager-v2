@@ -210,13 +210,15 @@ These are automatically set by GitHub Actions or defined in workflow files.
 
 ### Set in Workflows
 
-| Variable            | Workflow File  | Value                                   |
-| ------------------- | -------------- | --------------------------------------- |
-| `VITE_CONVEX_URL`   | `deploy.yml`   | `${{ secrets.CONVEX_PROD_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `deploy.yml`   | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}` |
-| `VITE_CONVEX_URL`   | `preview.yml`  | `${{ secrets.CONVEX_DEV_URL }}`         |
-| `VITE_CONVEX_URL`   | `test-e2e.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `test-e2e.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| Variable            | Workflow File            | Value                                   |
+| ------------------- | ------------------------ | --------------------------------------- |
+| `VITE_CONVEX_URL`   | `deploy.yml`             | `${{ secrets.CONVEX_PROD_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `deploy.yml`             | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}` |
+| `VITE_CONVEX_URL`   | `preview.yml`            | `${{ secrets.CONVEX_DEV_URL }}`         |
+| `VITE_CONVEX_URL`   | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| `VITE_CONVEX_URL`   | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `VITE_CONVEX_URL`   | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
 
 ---
 
