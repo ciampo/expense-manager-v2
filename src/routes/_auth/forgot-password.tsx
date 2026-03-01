@@ -19,6 +19,9 @@ import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/forgot-password')({
   component: ForgotPasswordPage,
+  head: () => ({
+    meta: [{ title: 'Reset Password — Expense Manager' }],
+  }),
 })
 
 const requestCodeSchema = z.object({

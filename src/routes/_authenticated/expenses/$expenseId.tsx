@@ -1,13 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, notFound, type ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { ExpenseForm, ExpenseFormSkeleton } from '@/components/expense-form'
+import { RouteErrorComponent } from '@/components/route-error'
 import { Suspense } from 'react'
 
 export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
   component: EditExpensePage,
+  errorComponent: RouteErrorComponent as (props: ErrorComponentProps) => React.ReactNode,
+  head: () => ({
+    meta: [{ title: 'Edit Expense — Expense Manager' }],
+  }),
 })
 
 function EditExpensePage() {
@@ -31,11 +36,7 @@ function EditExpenseForm({ expenseId }: { expenseId: Id<'expenses'> }) {
   const { data: expense } = useSuspenseQuery(convexQuery(api.expenses.get, { id: expenseId }))
 
   if (!expense) {
-    return (
-      <div className="py-8 text-center">
-        <p className="text-muted-foreground">Expense not found</p>
-      </div>
-    )
+    throw notFound()
   }
 
   return <ExpenseForm expense={expense} mode="edit" />

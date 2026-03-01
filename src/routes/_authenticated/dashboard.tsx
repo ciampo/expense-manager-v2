@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, type ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
@@ -35,6 +35,7 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import { toast } from 'sonner'
 import { Suspense, useMemo, useState, useTransition } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { RouteErrorComponent } from '@/components/route-error'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 const PAGINATION_THRESHOLD = Math.min(...PAGE_SIZE_OPTIONS)
@@ -42,6 +43,10 @@ const DEFAULT_PAGE_SIZE = 25
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
+  errorComponent: RouteErrorComponent as (props: ErrorComponentProps) => React.ReactNode,
+  head: () => ({
+    meta: [{ title: 'Dashboard — Expense Manager' }],
+  }),
 })
 
 function DashboardPage() {

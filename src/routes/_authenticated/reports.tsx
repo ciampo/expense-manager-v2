@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, type ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
@@ -17,11 +17,16 @@ import { centsToInputValue, formatCurrency, getMonthName } from '@/lib/format'
 import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 import { toast } from 'sonner'
 import { Suspense, useState } from 'react'
+import { RouteErrorComponent } from '@/components/route-error'
 const loadFileSaver = () => import('file-saver').then((m) => m.saveAs)
 const loadJSZip = () => import('jszip').then((m) => m.default)
 
 export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
+  errorComponent: RouteErrorComponent as (props: ErrorComponentProps) => React.ReactNode,
+  head: () => ({
+    meta: [{ title: 'Reports — Expense Manager' }],
+  }),
 })
 
 function ReportsPage() {
