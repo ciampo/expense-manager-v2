@@ -77,7 +77,7 @@ Run the verification suite (see `pr-workflow.mdc`) to confirm nothing regressed.
 
 ```bash
 git status
-git log --oneline origin/<base>..HEAD
+git log --oneline "origin/<base>..HEAD"
 ```
 
 ### Handling push failures
@@ -85,7 +85,7 @@ git log --oneline origin/<base>..HEAD
 If `git push` is rejected (branch diverged):
 
 1. Ensure the PR branch is checked out (handles fork-based PRs): `gh pr checkout <number>`
-2. Fetch and rebase onto the base: `git fetch origin <base> && git rebase origin/<base>`
+2. Fetch and rebase onto the base: `git fetch origin "<base>" && git rebase "origin/<base>"`
 3. Resolve any conflicts and continue: `git rebase --continue`
 4. Re-run the verification suite after resolving.
 5. Push with `--force-with-lease`: `git push --force-with-lease`

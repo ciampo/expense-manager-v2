@@ -43,13 +43,13 @@ Ensure the working tree is clean before checking out (stash or commit any in-pro
 gh pr checkout <number>
 
 # Update base branch ref
-git fetch origin <base>
+git fetch origin "<base>"
 
 # Check base branch history after fetch (to spot batch updates that may have superseded this PR)
-git log --oneline -15 origin/<base>
+git log --oneline -15 "origin/<base>"
 
 # Rebase onto the updated base
-git rebase origin/<base>
+git rebase "origin/<base>"
 ```
 
 If the rebase conflicts, abort the rebase to return to the pre-rebase state:
@@ -61,8 +61,8 @@ git rebase --abort
 If you need to start fresh on top of the base (e.g., the changes will be redone from scratch against a newer version), reset explicitly. This discards all local commits on the branch:
 
 ```bash
-git branch backup/<branch-name>-$(date +%Y%m%d%H%M%S) HEAD
-git reset --hard origin/<base>
+git branch "backup/<branch-name>-$(date +%Y%m%d%H%M%S)" HEAD
+git reset --hard "origin/<base>"
 ```
 
 After a successful rebase, force-push to update the remote branch:
@@ -124,7 +124,7 @@ Resolved via #<other-pr> (<brief description>).
 Cleanup:
 
 ```bash
-git checkout <base> && git branch -D <branch-name>
+git checkout "<base>" && git branch -D "<branch-name>"
 ```
 
 ### If still needed
