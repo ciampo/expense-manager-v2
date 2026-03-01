@@ -5,7 +5,11 @@ description: Independent self-review of PR changes delegated to a subagent for r
 
 # PR Self-Review
 
-> Throughout this skill, `<base>` refers to the PR's target branch (from `gh pr view --json baseRefName`). Do not assume `main`.
+> Throughout this skill:
+>
+> - `<base>` refers to the PR's target branch (from `gh pr view --json baseRefName`). Do not assume `main`.
+> - `<branch-name>` refers to the PR's head branch (from `gh pr view --json headRefName`).
+> - `<repo-path>` refers to the absolute path of the local repository checkout.
 
 ## Purpose
 
