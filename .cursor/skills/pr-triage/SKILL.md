@@ -30,6 +30,8 @@ gh issue view <issue-number> --json title,body,labels,state
 
 ## Step 2: Check out and rebase
 
+Ensure the working tree is clean before checking out (stash or commit any in-progress work).
+
 ```bash
 # Check out the PR branch (handles both same-repo and fork-based PRs)
 gh pr checkout <number>
