@@ -25,7 +25,20 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - name: Deploy Convex functions
+        run: npx convex deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+      - name: Seed test data
+        run: pnpm test:e2e:seed
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
       - run: pnpm test:visual
+      - name: Cleanup test data (safety net)
+        if: always()
+        run: pnpm test:e2e:cleanup
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
