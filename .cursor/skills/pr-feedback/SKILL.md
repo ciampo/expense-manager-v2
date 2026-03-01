@@ -16,6 +16,7 @@ Gather all review comments and CI feedback:
 
 ```bash
 # Review comments (inline on diffs)
+# Note: {owner}/{repo} are auto-expanded by the gh CLI; <number> is the PR number
 gh api repos/{owner}/{repo}/pulls/<number>/comments --paginate
 
 # PR review summaries
@@ -142,8 +143,13 @@ Reply to each addressed comment:
 After pushing all changes, request reviews to close the feedback loop:
 
 ```bash
-# Re-request review from all previous reviewers
+# Re-request review from all previous human reviewers (filter out bots and self)
+MYSELF=$(gh api user --jq '.login')
 gh pr view <number> --json reviews --jq '[.reviews[].author.login] | unique | .[]' | while read -r reviewer; do
+  # Skip bot accounts and the current user
+  if [[ "$reviewer" == *"[bot]"* ]] || [[ "$reviewer" == "$MYSELF" ]]; then
+    continue
+  fi
   gh pr edit <number> --add-reviewer "$reviewer"
 done
 
