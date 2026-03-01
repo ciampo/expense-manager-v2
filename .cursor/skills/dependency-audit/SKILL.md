@@ -43,14 +43,18 @@ Search the codebase for usage of anything deprecated or changed:
 
 ```bash
 # Example: Tailwind 4.2 deprecated start-*/end-* positioning utilities
+# App and config sources (respects .gitignore / default ignores)
 rg '\bstart-\d|\bend-\d' --glob '*.{tsx,ts,css}'
+
+# Third-party CSS in node_modules (ignored by default, needs -uuu)
+rg '\bstart-\d|\bend-\d' node_modules/<package>/dist/ -uuu --glob '*.css'
 ```
 
 Check all layers:
 
 - Application code (`src/`)
 - CSS files and theme configuration
-- Third-party component CSS (e.g., `node_modules/shadcn/dist/tailwind.css`)
+- Third-party component CSS in `node_modules/` (requires `rg -uuu` to bypass default ignores)
 - Test files
 
 ## Step 4: Ecosystem compatibility
