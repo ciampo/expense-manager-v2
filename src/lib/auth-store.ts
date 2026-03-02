@@ -1,3 +1,5 @@
+export const AUTH_TIMEOUT_MS = 10_000
+
 /**
  * Simple auth state bridge that allows non-React code (like beforeLoad)
  * to access the Convex auth state. Updated via useLayoutEffect by the
@@ -80,7 +82,19 @@ export function createAuthStore(): AuthStore {
       if (!_isLoading) {
         return Promise.resolve({ isAuthenticated: _isAuthenticated })
       }
-      return _authPromise
+      return new Promise<{ isAuthenticated: boolean }>((resolve) => {
+        const timer = setTimeout(() => {
+          console.warn(
+            `[auth-store] waitForAuth timed out after ${AUTH_TIMEOUT_MS / 1000}s — treating user as unauthenticated`,
+          )
+          resolve({ isAuthenticated: false })
+        }, AUTH_TIMEOUT_MS)
+
+        void _authPromise.then((result) => {
+          clearTimeout(timer)
+          resolve(result)
+        })
+      })
     },
   }
 }
