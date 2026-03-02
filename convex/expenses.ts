@@ -167,13 +167,10 @@ export const update = mutation({
     const categoryId = await resolveCategory(ctx, userId, args)
 
     // Only modify attachment when the client explicitly provides the field.
-    // Convex strips `undefined` from v.optional args, so this is true only
-    // when a valid Id<'_storage'> was sent — not when the field was omitted.
-    const attachmentProvided = args.attachmentId !== undefined
-    if (attachmentProvided && args.attachmentId !== existing.attachmentId) {
-      if (args.attachmentId) {
-        await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
-      }
+    // Convex strips `undefined` from v.optional args, so the comparison
+    // is true only when a valid Id<'_storage'> was sent.
+    if (args.attachmentId !== undefined && args.attachmentId !== existing.attachmentId) {
+      await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
       // Storage deletion is best-effort — if the file is already gone
       // (e.g. cleaned up by the cron), the update should still proceed.
       if (existing.attachmentId) {
@@ -192,7 +189,7 @@ export const update = mutation({
       amount,
       categoryId,
       comment,
-      ...(attachmentProvided ? { attachmentId: args.attachmentId } : {}),
+      ...(args.attachmentId !== undefined ? { attachmentId: args.attachmentId } : {}),
     })
 
     await upsertMerchant(ctx, userId, merchant)
