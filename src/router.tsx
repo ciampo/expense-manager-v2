@@ -55,7 +55,11 @@ function AuthBridge({ authStore }: { authStore: AuthStore }) {
   return null
 }
 
+let _router: ReturnType<typeof createRouter> | null = null
+
 export function getRouter() {
+  if (_router) return _router
+
   const CONVEX_URL = import.meta.env.VITE_CONVEX_URL
 
   if (!CONVEX_URL) {
@@ -100,6 +104,7 @@ export function getRouter() {
   // AuthBridge calls this when auth state settles to re-evaluate guards.
   authStore.invalidateRouter = () => router.invalidate()
 
+  _router = router
   return router
 }
 
