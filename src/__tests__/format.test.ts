@@ -91,6 +91,12 @@ describe('parseCurrencyToCents', () => {
     expect(parseCurrencyToCents('5.5')).toBe(550)
     expect(parseCurrencyToCents('5,5')).toBe(550)
   })
+
+  it('trims leading and trailing whitespace', () => {
+    expect(parseCurrencyToCents(' 12.50 ')).toBe(1250)
+    expect(parseCurrencyToCents('1,234,56 ')).toBe(123456)
+    expect(parseCurrencyToCents(' 1.234,56')).toBe(123456)
+  })
 })
 
 describe('centsToInputValue', () => {
