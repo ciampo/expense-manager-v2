@@ -58,8 +58,10 @@ export const formatDateLong = (isoDate: string): string =>
  * @returns Number of cents
  */
 export const parseCurrencyToCents = (value: string): number => {
-  // Strip everything except digits, dots, and commas so pasted values
-  // like "1.234,56 €" don't break the trailing-digit-count heuristic.
+  // Preserve an optional leading sign, then strip everything except
+  // digits, dots, and commas so pasted values like "1.234,56 €" or
+  // "-€12.50" don't break the trailing-digit-count heuristic.
+  const sign = /^\s*[-+]/.test(value) ? value.trimStart()[0] : ''
   const sanitized = value.replace(/[^\d.,]/g, '')
   // Normalize commas to dots, then decide how to interpret separators.
   // With multiple separators the non-last ones are unambiguously thousands
@@ -79,7 +81,7 @@ export const parseCurrencyToCents = (value: string): number => {
   } else {
     normalized = withDots
   }
-  const parsed = parseFloat(normalized)
+  const parsed = parseFloat(sign + normalized)
   if (isNaN(parsed)) return 0
   return Math.round(parsed * 100)
 }
