@@ -100,6 +100,13 @@ describe('parseCurrencyToCents', () => {
     expect(parseCurrencyToCents('€12.50')).toBe(1250)
     expect(parseCurrencyToCents('$1,234.56')).toBe(123456)
   })
+
+  it('preserves leading sign', () => {
+    expect(parseCurrencyToCents('-12.50')).toBe(-1250)
+    expect(parseCurrencyToCents('-12,50')).toBe(-1250)
+    expect(parseCurrencyToCents('-€12.50')).toBe(-1250)
+    expect(parseCurrencyToCents('+12.50')).toBe(1250)
+  })
 })
 
 describe('centsToInputValue', () => {
