@@ -43,7 +43,7 @@ import {
   parseCurrencyToCents,
   centsToInputValue,
   getTodayISO,
-  parseLocalDate,
+  tryParseLocalDate,
   toISODateString,
 } from '@/lib/format'
 import { expenseDateSchema, expenseMerchantSchema, expenseAmountSchema } from '@/lib/schemas'
@@ -353,8 +353,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       {/* Date */}
       <form.Field name="date">
         {(field) => {
-          const parsed = field.state.value ? parseLocalDate(field.state.value) : undefined
-          const selectedDate = parsed && !isNaN(parsed.getTime()) ? parsed : undefined
+          const selectedDate = field.state.value ? tryParseLocalDate(field.state.value) : undefined
           const hasErrors = field.state.meta.errors.length > 0
           return (
             <Field data-invalid={hasErrors || undefined}>
