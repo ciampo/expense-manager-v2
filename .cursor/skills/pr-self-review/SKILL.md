@@ -18,12 +18,15 @@ Perform an independent review of all changes on the branch. This applies to ever
 
 ## Step 1: Delegate the review
 
-Launch a readonly subagent that assesses the changes fresh:
+Launch a subagent that assesses the changes fresh. Do **not** set `readonly: true` — the subagent needs shell access for `git` and `gh` commands. The prompt itself constrains the subagent to read-only operations.
 
 ```
-Launch a Task (subagent_type: "generalPurpose", readonly: true) with a prompt like:
+Launch a Task (subagent_type: "generalPurpose") with a prompt like:
 
-"Review the changes on branch <branch-name> compared to origin/<base> in <repo-path>.
+"You are a code reviewer. Do NOT modify any files — only read files and run
+read-only shell commands (git diff, git log, gh pr view, etc.).
+
+Review the changes on branch <branch-name> compared to origin/<base> in <repo-path>.
 
 Run these commands to understand the changes:
   git diff origin/<base>...HEAD
