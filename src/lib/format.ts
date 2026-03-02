@@ -58,12 +58,15 @@ export const formatDateLong = (isoDate: string): string =>
  * @returns Number of cents
  */
 export const parseCurrencyToCents = (value: string): number => {
+  // Trim whitespace so pasted values like "1,234,56 " don't break the
+  // trailing-digit-count heuristic below.
+  const trimmed = value.trim()
   // Normalize commas to dots, then decide how to interpret separators.
   // With multiple separators the non-last ones are unambiguously thousands
   // grouping; the last one is decimal if it has 1–2 trailing digits, otherwise
   // it is also thousands.  A single separator is always treated as decimal to
   // preserve sub-cent rounding inputs like "12.555".
-  const withDots = value.replaceAll(',', '.')
+  const withDots = trimmed.replaceAll(',', '.')
   const parts = withDots.split('.')
   let normalized: string
   if (parts.length > 2) {
