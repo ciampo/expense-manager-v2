@@ -16,25 +16,47 @@ description: Independent self-review of PR changes delegated to a subagent for r
 
 Perform an independent review of all changes on the branch. This applies to every PR regardless of type (dependency, feature, refactor, bugfix). The review is delegated to a subagent to reduce confirmation bias.
 
-## Step 1: Delegate the review
+## Step 1: Gather context for the reviewer
 
-Launch a subagent that assesses the changes fresh. Do **not** set `readonly: true` — the subagent needs shell access for `git` and `gh` commands. The prompt itself constrains the subagent to read-only operations.
+Before launching the subagent, run these commands yourself and capture their output:
+
+```bash
+# Full diff
+git diff "origin/<base>...HEAD"
+
+# Commit log
+git log --oneline "origin/<base>..HEAD"
+
+# CI status
+gh pr view <number> --json statusCheckRollup
+```
+
+If any CI checks failed, also capture the failure details.
+
+## Step 2: Delegate the review
+
+Launch a **readonly** subagent (`readonly: true`) and pass the captured context inline in the prompt. This keeps the subagent sandboxed — it can read files but cannot run shell commands or modify anything.
 
 ```
-Launch a Task (subagent_type: "generalPurpose") with a prompt like:
+Launch a Task (subagent_type: "generalPurpose", readonly: true) with a prompt like:
 
-"You are a code reviewer. Do NOT modify any files — only read files and run
-read-only shell commands (git diff, git log, gh pr view, etc.).
+"You are a code reviewer. The repository is at <repo-path>.
+You may read any file in the repo for additional context, but do NOT
+modify anything.
 
-Review the changes on branch <branch-name> compared to origin/<base> in <repo-path>.
+Review the changes on branch <branch-name> compared to origin/<base>.
 
-Run these commands to understand the changes:
-  git diff origin/<base>...HEAD
-  git log --oneline origin/<base>..HEAD
+Here is the diff:
 
-Check CI status for the PR:
-  gh pr view <number> --json statusCheckRollup
-If any checks failed, investigate the failure details and include them in the report.
+<paste captured diff output>
+
+Here is the commit log:
+
+<paste captured log output>
+
+Here is the CI status:
+
+<paste captured CI output>
 
 Produce a structured review report covering:
 1. Summary of changes (what the PR does)
@@ -48,11 +70,11 @@ Produce a structured review report covering:
 Format the report as markdown. Be specific: reference files, line numbers, and concrete examples."
 ```
 
-## Step 2: Present the report
+## Step 3: Present the report
 
 Show the subagent's review report to the user in full before making any changes.
 
-## Step 3: Address every finding
+## Step 4: Address every finding
 
 Fix each issue identified in the report:
 
