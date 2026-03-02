@@ -2,11 +2,13 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   formatCurrency,
   formatDate,
+  formatDateLong,
   parseCurrencyToCents,
   centsToInputValue,
   getTodayISO,
   toISODateString,
   parseLocalDate,
+  tryParseLocalDate,
 } from '@/lib/format'
 
 describe('formatCurrency', () => {
@@ -24,6 +26,26 @@ describe('formatCurrency', () => {
   })
 })
 
+describe('tryParseLocalDate', () => {
+  it('returns a Date for valid YYYY-MM-DD input', () => {
+    const d = tryParseLocalDate('2024-03-15')
+    expect(d).toBeInstanceOf(Date)
+    expect(d!.getFullYear()).toBe(2024)
+    expect(d!.getMonth()).toBe(2)
+    expect(d!.getDate()).toBe(15)
+  })
+
+  it('returns undefined for malformed input', () => {
+    expect(tryParseLocalDate('not-a-date')).toBeUndefined()
+    expect(tryParseLocalDate('')).toBeUndefined()
+  })
+
+  it('returns undefined for impossible calendar dates', () => {
+    expect(tryParseLocalDate('2024-02-30')).toBeUndefined()
+    expect(tryParseLocalDate('2024-13-01')).toBeUndefined()
+  })
+})
+
 describe('formatDate', () => {
   it('formats ISO date to MM/DD/YYYY format', () => {
     expect(formatDate('2024-03-15')).toBe('3/15/2024')
@@ -32,6 +54,23 @@ describe('formatDate', () => {
 
   it('handles single digit months and days', () => {
     expect(formatDate('2024-01-05')).toBe('1/5/2024')
+  })
+
+  it('returns em dash for invalid dates', () => {
+    expect(formatDate('not-a-date')).toBe('—')
+    expect(formatDate('')).toBe('—')
+    expect(formatDate('2024-02-30')).toBe('—')
+  })
+})
+
+describe('formatDateLong', () => {
+  it('formats ISO date with day of week', () => {
+    expect(formatDateLong('2024-03-15')).toBe('Friday, March 15, 2024')
+  })
+
+  it('returns em dash for invalid dates', () => {
+    expect(formatDateLong('not-a-date')).toBe('—')
+    expect(formatDateLong('')).toBe('—')
   })
 })
 
