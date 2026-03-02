@@ -278,6 +278,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       if (!file) return
 
       if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
@@ -312,9 +315,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         toast.error('Error uploading file')
       } finally {
         setIsUploading(false)
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
       }
     },
     [generateUploadUrlAsync, confirmUploadAsync],
