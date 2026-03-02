@@ -82,7 +82,7 @@ export const expenseSchema = z.object({
  */
 export const categoryNameSchema = z
   .string()
-  .max(1000, { message: 'Category name must be 100 characters or less.' })
+  .max(1000, { message: 'Input too long.' })
   .transform((s) => s.trim())
   .pipe(
     z.string().min(1, { message: 'Category name is required.' }).max(100, {
@@ -98,7 +98,7 @@ export const categoryNameSchema = z
 export const categoryIconSchema = z
   .string()
   .refine((s) => s.length <= 100, {
-    message: 'Category icon must be 10 characters or less.',
+    message: 'Input too long.',
   })
   .transform((s) => s.trim() || undefined)
   .refine((s) => s === undefined || graphemeCount(s) <= 10, {

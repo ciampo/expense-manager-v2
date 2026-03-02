@@ -56,6 +56,57 @@ describe('parseCurrencyToCents', () => {
   it('rounds to nearest cent', () => {
     expect(parseCurrencyToCents('12.555')).toBe(1256)
   })
+
+  it('handles multiple commas (European thousands + decimal)', () => {
+    expect(parseCurrencyToCents('1,234,56')).toBe(123456)
+  })
+
+  it('parses European thousands and decimal separators', () => {
+    expect(parseCurrencyToCents('1.234,56')).toBe(123456)
+  })
+
+  it('parses US thousands and decimal separators', () => {
+    expect(parseCurrencyToCents('1,234.56')).toBe(123456)
+  })
+
+  it('treats single separator as decimal even with 3 trailing digits', () => {
+    expect(parseCurrencyToCents('1.234')).toBe(123)
+    expect(parseCurrencyToCents('1,234')).toBe(123)
+  })
+
+  it('parses multiple thousands groups without decimals', () => {
+    expect(parseCurrencyToCents('1,234,567')).toBe(123456700)
+  })
+
+  it('parses multiple thousands groups with decimals', () => {
+    expect(parseCurrencyToCents('1,234,567.89')).toBe(123456789)
+  })
+
+  it('parses sub-unit amounts', () => {
+    expect(parseCurrencyToCents('0.99')).toBe(99)
+    expect(parseCurrencyToCents('0,99')).toBe(99)
+  })
+
+  it('parses single-digit decimal', () => {
+    expect(parseCurrencyToCents('5.5')).toBe(550)
+    expect(parseCurrencyToCents('5,5')).toBe(550)
+  })
+
+  it('strips whitespace and non-numeric characters', () => {
+    expect(parseCurrencyToCents(' 12.50 ')).toBe(1250)
+    expect(parseCurrencyToCents('1,234,56 ')).toBe(123456)
+    expect(parseCurrencyToCents(' 1.234,56')).toBe(123456)
+    expect(parseCurrencyToCents('1.234,56 €')).toBe(123456)
+    expect(parseCurrencyToCents('€12.50')).toBe(1250)
+    expect(parseCurrencyToCents('$1,234.56')).toBe(123456)
+  })
+
+  it('preserves leading sign', () => {
+    expect(parseCurrencyToCents('-12.50')).toBe(-1250)
+    expect(parseCurrencyToCents('-12,50')).toBe(-1250)
+    expect(parseCurrencyToCents('-€12.50')).toBe(-1250)
+    expect(parseCurrencyToCents('+12.50')).toBe(1250)
+  })
 })
 
 describe('centsToInputValue', () => {
