@@ -84,6 +84,11 @@ describe('expenses.update — attachment handling', () => {
       return await ctx.db.get('expenses', expenseId)
     })
     expect(updated?.attachmentId).toBe(storageId)
+
+    const fileStillExists = await t.run(async (ctx) => {
+      return await ctx.storage.getUrl(storageId)
+    })
+    expect(fileStillExists).not.toBeNull()
   })
 
   it('replaces attachment when a new attachmentId is provided', async () => {
