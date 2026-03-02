@@ -166,19 +166,21 @@ export const update = mutation({
     const { date, merchant, amount, comment } = validateExpenseFields(args)
     const categoryId = await resolveCategory(ctx, userId, args)
 
-    if (args.attachmentId && args.attachmentId !== existing.attachmentId) {
+    // Only modify attachment when the client explicitly provides the field.
+    // Convex strips `undefined` from v.optional args, so the comparison
+    // is true only when a valid Id<'_storage'> was sent.
+    if (args.attachmentId !== undefined && args.attachmentId !== existing.attachmentId) {
       await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
-    }
-
-    // Storage deletion is best-effort — if the file is already gone
-    // (e.g. cleaned up by the cron), the update should still proceed.
-    if (existing.attachmentId && existing.attachmentId !== args.attachmentId) {
-      try {
-        await ctx.storage.delete(existing.attachmentId)
-      } catch {
-        // File may have already been deleted
+      // Storage deletion is best-effort — if the file is already gone
+      // (e.g. cleaned up by the cron), the update should still proceed.
+      if (existing.attachmentId) {
+        try {
+          await ctx.storage.delete(existing.attachmentId)
+        } catch {
+          // File may have already been deleted
+        }
+        await deleteUploadRecord(ctx, existing.attachmentId)
       }
-      await deleteUploadRecord(ctx, existing.attachmentId)
     }
 
     await ctx.db.patch('expenses', args.id, {
@@ -186,8 +188,8 @@ export const update = mutation({
       merchant,
       amount,
       categoryId,
-      attachmentId: args.attachmentId,
       comment,
+      ...(args.attachmentId !== undefined ? { attachmentId: args.attachmentId } : {}),
     })
 
     await upsertMerchant(ctx, userId, merchant)

@@ -229,7 +229,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const removeAttachment = useMutation({
     mutationFn: useConvexMutation(api.expenses.removeAttachment),
     onSuccess: () => {
-      setAttachmentId(undefined)
       toast.success('Attachment removed')
     },
     onError: () => {
@@ -328,7 +327,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
   const handleRemoveAttachment = () => {
     if (expense && attachmentId) {
-      removeAttachment.mutate({ id: expense._id })
+      const previousId = attachmentId
+      setAttachmentId(undefined)
+      removeAttachment.mutate({ id: expense._id }, { onError: () => setAttachmentId(previousId) })
     } else {
       setAttachmentId(undefined)
     }
