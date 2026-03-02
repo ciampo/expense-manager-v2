@@ -55,11 +55,7 @@ function AuthBridge({ authStore }: { authStore: AuthStore }) {
   return null
 }
 
-let _router: ReturnType<typeof createRouter> | null = null
-
-export function getRouter() {
-  if (_router) return _router
-
+function initRouter() {
   const CONVEX_URL = import.meta.env.VITE_CONVEX_URL
 
   if (!CONVEX_URL) {
@@ -104,8 +100,16 @@ export function getRouter() {
   // AuthBridge calls this when auth state settles to re-evaluate guards.
   authStore.invalidateRouter = () => router.invalidate()
 
-  _router = router
   return router
+}
+
+let _router: ReturnType<typeof initRouter> | null = null
+
+export function getRouter() {
+  if (!_router) {
+    _router = initRouter()
+  }
+  return _router
 }
 
 declare module '@tanstack/react-router' {
