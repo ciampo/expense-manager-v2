@@ -167,7 +167,8 @@ export const update = mutation({
     const categoryId = await resolveCategory(ctx, userId, args)
 
     // Only modify attachment when the client explicitly provides the field.
-    // This prevents silent attachment deletion when the client omits attachmentId.
+    // Convex strips `undefined` from v.optional args, so this is true only
+    // when a valid Id<'_storage'> was sent — not when the field was omitted.
     const attachmentProvided = args.attachmentId !== undefined
     if (attachmentProvided && args.attachmentId !== existing.attachmentId) {
       if (args.attachmentId) {
