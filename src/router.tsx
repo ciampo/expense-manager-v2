@@ -7,18 +7,20 @@ import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
 import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { useConvexAuth } from 'convex/react'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 
 import { routeTree } from './routeTree.gen'
 import { createAuthStore } from '@/lib/auth-store'
 import type { AuthStore } from '@/lib/auth-store'
 
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 /**
  * React component that bridges Convex auth state into the auth store.
  * Rendered inside the Wrap component so it has access to ConvexAuthProvider.
  *
- * The store is updated eagerly during render so that synchronous reads
- * (e.g. by beforeLoad right after a re-render) always see the latest state.
+ * The store is updated via useLayoutEffect (synchronously after render,
+ * before paint) so that reads from route guards see the latest state.
  *
  * After the store is updated, `authStore.invalidateRouter()` is called
  * (via useEffect) to re-evaluate route guards. This is how TanStack Router
@@ -35,11 +37,11 @@ import type { AuthStore } from '@/lib/auth-store'
 function AuthBridge({ authStore }: { authStore: AuthStore }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
 
-  // Eagerly update the store during render so beforeLoad always reads
-  // current values. The update method sets isAuthenticated before
-  // isLoading, because the isLoading setter resolves the waitForAuth()
-  // promise which reads isAuthenticated at resolution time.
-  authStore.update({ isAuthenticated, isLoading })
+  // Synchronously update the store after render (before paint) so
+  // beforeLoad guards always see the latest values.
+  useIsomorphicLayoutEffect(() => {
+    authStore.update({ isAuthenticated, isLoading })
+  }, [isAuthenticated, isLoading, authStore])
 
   // When auth state settles, tell the router to re-run its beforeLoad
   // guards. This triggers automatic redirects (e.g. _auth → /dashboard

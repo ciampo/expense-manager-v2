@@ -1,7 +1,8 @@
 /**
  * Simple auth state bridge that allows non-React code (like beforeLoad)
- * to access the Convex auth state. Updated eagerly during render by the
- * AuthBridge component in router.tsx.
+ * to access the Convex auth state. Updated via useLayoutEffect by the
+ * AuthBridge component in router.tsx (synchronously after render, before
+ * the browser paints).
  *
  * The `invalidateRouter` callback is set by `getRouter()` after the router
  * is created, and called by AuthBridge (via useEffect) when auth state
@@ -13,7 +14,8 @@ export interface AuthStore {
   readonly isAuthenticated: boolean
   readonly isLoading: boolean
   /**
-   * Eagerly update auth state during render. Order is significant:
+   * Update auth state. Called from useLayoutEffect in AuthBridge so it
+   * runs synchronously after render, before paint. Order is significant:
    * isAuthenticated is set first, then isLoading — the isLoading setter
    * resolves the waitForAuth() promise which reads isAuthenticated.
    */
