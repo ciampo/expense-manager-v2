@@ -45,7 +45,7 @@ Read `.cursor/skills/pr-feedback/SKILL.md`:
 - Assess whether each review comment is still valid against the current branch state
 - Address review comments with granular, well-scoped commits
 - Assess whether each of the review comments can be applied to other parts of the codebase, and apply those changes
-- Assess whether the recent changes require changes (or additions, or deletions) to the current suite of tests (including unit, visual regression, e2e tests
+- Assess whether the recent changes require changes (or additions, or deletions) to the current suite of tests (including unit, visual regression, e2e tests)
 - Run the verification suite, push changes
 - Request reviews from previous reviewers and GitHub Copilot
 
