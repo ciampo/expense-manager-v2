@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useSuspenseQuery, useQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -43,7 +43,7 @@ import {
   parseCurrencyToCents,
   centsToInputValue,
   getTodayISO,
-  parseLocalDate,
+  tryParseLocalDate,
   toISODateString,
 } from '@/lib/format'
 import { expenseDateSchema, expenseMerchantSchema, expenseAmountSchema } from '@/lib/schemas'
@@ -183,6 +183,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [showDeleteAttachment, setShowDeleteAttachment] = useState(false)
   const [showDeleteExpense, setShowDeleteExpense] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const createExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.create),
@@ -277,6 +278,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       if (!file) return
 
       if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
@@ -349,7 +353,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       {/* Date */}
       <form.Field name="date">
         {(field) => {
-          const selectedDate = field.state.value ? parseLocalDate(field.state.value) : undefined
+          const selectedDate = field.state.value ? tryParseLocalDate(field.state.value) : undefined
           const hasErrors = field.state.meta.errors.length > 0
           return (
             <Field data-invalid={hasErrors || undefined}>
@@ -656,6 +660,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           </div>
         ) : (
           <Input
+            ref={fileInputRef}
             id="attachment-input"
             type="file"
             accept={ACCEPTED_FILE_TYPES.join(',')}

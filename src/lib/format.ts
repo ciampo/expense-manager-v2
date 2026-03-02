@@ -34,23 +34,39 @@ export function parseLocalDate(isoDate: string): Date {
 }
 
 /**
- * Format ISO date string for display using English locale (MM/DD/YYYY)
- * @param isoDate - ISO date string (YYYY-MM-DD)
+ * Like parseLocalDate, but returns undefined instead of Invalid Date.
  */
-export const formatDate = (isoDate: string): string =>
-  new Intl.DateTimeFormat('en-US').format(parseLocalDate(isoDate))
+export function tryParseLocalDate(isoDate: string): Date | undefined {
+  const d = parseLocalDate(isoDate)
+  return isNaN(d.getTime()) ? undefined : d
+}
 
 /**
- * Format date for display with day of week
+ * Format ISO date string for display using English locale (MM/DD/YYYY).
+ * Returns '—' for invalid dates.
  * @param isoDate - ISO date string (YYYY-MM-DD)
  */
-export const formatDateLong = (isoDate: string): string =>
-  new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(parseLocalDate(isoDate))
+export const formatDate = (isoDate: string): string => {
+  const d = tryParseLocalDate(isoDate)
+  return d ? new Intl.DateTimeFormat('en-US').format(d) : '—'
+}
+
+/**
+ * Format date for display with day of week.
+ * Returns '—' for invalid dates.
+ * @param isoDate - ISO date string (YYYY-MM-DD)
+ */
+export const formatDateLong = (isoDate: string): string => {
+  const d = tryParseLocalDate(isoDate)
+  return d
+    ? new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).format(d)
+    : '—'
+}
 
 /**
  * Parse EUR input to cents
