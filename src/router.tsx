@@ -7,18 +7,24 @@ import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
 import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { useConvexAuth } from 'convex/react'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 
 import { routeTree } from './routeTree.gen'
 import { createAuthStore } from '@/lib/auth-store'
 import type { AuthStore } from '@/lib/auth-store'
 
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 /**
  * React component that bridges Convex auth state into the auth store.
  * Rendered inside the Wrap component so it has access to ConvexAuthProvider.
  *
- * The store is updated eagerly during render so that synchronous reads
- * (e.g. by beforeLoad right after a re-render) always see the latest state.
+ * On the client the store is updated via useLayoutEffect (synchronously
+ * after render, before paint). During SSR, effects don't fire, so the
+ * store is updated synchronously during render instead. This is
+ * acceptable because the update is idempotent — calling it multiple
+ * times with the same values (e.g. during streaming SSR retries) has no
+ * observable side effects beyond setting the same state.
  *
  * After the store is updated, `authStore.invalidateRouter()` is called
  * (via useEffect) to re-evaluate route guards. This is how TanStack Router
@@ -35,11 +41,17 @@ import type { AuthStore } from '@/lib/auth-store'
 function AuthBridge({ authStore }: { authStore: AuthStore }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
 
-  // Eagerly update the store during render so beforeLoad always reads
-  // current values. The update method sets isAuthenticated before
-  // isLoading, because the isLoading setter resolves the waitForAuth()
-  // promise which reads isAuthenticated at resolution time.
-  authStore.update({ isAuthenticated, isLoading })
+  // During SSR, effects don't fire, so update the store synchronously
+  // during render. This is acceptable because the update is idempotent.
+  // On the client, use useLayoutEffect to avoid render-phase side
+  // effects while still updating before paint.
+  if (typeof window === 'undefined') {
+    authStore.update({ isAuthenticated, isLoading })
+  }
+
+  useIsomorphicLayoutEffect(() => {
+    authStore.update({ isAuthenticated, isLoading })
+  }, [isAuthenticated, isLoading, authStore])
 
   // When auth state settles, tell the router to re-run its beforeLoad
   // guards. This triggers automatic redirects (e.g. _auth → /dashboard
@@ -53,7 +65,7 @@ function AuthBridge({ authStore }: { authStore: AuthStore }) {
   return null
 }
 
-export function getRouter() {
+function initRouter() {
   const CONVEX_URL = import.meta.env.VITE_CONVEX_URL
 
   if (!CONVEX_URL) {
@@ -99,6 +111,20 @@ export function getRouter() {
   authStore.invalidateRouter = () => router.invalidate()
 
   return router
+}
+
+// Only cache on the client — SSR must create a fresh router per request
+// to avoid leaking QueryClient cache and authStore between users.
+let _clientRouter: ReturnType<typeof initRouter> | null = null
+
+export function getRouter() {
+  if (typeof window === 'undefined') {
+    return initRouter()
+  }
+  if (!_clientRouter) {
+    _clientRouter = initRouter()
+  }
+  return _clientRouter
 }
 
 declare module '@tanstack/react-router' {

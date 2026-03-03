@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { createAuthStore } from '../lib/auth-store'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createAuthStore, AUTH_TIMEOUT_MS } from '../lib/auth-store'
 
 // ---------------------------------------------------------------------------
 // Basic behavior
@@ -315,5 +315,100 @@ describe('invalidateRouter', () => {
     store.invalidateRouter()
     expect(second).toHaveBeenCalledOnce()
     expect(first).toHaveBeenCalledOnce()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// waitForAuth — timeout behavior
+// ---------------------------------------------------------------------------
+
+describe('waitForAuth — timeout', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    warnSpy.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('resolves with isAuthenticated: false after timeout if auth never settles', async () => {
+    const store = createAuthStore()
+
+    const promise = store.waitForAuth()
+
+    vi.advanceTimersByTime(AUTH_TIMEOUT_MS)
+
+    const result = await promise
+    expect(result).toEqual({ isAuthenticated: false })
+  })
+
+  it('transitions store to settled unauthenticated state after timeout', async () => {
+    const store = createAuthStore()
+
+    const promise = store.waitForAuth()
+
+    vi.advanceTimersByTime(AUTH_TIMEOUT_MS)
+    await promise
+
+    expect(store.isLoading).toBe(false)
+    expect(store.isAuthenticated).toBe(false)
+
+    // Subsequent calls resolve immediately without re-waiting
+    const second = await store.waitForAuth()
+    expect(second).toEqual({ isAuthenticated: false })
+  })
+
+  it('resolves with the real value if auth settles before the timeout', async () => {
+    const store = createAuthStore()
+
+    const promise = store.waitForAuth()
+
+    store.update({ isAuthenticated: true, isLoading: false })
+
+    const result = await promise
+    expect(result).toEqual({ isAuthenticated: true })
+  })
+
+  it('logs a warning when the timeout fires', async () => {
+    const store = createAuthStore()
+
+    const promise = store.waitForAuth()
+
+    vi.advanceTimersByTime(AUTH_TIMEOUT_MS)
+    await promise
+
+    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('waitForAuth timed out'))
+  })
+
+  it('does not log a warning when auth settles before the timeout', async () => {
+    const store = createAuthStore()
+
+    const promise = store.waitForAuth()
+    store.update({ isAuthenticated: true, isLoading: false })
+    await promise
+
+    vi.advanceTimersByTime(AUTH_TIMEOUT_MS)
+
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('concurrent callers during timeout all get the timeout result', async () => {
+    const store = createAuthStore()
+
+    const p1 = store.waitForAuth()
+    const p2 = store.waitForAuth()
+    const p3 = store.waitForAuth()
+
+    vi.advanceTimersByTime(AUTH_TIMEOUT_MS)
+
+    const [r1, r2, r3] = await Promise.all([p1, p2, p3])
+    expect(r1).toEqual({ isAuthenticated: false })
+    expect(r2).toEqual({ isAuthenticated: false })
+    expect(r3).toEqual({ isAuthenticated: false })
   })
 })
