@@ -16,3 +16,6 @@ export function csvRow(fields: string[]): string {
 
 /** UTF-8 BOM for broad spreadsheet compatibility. */
 export const CSV_BOM = '\uFEFF'
+
+/** RFC 4180 line terminator. */
+export const CSV_EOL = '\r\n'
