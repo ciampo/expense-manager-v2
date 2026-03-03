@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CSV_BOM, csvRow } from '@/lib/csv'
 import { centsToInputValue, formatCurrency, getMonthName } from '@/lib/format'
 import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 import { toast } from 'sonner'
@@ -158,10 +159,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       // Get all unique categories
       const allCategories = [...new Set(data.expenses.map((e) => e.categoryName))].sort()
 
-      const csvEscape = (value: string) =>
-        /[,"\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
-
-      let csv = ['Date', ...allCategories, 'Total'].map(csvEscape).join(',') + '\n'
+      let csv = csvRow(['Date', ...allCategories, 'Total']) + '\n'
 
       const dates = Object.keys(grouped).sort()
       for (const date of dates) {
@@ -175,7 +173,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         }
 
         row.push(centsToInputValue(dayTotal))
-        csv += row.map(csvEscape).join(',') + '\n'
+        csv += csvRow(row) + '\n'
       }
 
       const totalsRow = ['TOTAL']
@@ -184,10 +182,10 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         totalsRow.push(centsToInputValue(categoryTotal))
       }
       totalsRow.push(centsToInputValue(data.total))
-      csv += totalsRow.map(csvEscape).join(',') + '\n'
+      csv += csvRow(totalsRow) + '\n'
 
       // Download
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+      const blob = new Blob([CSV_BOM + csv], { type: 'text/csv;charset=utf-8;' })
       const monthName = getMonthName(month, year).replace(' ', '-')
       saveAs(blob, `expenses-${monthName}.csv`)
 
