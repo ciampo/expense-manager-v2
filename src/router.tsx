@@ -19,8 +19,10 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
  * React component that bridges Convex auth state into the auth store.
  * Rendered inside the Wrap component so it has access to ConvexAuthProvider.
  *
- * The store is updated via useLayoutEffect (synchronously after render,
- * before paint) so that reads from route guards see the latest state.
+ * On the client the store is updated via useLayoutEffect (synchronously
+ * after render, before paint). During SSR, effects don't fire, so the
+ * store is updated synchronously during render instead (safe because SSR
+ * is single-pass with no concurrent mode).
  *
  * After the store is updated, `authStore.invalidateRouter()` is called
  * (via useEffect) to re-evaluate route guards. This is how TanStack Router
@@ -37,8 +39,14 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
 function AuthBridge({ authStore }: { authStore: AuthStore }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
 
-  // Synchronously update the store after render (before paint) so
-  // beforeLoad guards always see the latest values.
+  // During SSR, effects don't fire, so update the store synchronously
+  // during render. This is safe because SSR is single-pass (no
+  // concurrent mode). On the client, use useLayoutEffect to avoid
+  // render-phase side effects while still updating before paint.
+  if (typeof window === 'undefined') {
+    authStore.update({ isAuthenticated, isLoading })
+  }
+
   useIsomorphicLayoutEffect(() => {
     authStore.update({ isAuthenticated, isLoading })
   }, [isAuthenticated, isLoading, authStore])
@@ -103,13 +111,18 @@ function initRouter() {
   return router
 }
 
-let _router: ReturnType<typeof initRouter> | null = null
+// Only cache on the client — SSR must create a fresh router per request
+// to avoid leaking QueryClient cache and authStore between users.
+let _clientRouter: ReturnType<typeof initRouter> | null = null
 
 export function getRouter() {
-  if (!_router) {
-    _router = initRouter()
+  if (typeof window === 'undefined') {
+    return initRouter()
   }
-  return _router
+  if (!_clientRouter) {
+    _clientRouter = initRouter()
+  }
+  return _clientRouter
 }
 
 declare module '@tanstack/react-router' {
