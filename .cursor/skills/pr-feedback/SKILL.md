@@ -73,6 +73,8 @@ test(visual): update baseline screenshots for Tailwind 4.2
 
 ## Step 3: Verify before pushing
 
+Make sure that all comments have been addressed. If not, address them before continuing.
+
 Run the verification suite (see `pr-workflow.mdc`) to confirm nothing regressed.
 
 ```bash
@@ -118,6 +120,7 @@ gh pr edit <number> --body "$(cat <<'EOF'
 - [ ] `pnpm build` — clean build (includes `tsc --noEmit`)
 - [ ] `pnpm test:unit` — all tests pass
 - [ ] `pnpm test:visual:docker` — no visual regressions
+- [ ] CI: e2e tests pass (runs against deployed preview)
 - [ ] <other relevant checks>
 
 Fixes #<issue-number>
