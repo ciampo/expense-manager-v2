@@ -323,11 +323,15 @@ describe('invalidateRouter', () => {
 // ---------------------------------------------------------------------------
 
 describe('waitForAuth — timeout', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
     vi.useFakeTimers()
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
+    warnSpy.mockRestore()
     vi.useRealTimers()
   })
 
@@ -370,7 +374,6 @@ describe('waitForAuth — timeout', () => {
   })
 
   it('logs a warning when the timeout fires', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const store = createAuthStore()
 
     const promise = store.waitForAuth()
@@ -380,12 +383,9 @@ describe('waitForAuth — timeout', () => {
 
     expect(warnSpy).toHaveBeenCalledOnce()
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('waitForAuth timed out'))
-
-    warnSpy.mockRestore()
   })
 
   it('does not log a warning when auth settles before the timeout', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const store = createAuthStore()
 
     const promise = store.waitForAuth()
@@ -395,8 +395,6 @@ describe('waitForAuth — timeout', () => {
     vi.advanceTimersByTime(AUTH_TIMEOUT_MS)
 
     expect(warnSpy).not.toHaveBeenCalled()
-
-    warnSpy.mockRestore()
   })
 
   it('concurrent callers during timeout all get the timeout result', async () => {
