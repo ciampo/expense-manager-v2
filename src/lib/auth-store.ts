@@ -2,9 +2,10 @@ export const AUTH_TIMEOUT_MS = 10_000
 
 /**
  * Simple auth state bridge that allows non-React code (like beforeLoad)
- * to access the Convex auth state. Updated via useLayoutEffect by the
- * AuthBridge component in router.tsx (synchronously after render, before
- * the browser paints).
+ * to access the Convex auth state. Updated by the AuthBridge component
+ * in router.tsx — via useLayoutEffect on the client (synchronously after
+ * render, before paint) and synchronously during render on the server
+ * (where effects don't fire).
  *
  * The `invalidateRouter` callback is set by `getRouter()` after the router
  * is created, and called by AuthBridge (via useEffect) when auth state
