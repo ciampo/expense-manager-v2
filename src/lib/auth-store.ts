@@ -48,6 +48,10 @@ export function createAuthStore(): AuthStore {
   let _authPromise = new Promise<{ isAuthenticated: boolean }>((resolve) => {
     _resolveAuth = resolve
   })
+  // Memoized timeout-wrapped promise shared by all concurrent callers
+  // during a single loading phase. Reset on loading restart / settle
+  // so each phase gets at most one timer.
+  let _waitPromise: Promise<{ isAuthenticated: boolean }> | null = null
 
   function setIsLoading(value: boolean) {
     const wasLoading = _isLoading
@@ -58,11 +62,13 @@ export function createAuthStore(): AuthStore {
       _authPromise = new Promise<{ isAuthenticated: boolean }>((resolve) => {
         _resolveAuth = resolve
       })
+      _waitPromise = null
     }
     // Loading finished — resolve with the current auth state.
     if (wasLoading && !value && _resolveAuth) {
       _resolveAuth({ isAuthenticated: _isAuthenticated })
       _resolveAuth = null
+      _waitPromise = null
     }
   }
 
@@ -82,7 +88,9 @@ export function createAuthStore(): AuthStore {
       if (!_isLoading) {
         return Promise.resolve({ isAuthenticated: _isAuthenticated })
       }
-      return new Promise<{ isAuthenticated: boolean }>((resolve) => {
+      if (_waitPromise) return _waitPromise
+
+      _waitPromise = new Promise<{ isAuthenticated: boolean }>((resolve) => {
         const timer = setTimeout(() => {
           console.warn(
             `[auth-store] waitForAuth timed out after ${AUTH_TIMEOUT_MS / 1000}s — treating user as unauthenticated`,
@@ -99,6 +107,7 @@ export function createAuthStore(): AuthStore {
           resolve(result)
         })
       })
+      return _waitPromise
     },
   }
 }
