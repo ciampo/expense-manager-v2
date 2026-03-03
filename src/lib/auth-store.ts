@@ -87,6 +87,10 @@ export function createAuthStore(): AuthStore {
           console.warn(
             `[auth-store] waitForAuth timed out after ${AUTH_TIMEOUT_MS / 1000}s — treating user as unauthenticated`,
           )
+          // Transition the store to a settled unauthenticated state so
+          // subsequent guards resolve immediately instead of re-waiting.
+          _isAuthenticated = false
+          setIsLoading(false)
           resolve({ isAuthenticated: false })
         }, AUTH_TIMEOUT_MS)
 

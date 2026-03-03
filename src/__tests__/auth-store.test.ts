@@ -342,6 +342,22 @@ describe('waitForAuth — timeout', () => {
     expect(result).toEqual({ isAuthenticated: false })
   })
 
+  it('transitions store to settled unauthenticated state after timeout', async () => {
+    const store = createAuthStore()
+
+    const promise = store.waitForAuth()
+
+    vi.advanceTimersByTime(AUTH_TIMEOUT_MS)
+    await promise
+
+    expect(store.isLoading).toBe(false)
+    expect(store.isAuthenticated).toBe(false)
+
+    // Subsequent calls resolve immediately without re-waiting
+    const second = await store.waitForAuth()
+    expect(second).toEqual({ isAuthenticated: false })
+  })
+
   it('resolves with the real value if auth settles before the timeout', async () => {
     const store = createAuthStore()
 
