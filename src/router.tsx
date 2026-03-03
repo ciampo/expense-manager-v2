@@ -21,8 +21,10 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
  *
  * On the client the store is updated via useLayoutEffect (synchronously
  * after render, before paint). During SSR, effects don't fire, so the
- * store is updated synchronously during render instead (safe because SSR
- * is single-pass with no concurrent mode).
+ * store is updated synchronously during render instead. This is
+ * acceptable because the update is idempotent — calling it multiple
+ * times with the same values (e.g. during streaming SSR retries) has no
+ * observable side effects beyond setting the same state.
  *
  * After the store is updated, `authStore.invalidateRouter()` is called
  * (via useEffect) to re-evaluate route guards. This is how TanStack Router
@@ -40,9 +42,9 @@ function AuthBridge({ authStore }: { authStore: AuthStore }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
 
   // During SSR, effects don't fire, so update the store synchronously
-  // during render. This is safe because SSR is single-pass (no
-  // concurrent mode). On the client, use useLayoutEffect to avoid
-  // render-phase side effects while still updating before paint.
+  // during render. This is acceptable because the update is idempotent.
+  // On the client, use useLayoutEffect to avoid render-phase side
+  // effects while still updating before paint.
   if (typeof window === 'undefined') {
     authStore.update({ isAuthenticated, isLoading })
   }
