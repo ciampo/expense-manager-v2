@@ -17,10 +17,12 @@ export interface AuthStore {
   readonly isAuthenticated: boolean
   readonly isLoading: boolean
   /**
-   * Update auth state. Called from useLayoutEffect in AuthBridge so it
-   * runs synchronously after render, before paint. Order is significant:
-   * isAuthenticated is set first, then isLoading — the isLoading setter
-   * resolves the waitForAuth() promise which reads isAuthenticated.
+   * Update auth state. Called by AuthBridge via useLayoutEffect on the
+   * client (synchronously after render, before paint) and synchronously
+   * during render on the server (where effects don't fire). The update
+   * is idempotent. Order is significant: isAuthenticated is set first,
+   * then isLoading — the isLoading setter resolves the waitForAuth()
+   * promise which reads isAuthenticated.
    */
   update: (state: { isAuthenticated: boolean; isLoading: boolean }) => void
   /**
