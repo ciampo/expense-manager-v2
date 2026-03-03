@@ -159,7 +159,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       const allCategories = [...new Set(data.expenses.map((e) => e.categoryName))].sort()
 
       const csvEscape = (value: string) =>
-        value.includes(',') || value.includes('"') ? `"${value.replace(/"/g, '""')}"` : value
+        /[,"\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
 
       let csv = ['Date', ...allCategories, 'Total'].map(csvEscape).join(',') + '\n'
 
@@ -187,7 +187,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       csv += totalsRow.map(csvEscape).join(',') + '\n'
 
       // Download
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
       const monthName = getMonthName(month, year).replace(' ', '-')
       saveAs(blob, `expenses-${monthName}.csv`)
 
