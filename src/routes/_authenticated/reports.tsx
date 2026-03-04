@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatCurrency, getMonthName } from '@/lib/format'
+import { CSV_BOM, CSV_EOL, csvRow } from '@/lib/csv'
+import { centsToInputValue, formatCurrency, getMonthName } from '@/lib/format'
 import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 import { toast } from 'sonner'
 import { Suspense, useState } from 'react'
@@ -158,8 +159,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       // Get all unique categories
       const allCategories = [...new Set(data.expenses.map((e) => e.categoryName))].sort()
 
-      // Build CSV (using semicolon as delimiter for European locale compatibility)
-      let csv = 'Date;' + allCategories.join(';') + ';Total\n'
+      let csv = csvRow(['Date', ...allCategories, 'Total']) + CSV_EOL
 
       const dates = Object.keys(grouped).sort()
       for (const date of dates) {
@@ -168,25 +168,24 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
         for (const category of allCategories) {
           const amount = grouped[date][category] || 0
-          row.push((amount / 100).toFixed(2).replace('.', ','))
+          row.push(centsToInputValue(amount))
           dayTotal += amount
         }
 
-        row.push((dayTotal / 100).toFixed(2).replace('.', ','))
-        csv += row.join(';') + '\n'
+        row.push(centsToInputValue(dayTotal))
+        csv += csvRow(row) + CSV_EOL
       }
 
-      // Add totals row
       const totalsRow = ['TOTAL']
       for (const category of allCategories) {
         const categoryTotal = data.categories[category]?.total || 0
-        totalsRow.push((categoryTotal / 100).toFixed(2).replace('.', ','))
+        totalsRow.push(centsToInputValue(categoryTotal))
       }
-      totalsRow.push((data.total / 100).toFixed(2).replace('.', ','))
-      csv += totalsRow.join(';') + '\n'
+      totalsRow.push(centsToInputValue(data.total))
+      csv += csvRow(totalsRow) + CSV_EOL
 
       // Download
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const blob = new Blob([CSV_BOM + csv], { type: 'text/csv;charset=utf-8;' })
       const monthName = getMonthName(month, year).replace(' ', '-')
       saveAs(blob, `expenses-${monthName}.csv`)
 

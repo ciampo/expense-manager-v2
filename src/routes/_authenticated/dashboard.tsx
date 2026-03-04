@@ -128,6 +128,9 @@ function ExpenseTable() {
     onSuccess: () => {
       toast.success('Expense deleted')
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: expensesQueryKey })
+    },
   })
 
   const handleDelete = (id: Id<'expenses'>) => {
