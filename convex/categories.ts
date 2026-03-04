@@ -6,6 +6,37 @@ import { auth } from './auth'
 import { validateCategoryFields } from './validation'
 
 /**
+ * Find a category by normalized name, with a fallback for legacy rows that
+ * predate the normalizedName field. When a legacy row is found by exact name,
+ * its normalizedName is lazily backfilled.
+ */
+async function findCategory(
+  ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'> | undefined,
+  name: string,
+  normalizedName: string,
+) {
+  const byNormalized = await ctx.db
+    .query('categories')
+    .withIndex('by_user_and_normalized_name', (q) =>
+      q.eq('userId', userId).eq('normalizedName', normalizedName),
+    )
+    .first()
+  if (byNormalized) return byNormalized
+
+  const byExactName = await ctx.db
+    .query('categories')
+    .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', name))
+    .first()
+  if (byExactName && !byExactName.normalizedName) {
+    await ctx.db.patch('categories', byExactName._id, {
+      normalizedName: byExactName.name.toLowerCase(),
+    })
+  }
+  return byExactName
+}
+
+/**
  * Find an existing category by name or create a new one for the user.
  * Checks both user-created and predefined categories for dedup.
  * Returns the category ID in all cases.
@@ -18,20 +49,10 @@ export async function upsertCategory(
   const { name } = validateCategoryFields({ name: categoryName })
   const normalizedName = name.toLowerCase()
 
-  const existing = await ctx.db
-    .query('categories')
-    .withIndex('by_user_and_normalized_name', (q) =>
-      q.eq('userId', userId).eq('normalizedName', normalizedName),
-    )
-    .first()
+  const existing = await findCategory(ctx, userId, name, normalizedName)
   if (existing) return existing._id
 
-  const predefined = await ctx.db
-    .query('categories')
-    .withIndex('by_user_and_normalized_name', (q) =>
-      q.eq('userId', undefined).eq('normalizedName', normalizedName),
-    )
-    .first()
+  const predefined = await findCategory(ctx, undefined, name, normalizedName)
   if (predefined) return predefined._id
 
   return ctx.db.insert('categories', { name, normalizedName, userId })
@@ -153,23 +174,11 @@ export const create = mutation({
     const { name, icon } = validateCategoryFields(args)
     const normalizedName = name.toLowerCase()
 
-    const existingUser = await ctx.db
-      .query('categories')
-      .withIndex('by_user_and_normalized_name', (q) =>
-        q.eq('userId', userId).eq('normalizedName', normalizedName),
-      )
-      .first()
-    if (existingUser) {
+    if (await findCategory(ctx, userId, name, normalizedName)) {
       throw new Error('Category already exists')
     }
 
-    const existingPredefined = await ctx.db
-      .query('categories')
-      .withIndex('by_user_and_normalized_name', (q) =>
-        q.eq('userId', undefined).eq('normalizedName', normalizedName),
-      )
-      .first()
-    if (existingPredefined) {
+    if (await findCategory(ctx, undefined, name, normalizedName)) {
       throw new Error('Category already exists')
     }
 

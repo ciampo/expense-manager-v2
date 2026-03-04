@@ -22,7 +22,7 @@ export default defineSchema({
   categories: defineTable({
     name: v.string(),
     normalizedName: v.optional(v.string()), // lowercased for case-insensitive dedup
-    userId: v.optional(v.id('users')), // null/undefined = predefined, set = user custom
+    userId: v.optional(v.id('users')), // undefined/omitted = predefined, set = user custom
     icon: v.optional(v.string()),
   })
     .index('by_user_and_name', ['userId', 'name'])
