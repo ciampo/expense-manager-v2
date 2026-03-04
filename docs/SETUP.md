@@ -4,8 +4,8 @@ This guide covers all the manual configuration steps required to set up the Expe
 
 > **Tip:** For a guided, interactive experience:
 >
-> - `pnpm setup` — installs dependencies, creates `.env.local`, and guides you through steps 1.4, 1.5, and the dev-project seeding in 1.7.
-> - `pnpm setup:e2e` — creates `.env.e2e`, validates credentials, deploys the schema (1.6), configures auth, and seeds the test project (1.7).
+> - `pnpm setup` — installs dependencies, creates `.env.local`, and guides you through steps 1.4, 1.5, seeding, and migrations in 1.7.
+> - `pnpm setup:e2e` — creates `.env.e2e`, validates credentials, deploys the schema (1.6), runs migrations, configures auth, and seeds the test project (1.7).
 >
 > You still need to create the Convex projects (1.1–1.3) and configure email/Cloudflare/GitHub manually. This guide is useful as a reference or when you need more control over individual steps.
 
@@ -139,17 +139,29 @@ CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
 
 > **Important:** All `convex` commands in this terminal session will target the test project's production deployment as long as `CONVEX_DEPLOY_KEY` is set. To switch back to the development project, run `unset CONVEX_DEPLOY_KEY`.
 
-### 1.7 Seed Initial Data
+### 1.7 Seed Initial Data and Run Migrations
 
-Seed the predefined categories using the existing seed scripts:
+Seed the predefined categories and run pending migrations.
+
+**Development project** (targets the dev deployment linked via `npx convex dev`):
 
 ```bash
-# Seed the development project (currently linked via npx convex dev)
-npx convex run seed:seedCategories
+# Make sure CONVEX_DEPLOY_KEY is NOT set, so commands target the dev deployment
+unset CONVEX_DEPLOY_KEY
 
-# Seed the test project (CONVEX_DEPLOY_KEY must be set — see step 1.6)
-pnpm test:e2e:seed
+npx convex run seed:seedCategories
+pnpm migrate
 ```
+
+**Test project** (requires `CONVEX_DEPLOY_KEY` — see step 1.6):
+
+```bash
+export CONVEX_DEPLOY_KEY=prod:<your-test-project-deploy-key>
+pnpm test:e2e:seed
+npx convex run seed:postDeploy --prod
+```
+
+> **Note:** `pnpm migrate` runs `seed:postDeploy`, which executes all pending schema backfills (e.g., populating `normalizedName` for categories). It is idempotent — safe to run repeatedly. In CI, this runs automatically after every `npx convex deploy` (see `deploy.yml` and `test-e2e.yml`). Locally, run it after pulling changes that include schema migrations.
 
 > **Note:** Test data (including auth users created during E2E runs) is cleaned up automatically by Playwright's `globalTeardown` after each `pnpm test:e2e` run. You can also clean up manually with `pnpm test:e2e:cleanup` (requires `CONVEX_DEPLOY_KEY` to be set).
 
@@ -282,6 +294,7 @@ pnpm test:visual:docker
 - [ ] `.env.e2e` contains test Convex URL and `CONVEX_DEPLOY_KEY`
 - [ ] `npx convex dev` runs without errors
 - [ ] Categories seeded: `npx convex run seed:seedCategories` (or `pnpm test:e2e:seed` for test project)
+- [ ] Migrations applied: `pnpm migrate`
 - [ ] Wrangler authenticated: `pnpm dlx wrangler whoami`
 
 ### Before CI/CD

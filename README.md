@@ -68,10 +68,11 @@ A modern expense management application for tracking work-related expenses, buil
    When prompted for the **site URL**, enter `http://localhost:3000`.
    This sets `JWT_PRIVATE_KEY` and `JWKS` on your Convex deployment.
 
-6. Seed the predefined categories (run once, same terminal as step 5):
+6. Seed the predefined categories and run migrations (run once, same terminal as step 5):
 
    ```bash
    npx convex run seed:seedCategories
+   pnpm migrate
    ```
 
 7. Start the app (same terminal):
@@ -96,6 +97,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `pnpm build`                     | Build for production (includes typecheck) |
 | `pnpm preview`                   | Preview production build locally          |
 | `pnpm deploy`                    | Build and deploy to Cloudflare Workers    |
+| `pnpm migrate`                   | Run pending Convex migrations             |
 | `pnpm test`                      | Run all Vitest tests                      |
 | `pnpm test:unit`                 | Run unit tests only                       |
 | `pnpm test:e2e`                  | Run Playwright E2E tests                  |
@@ -268,7 +270,7 @@ The project includes GitHub Actions workflows for:
 - **Visual Regression**: Run on every push/PR in Docker
 - **Lint**: Run ESLint and Prettier checks on every push/PR
 - **Type Check**: Run TypeScript type checking on every push/PR
-- **Deploy**: Auto-deploy Convex backend and Cloudflare Workers on push to `main`
+- **Deploy**: Auto-deploy Convex backend, run migrations, and deploy Cloudflare Workers on push to `main`
 - **Preview**: Deploy preview on every PR (automatically cleaned up when the PR is closed)
 - **Update Screenshots**: Manually triggered workflow to update and commit visual regression baselines
 
@@ -285,6 +287,15 @@ Configure these GitHub Actions secrets:
 | `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` project → **production** deploy key                   |
 
 > **Note:** During local development, `npx convex dev` automatically syncs backend changes to the development deployment on every file save. The CI pipeline handles production deployment — you never need to run `npx convex deploy` manually.
+
+### Migrations
+
+Schema backfills (e.g., populating a new field for existing records) are managed by idempotent migration functions in `convex/seed.ts`, orchestrated by `seed:postDeploy`:
+
+- **CI (automatic):** `deploy.yml` and `test-e2e.yml` run `npx convex run seed:postDeploy --prod` after every `npx convex deploy`. No manual intervention needed.
+- **Local dev (manual):** Run `pnpm migrate` after pulling changes that include schema migrations. This is included in `pnpm setup` for fresh setups.
+
+Migrations are idempotent and safe to run multiple times. Those that can short-circuit (e.g., merchants backfill) include an O(1) precondition check; others scan existing rows but only patch those still needing updates. To add a new migration, create a handler function in `convex/seed.ts` and call it from `postDeploy`.
 
 ## Backend Security & Validation
 

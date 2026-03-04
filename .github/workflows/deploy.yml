@@ -18,6 +18,10 @@ jobs:
         run: npx convex deploy
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
+      - name: Run post-deploy migrations
+        run: npx convex run seed:postDeploy --prod
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
       - run: pnpm build
         env:
           VITE_CONVEX_URL: ${{ secrets.CONVEX_PROD_URL }}

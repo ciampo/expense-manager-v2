@@ -75,6 +75,10 @@ echo "5. Seeding predefined categories..."
 npx convex run seed:seedCategories
 
 echo ""
+echo "6. Running migrations..."
+pnpm migrate
+
+echo ""
 echo "=== Setup complete! ==="
 echo ""
 echo "Start the app with: pnpm dev"

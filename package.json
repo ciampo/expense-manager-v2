@@ -12,6 +12,7 @@
     "build": "vite build && tsc --noEmit",
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler deploy",
+    "migrate": "convex run seed:postDeploy",
     "cf-typegen": "wrangler types",
     "test": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.config.ts src/",
