@@ -15,20 +15,19 @@ const PREDEFINED_CATEGORIES = [
 export const seedCategories = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // Check if predefined categories already exist
     const existingCategories = await ctx.db
       .query('categories')
-      .filter((q) => q.eq(q.field('userId'), undefined))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
       .collect()
 
     if (existingCategories.length > 0) {
       return { seeded: false, message: 'Categories already seeded' }
     }
 
-    // Insert predefined categories
     for (const category of PREDEFINED_CATEGORIES) {
       await ctx.db.insert('categories', {
         name: category.name,
+        normalizedName: category.name.toLowerCase(),
         icon: category.icon,
         userId: undefined,
       })
@@ -46,7 +45,7 @@ export const checkSeeded = internalQuery({
   handler: async (ctx) => {
     const categories = await ctx.db
       .query('categories')
-      .filter((q) => q.eq(q.field('userId'), undefined))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
       .collect()
 
     return {
@@ -81,6 +80,32 @@ export const backfillMerchants = internalMutation({
   },
 })
 
+/**
+ * One-time backfill: populate normalizedName for all existing categories.
+ * Safe to run repeatedly — skips records that already have the field set.
+ *
+ * Run after deploying the normalizedName schema change:
+ *   npx convex run seed:backfillCategoryNormalizedName
+ */
+export const backfillCategoryNormalizedName = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const categories = await ctx.db.query('categories').collect()
+
+    let updated = 0
+    for (const category of categories) {
+      if (category.normalizedName === undefined) {
+        await ctx.db.patch('categories', category._id, {
+          normalizedName: category.name.toLowerCase(),
+        })
+        updated++
+      }
+    }
+
+    return { updated, total: categories.length, message: `Backfilled ${updated} categories` }
+  },
+})
+
 // ============================================
 // E2E Test Data Management
 // ============================================
@@ -92,16 +117,16 @@ export const backfillMerchants = internalMutation({
 export const e2e = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // First, seed the predefined categories
     const existingCategories = await ctx.db
       .query('categories')
-      .filter((q) => q.eq(q.field('userId'), undefined))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
       .collect()
 
     if (existingCategories.length === 0) {
       for (const category of PREDEFINED_CATEGORIES) {
         await ctx.db.insert('categories', {
           name: category.name,
+          normalizedName: category.name.toLowerCase(),
           icon: category.icon,
           userId: undefined,
         })
@@ -152,7 +177,8 @@ export const cleanup = internalMutation({
       await ctx.db.delete('merchants', merchant._id)
     }
 
-    // Delete user-created categories (keep predefined)
+    // Delete user-created categories (keep predefined).
+    // No index covers userId != undefined, so filter is appropriate here.
     const userCategories = await ctx.db
       .query('categories')
       .filter((q) => q.neq(q.field('userId'), undefined))
