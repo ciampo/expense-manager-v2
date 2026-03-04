@@ -1,10 +1,16 @@
 /**
- * RFC 4180–compliant CSV escape.
+ * RFC 4180–compliant CSV escape with formula-injection mitigation.
  * Wraps the value in double quotes if it contains a comma, double quote,
  * carriage return, or newline. Internal double quotes are doubled.
+ * Values starting with =, +, -, or @ are prefixed with an apostrophe
+ * to prevent spreadsheet formula evaluation.
  */
 export function csvEscape(value: string): string {
-  return /[,"\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+  let safe = value
+  if (/^[=+\-@]/.test(safe)) {
+    safe = `'${safe}`
+  }
+  return /[,"\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 
 /**

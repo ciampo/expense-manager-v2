@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { csvEscape, csvRow, CSV_BOM } from '@/lib/csv'
+import { csvEscape, csvRow, CSV_BOM, CSV_EOL } from '@/lib/csv'
 
 describe('csvEscape', () => {
   it('returns plain values unchanged', () => {
@@ -25,6 +25,17 @@ describe('csvEscape', () => {
   it('handles values with commas, quotes, and newlines together', () => {
     expect(csvEscape('a "b", c\nd')).toBe('"a ""b"", c\nd"')
   })
+
+  it('prefixes formula-injection characters with an apostrophe', () => {
+    expect(csvEscape('=SUM(A1)')).toBe("'=SUM(A1)")
+    expect(csvEscape('+cmd|stuff')).toBe("'+cmd|stuff")
+    expect(csvEscape('-1+2')).toBe("'-1+2")
+    expect(csvEscape('@import')).toBe("'@import")
+  })
+
+  it('quotes and prefixes when formula char and special CSV chars combine', () => {
+    expect(csvEscape('=a,b')).toBe('"\'=a,b"')
+  })
 })
 
 describe('csvRow', () => {
@@ -48,5 +59,11 @@ describe('csvRow', () => {
 describe('CSV_BOM', () => {
   it('is the UTF-8 BOM character', () => {
     expect(CSV_BOM).toBe('\uFEFF')
+  })
+})
+
+describe('CSV_EOL', () => {
+  it('is CRLF per RFC 4180', () => {
+    expect(CSV_EOL).toBe('\r\n')
   })
 })
