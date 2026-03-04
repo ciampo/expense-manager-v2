@@ -16,24 +16,25 @@ export async function upsertCategory(
   categoryName: string,
 ): Promise<Id<'categories'>> {
   const { name } = validateCategoryFields({ name: categoryName })
-  const normalized = name.toLowerCase()
+  const normalizedName = name.toLowerCase()
 
-  // Case-insensitive dedup: query by userId prefix and compare lowercased
-  const userCategories = await ctx.db
+  const existing = await ctx.db
     .query('categories')
-    .withIndex('by_user_and_name', (q) => q.eq('userId', userId))
-    .collect()
-  const existing = userCategories.find((c) => c.name.toLowerCase() === normalized)
+    .withIndex('by_user_and_normalized_name', (q) =>
+      q.eq('userId', userId).eq('normalizedName', normalizedName),
+    )
+    .first()
   if (existing) return existing._id
 
-  const predefinedCategories = await ctx.db
+  const predefined = await ctx.db
     .query('categories')
-    .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
-    .collect()
-  const predefined = predefinedCategories.find((c) => c.name.toLowerCase() === normalized)
+    .withIndex('by_user_and_normalized_name', (q) =>
+      q.eq('userId', undefined).eq('normalizedName', normalizedName),
+    )
+    .first()
   if (predefined) return predefined._id
 
-  return ctx.db.insert('categories', { name, userId })
+  return ctx.db.insert('categories', { name, normalizedName, userId })
 }
 
 /**
@@ -150,27 +151,31 @@ export const create = mutation({
     }
 
     const { name, icon } = validateCategoryFields(args)
-    const normalized = name.toLowerCase()
+    const normalizedName = name.toLowerCase()
 
-    // Case-insensitive dedup: query by userId prefix and compare lowercased
-    const userCategories = await ctx.db
+    const existingUser = await ctx.db
       .query('categories')
-      .withIndex('by_user_and_name', (q) => q.eq('userId', userId))
-      .collect()
-    if (userCategories.some((c) => c.name.toLowerCase() === normalized)) {
+      .withIndex('by_user_and_normalized_name', (q) =>
+        q.eq('userId', userId).eq('normalizedName', normalizedName),
+      )
+      .first()
+    if (existingUser) {
       throw new Error('Category already exists')
     }
 
-    const predefinedCategories = await ctx.db
+    const existingPredefined = await ctx.db
       .query('categories')
-      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
-      .collect()
-    if (predefinedCategories.some((c) => c.name.toLowerCase() === normalized)) {
+      .withIndex('by_user_and_normalized_name', (q) =>
+        q.eq('userId', undefined).eq('normalizedName', normalizedName),
+      )
+      .first()
+    if (existingPredefined) {
       throw new Error('Category already exists')
     }
 
     const categoryId = await ctx.db.insert('categories', {
       name,
+      normalizedName,
       userId,
       icon,
     })
