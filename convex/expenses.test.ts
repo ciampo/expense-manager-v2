@@ -25,7 +25,11 @@ async function setupAuthenticatedUser(t: ReturnType<typeof convexTest>) {
 
 async function setupCategory(t: ReturnType<typeof convexTest>, userId: Id<'users'>) {
   return await t.run(async (ctx) => {
-    return await ctx.db.insert('categories', { name: 'Test Category', userId })
+    return await ctx.db.insert('categories', {
+      name: 'Test Category',
+      normalizedName: 'test category',
+      userId,
+    })
   })
 }
 
