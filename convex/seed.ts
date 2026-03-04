@@ -60,13 +60,20 @@ export const checkSeeded = internalQuery({
 // Backfill migrations
 // ============================================
 //
-// Each migration is idempotent — checks its own precondition and
-// short-circuits if already done. They are called automatically by
-// `postDeploy` after every Convex deploy (CI) and via `pnpm migrate`
-// (local dev). The standalone mutations below remain available for
-// targeted manual runs: `npx convex run seed:<name>`.
+// Each migration is idempotent and safe to run multiple times. Migrations
+// that can short-circuit (e.g., merchants backfill) include an O(1)
+// precondition check; others (e.g., category normalizedName) scan existing
+// rows but only patch those that still need updating.
+// Called automatically by `postDeploy` after every Convex deploy (CI) and
+// via `pnpm migrate` (local dev). The standalone mutations below remain
+// available for targeted manual runs: `npx convex run seed:<name>`.
 
 async function runBackfillMerchants(ctx: MutationCtx) {
+  const alreadyPopulated = await ctx.db.query('merchants').first()
+  if (alreadyPopulated) {
+    return { processed: 0, message: 'Merchants table already populated, skipping backfill' }
+  }
+
   const expenses = await ctx.db.query('expenses').collect()
 
   const seen = new Set<string>()

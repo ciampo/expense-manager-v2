@@ -141,14 +141,22 @@ CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
 
 ### 1.7 Seed Initial Data and Run Migrations
 
-Seed the predefined categories and run pending migrations:
+Seed the predefined categories and run pending migrations.
+
+**Development project** (targets the dev deployment linked via `npx convex dev`):
 
 ```bash
-# Seed the development project (currently linked via npx convex dev)
+# Make sure CONVEX_DEPLOY_KEY is NOT set, so commands target the dev deployment
+unset CONVEX_DEPLOY_KEY
+
 npx convex run seed:seedCategories
 pnpm migrate
+```
 
-# Seed the test project (CONVEX_DEPLOY_KEY must be set — see step 1.6)
+**Test project** (requires `CONVEX_DEPLOY_KEY` — see step 1.6):
+
+```bash
+export CONVEX_DEPLOY_KEY=prod:<your-test-project-deploy-key>
 pnpm test:e2e:seed
 ```
 

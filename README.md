@@ -295,7 +295,7 @@ Schema backfills (e.g., populating a new field for existing records) are managed
 - **CI (automatic):** `deploy.yml` and `test-e2e.yml` run `npx convex run seed:postDeploy --prod` after every `npx convex deploy`. No manual intervention needed.
 - **Local dev (manual):** Run `pnpm migrate` after pulling changes that include schema migrations. This is included in `pnpm setup` for fresh setups.
 
-Each migration checks its own precondition and short-circuits if already done, so repeated runs are safe. To add a new migration, create a handler function in `convex/seed.ts` and call it from `postDeploy`.
+Migrations are idempotent and safe to run multiple times. Those that can short-circuit (e.g., merchants backfill) include an O(1) precondition check; others scan existing rows but only patch those still needing updates. To add a new migration, create a handler function in `convex/seed.ts` and call it from `postDeploy`.
 
 ## Backend Security & Validation
 
