@@ -158,6 +158,7 @@ pnpm migrate
 ```bash
 export CONVEX_DEPLOY_KEY=prod:<your-test-project-deploy-key>
 pnpm test:e2e:seed
+pnpm migrate
 ```
 
 > **Note:** `pnpm migrate` runs `seed:postDeploy`, which executes all pending schema backfills (e.g., populating `normalizedName` for categories). It is idempotent — safe to run repeatedly. In CI, this runs automatically after every `npx convex deploy` (see `deploy.yml` and `test-e2e.yml`). Locally, run it after pulling changes that include schema migrations.
