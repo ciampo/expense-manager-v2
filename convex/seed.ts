@@ -1,3 +1,4 @@
+import type { MutationCtx } from './_generated/server'
 import { internalMutation, internalQuery } from './_generated/server'
 import { authTables } from '@convex-dev/auth/server'
 import { upsertMerchant } from './expenses'
@@ -55,54 +56,69 @@ export const checkSeeded = internalQuery({
   },
 })
 
-/**
- * One-time backfill: populate the merchants table from existing expenses.
- * Safe to run repeatedly — uses the same upsertMerchant helper so duplicates
- * and case variants are handled identically to the live create/update path.
- *
- * Run after deploying the merchants table:
- *   npx convex run seed:backfillMerchants
- */
+// ============================================
+// Backfill migrations
+// ============================================
+//
+// Each migration is idempotent — checks its own precondition and
+// short-circuits if already done. They are called automatically by
+// `postDeploy` after every Convex deploy (CI) and via `pnpm migrate`
+// (local dev). The standalone mutations below remain available for
+// targeted manual runs: `npx convex run seed:<name>`.
+
+async function runBackfillMerchants(ctx: MutationCtx) {
+  const expenses = await ctx.db.query('expenses').collect()
+
+  const seen = new Set<string>()
+  for (const expense of expenses) {
+    const key = `${expense.userId}:${expense.merchant.toLowerCase()}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    await upsertMerchant(ctx, expense.userId, expense.merchant)
+  }
+
+  return { processed: seen.size, message: `Backfilled ${seen.size} unique merchants` }
+}
+
+async function runBackfillCategoryNormalizedName(ctx: MutationCtx) {
+  const categories = await ctx.db.query('categories').collect()
+
+  let updated = 0
+  for (const category of categories) {
+    if (category.normalizedName === undefined) {
+      await ctx.db.patch('categories', category._id, {
+        normalizedName: category.name.toLowerCase(),
+      })
+      updated++
+    }
+  }
+
+  return { updated, total: categories.length, message: `Backfilled ${updated} categories` }
+}
+
+/** Populate the merchants table from existing expenses. */
 export const backfillMerchants = internalMutation({
   args: {},
-  handler: async (ctx) => {
-    const expenses = await ctx.db.query('expenses').collect()
+  handler: async (ctx) => runBackfillMerchants(ctx),
+})
 
-    const seen = new Set<string>()
-    for (const expense of expenses) {
-      const key = `${expense.userId}:${expense.merchant.toLowerCase()}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      await upsertMerchant(ctx, expense.userId, expense.merchant)
-    }
-
-    return { processed: seen.size, message: `Backfilled ${seen.size} unique merchants` }
-  },
+/** Populate normalizedName for all existing categories. */
+export const backfillCategoryNormalizedName = internalMutation({
+  args: {},
+  handler: async (ctx) => runBackfillCategoryNormalizedName(ctx),
 })
 
 /**
- * One-time backfill: populate normalizedName for all existing categories.
- * Safe to run repeatedly — skips records that already have the field set.
- *
- * Run after deploying the normalizedName schema change:
- *   npx convex run seed:backfillCategoryNormalizedName
+ * Run all pending migrations. Called automatically after every
+ * `npx convex deploy` in CI (deploy.yml, test-e2e.yml) and available
+ * locally via `pnpm migrate`.
  */
-export const backfillCategoryNormalizedName = internalMutation({
+export const postDeploy = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const categories = await ctx.db.query('categories').collect()
-
-    let updated = 0
-    for (const category of categories) {
-      if (category.normalizedName === undefined) {
-        await ctx.db.patch('categories', category._id, {
-          normalizedName: category.name.toLowerCase(),
-        })
-        updated++
-      }
-    }
-
-    return { updated, total: categories.length, message: `Backfilled ${updated} categories` }
+    const merchants = await runBackfillMerchants(ctx)
+    const categories = await runBackfillCategoryNormalizedName(ctx)
+    return { merchants, categories }
   },
 })
 
