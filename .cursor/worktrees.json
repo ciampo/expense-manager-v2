@@ -1,0 +1,7 @@
+{
+  "setup-worktree-unix": [
+    "pnpm install --frozen-lockfile",
+    "test -f \"$ROOT_WORKTREE_PATH/.env.local\" && cp \"$ROOT_WORKTREE_PATH/.env.local\" .env.local || echo 'No .env.local found in main worktree — skipping'",
+    "test -f \"$ROOT_WORKTREE_PATH/.env.e2e\" && cp \"$ROOT_WORKTREE_PATH/.env.e2e\" .env.e2e || echo 'No .env.e2e found in main worktree — skipping'"
+  ]
+}
