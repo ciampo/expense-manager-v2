@@ -133,8 +133,12 @@ const monthYearFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', yea
  * Get month name in English
  * @param month - Month number (1-12)
  * @param year - Year
+ * @throws {RangeError} If month is not between 1 and 12
  */
 export const getMonthName = (month: number, year: number): string => {
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new RangeError(`month must be an integer between 1 and 12, got ${month}`)
+  }
   const date = new Date(year, month - 1, 1)
   return monthYearFormatter.format(date)
 }

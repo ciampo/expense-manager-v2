@@ -273,4 +273,15 @@ describe('getMonthName', () => {
       expect(result).toContain('2026')
     }
   })
+
+  it('throws RangeError for out-of-range months', () => {
+    expect(() => getMonthName(0, 2026)).toThrow(RangeError)
+    expect(() => getMonthName(13, 2026)).toThrow(RangeError)
+    expect(() => getMonthName(-1, 2026)).toThrow(RangeError)
+  })
+
+  it('throws RangeError for non-integer months', () => {
+    expect(() => getMonthName(1.5, 2026)).toThrow(RangeError)
+    expect(() => getMonthName(NaN, 2026)).toThrow(RangeError)
+  })
 })
