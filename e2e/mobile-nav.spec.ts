@@ -18,7 +18,7 @@ test.describe('Mobile Navigation', () => {
     // Desktop nav should exist in the DOM but be hidden on mobile (hidden md:flex).
     // Assert count first — toBeHidden() alone passes for missing elements,
     // which would be a false positive during the skeleton/pending state.
-    const desktopNav = page.locator('header nav[aria-label="Main"]')
+    const desktopNav = page.locator('header nav[aria-label="Main navigation"]')
     await expect(desktopNav).toHaveCount(1)
     await expect(desktopNav).toBeHidden()
   })
