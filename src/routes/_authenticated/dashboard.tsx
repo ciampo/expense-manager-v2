@@ -53,7 +53,7 @@ function DashboardPage() {
 function TableSkeleton() {
   return (
     <div className="rounded-md border">
-      <Table>
+      <Table aria-label="Expenses">
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
