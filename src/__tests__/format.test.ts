@@ -75,14 +75,12 @@ describe('formatDateLong', () => {
   })
 
   it('handles first and last day of year', () => {
-    expect(formatDateLong('2024-01-01')).toContain('January')
-    expect(formatDateLong('2024-12-31')).toContain('December')
+    expect(formatDateLong('2024-01-01')).toBe('Monday, January 1, 2024')
+    expect(formatDateLong('2024-12-31')).toBe('Tuesday, December 31, 2024')
   })
 
   it('handles leap year date', () => {
-    const result = formatDateLong('2024-02-29')
-    expect(result).toContain('February')
-    expect(result).toContain('29')
+    expect(formatDateLong('2024-02-29')).toBe('Thursday, February 29, 2024')
   })
 })
 
