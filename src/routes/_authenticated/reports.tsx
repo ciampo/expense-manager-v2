@@ -206,7 +206,7 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
     setIsDownloadingZip(true)
     try {
-      const JSZip = await loadJSZip()
+      const [JSZip, saveAs] = await Promise.all([loadJSZip(), loadFileSaver()])
       const zip = new JSZip()
 
       toast.info('Downloading attachments...')
@@ -275,7 +275,6 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
       const content = await zip.generateAsync({ type: 'blob' })
       const monthName = getMonthName(month, year).replace(' ', '-')
-      const saveAs = await loadFileSaver()
       saveAs(content, `attachments-${monthName}.zip`)
 
       const fileLabel = successfulDownloads === 1 ? 'file' : 'files'
