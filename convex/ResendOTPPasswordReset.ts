@@ -11,9 +11,9 @@ import { generateRandomString } from '@oslojs/crypto/random'
  * Requires the AUTH_RESEND_KEY environment variable to be set in Convex:
  *   npx convex env set AUTH_RESEND_KEY <your-resend-api-key>
  *
- * During development you can use Resend's free tier with the
+ * During development you can use Resend's free tier with the default
  * onboarding@resend.dev sender. For production, verify your domain
- * in the Resend dashboard and update the `from` address below.
+ * in the Resend dashboard and set AUTH_RESEND_FROM in Convex env vars.
  */
 export const ResendOTPPasswordReset = Resend({
   id: 'resend-otp',
