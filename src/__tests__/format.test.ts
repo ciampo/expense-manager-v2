@@ -3,6 +3,7 @@ import {
   formatCurrency,
   formatDate,
   formatDateLong,
+  getMonthName,
   parseCurrencyToCents,
   centsToInputValue,
   getTodayISO,
@@ -71,6 +72,15 @@ describe('formatDateLong', () => {
   it('returns em dash for invalid dates', () => {
     expect(formatDateLong('not-a-date')).toBe('—')
     expect(formatDateLong('')).toBe('—')
+  })
+
+  it('handles first and last day of year', () => {
+    expect(formatDateLong('2024-01-01')).toBe('Monday, January 1, 2024')
+    expect(formatDateLong('2024-12-31')).toBe('Tuesday, December 31, 2024')
+  })
+
+  it('handles leap year date', () => {
+    expect(formatDateLong('2024-02-29')).toBe('Thursday, February 29, 2024')
   })
 })
 
@@ -238,5 +248,38 @@ describe('formatDate timezone stability', () => {
     const result = formatDate('2024-01-01')
     // new Date('2024-01-01') is UTC midnight; in UTC-5 that's Dec 31 23:00
     expect(result).toContain('1/1/2024')
+  })
+})
+
+describe('getMonthName', () => {
+  it('returns full month name with year for all 12 months', () => {
+    const expected = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ]
+    for (let m = 1; m <= 12; m++) {
+      expect(getMonthName(m, 2026)).toBe(`${expected[m - 1]} 2026`)
+    }
+  })
+
+  it('returns em dash for out-of-range months', () => {
+    expect(getMonthName(0, 2026)).toBe('—')
+    expect(getMonthName(13, 2026)).toBe('—')
+    expect(getMonthName(-1, 2026)).toBe('—')
+  })
+
+  it('returns em dash for non-integer months', () => {
+    expect(getMonthName(1.5, 2026)).toBe('—')
+    expect(getMonthName(NaN, 2026)).toBe('—')
   })
 })
