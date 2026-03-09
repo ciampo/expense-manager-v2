@@ -3,17 +3,11 @@ import type { MutationCtx, QueryCtx } from './_generated/server'
 import { internalMutation, mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
+import { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from './uploadLimits'
 
 const ORPHAN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const CLEANUP_BATCH_SIZE = 100
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
-const ALLOWED_CONTENT_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/pdf',
-])
+const ALLOWED_CONTENT_TYPES_SET = new Set<string>(ALLOWED_CONTENT_TYPES)
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 //
@@ -125,7 +119,7 @@ export const confirmUpload = mutation({
       throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB`)
     }
 
-    if (fileRecord.contentType && !ALLOWED_CONTENT_TYPES.has(fileRecord.contentType)) {
+    if (fileRecord.contentType && !ALLOWED_CONTENT_TYPES_SET.has(fileRecord.contentType)) {
       await ctx.storage.delete(args.storageId)
       throw new Error('Unsupported file type. Use images (JPEG, PNG, GIF, WebP) or PDF.')
     }

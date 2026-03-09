@@ -51,15 +51,7 @@ import { shouldShowCreateOption } from '@/lib/combobox'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ACCEPTED_FILE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/pdf',
-]
+import { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from '../../convex/uploadLimits'
 
 const expenseFormSchema = z
   .object({
@@ -282,7 +274,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       }
       if (!file) return
 
-      if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+      if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
         toast.error('Unsupported file type. Use images or PDF.')
         return
       }
@@ -664,7 +656,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             ref={fileInputRef}
             id="attachment-input"
             type="file"
-            accept={ACCEPTED_FILE_TYPES.join(',')}
+            accept={ALLOWED_CONTENT_TYPES.join(',')}
             onChange={handleFileChange}
             disabled={isUploading || isLoading}
           />
