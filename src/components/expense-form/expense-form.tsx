@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -52,6 +52,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   )
   const [isUploading, setIsUploading] = useState(false)
   const [showDeleteExpense, setShowDeleteExpense] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const createExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.create),
@@ -97,7 +98,6 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const removeAttachment = useMutation({
     mutationFn: useConvexMutation(api.expenses.removeAttachment),
     onSuccess: () => {
-      setAttachmentId(undefined)
       toast.success('Attachment removed')
     },
     onError: () => {
@@ -146,6 +146,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       if (!file) return
 
       if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
@@ -193,7 +196,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
   const handleRemoveAttachment = () => {
     if (expense && attachmentId) {
-      removeAttachment.mutate({ id: expense._id })
+      const previousId = attachmentId
+      setAttachmentId(undefined)
+      removeAttachment.mutate({ id: expense._id }, { onError: () => setAttachmentId(previousId) })
     } else {
       setAttachmentId(undefined)
     }
@@ -247,6 +252,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         attachmentId={attachmentId}
         isLoading={isLoading}
         isUploading={isUploading}
+        fileInputRef={fileInputRef}
         onFileChange={handleFileChange}
         onRemoveAttachment={handleRemoveAttachment}
       />

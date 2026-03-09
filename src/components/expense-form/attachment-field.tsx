@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type RefObject } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ interface AttachmentFieldProps {
   attachmentId: Id<'_storage'> | undefined
   isLoading: boolean
   isUploading: boolean
+  fileInputRef: RefObject<HTMLInputElement | null>
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onRemoveAttachment: () => void
 }
@@ -29,6 +30,7 @@ export function AttachmentField({
   attachmentId,
   isLoading,
   isUploading,
+  fileInputRef,
   onFileChange,
   onRemoveAttachment,
 }: AttachmentFieldProps) {
@@ -78,6 +80,7 @@ export function AttachmentField({
         </div>
       ) : (
         <Input
+          ref={fileInputRef}
           id="attachment-input"
           type="file"
           accept={ACCEPTED_FILE_TYPES.join(',')}

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { parseLocalDate, toISODateString } from '@/lib/format'
+import { tryParseLocalDate, toISODateString } from '@/lib/format'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
 
@@ -19,7 +19,7 @@ interface DateFieldProps {
 export function DateField({ field, isLoading }: DateFieldProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const selectedDate = field.state.value ? parseLocalDate(field.state.value) : undefined
+  const selectedDate = field.state.value ? tryParseLocalDate(field.state.value) : undefined
   const hasErrors = field.state.meta.errors.length > 0
 
   return (
