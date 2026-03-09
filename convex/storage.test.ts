@@ -26,7 +26,7 @@ function getUploadRecord(t: ReturnType<typeof convexTest>, storageId: Id<'_stora
   return t.run(async (ctx) => {
     return await ctx.db
       .query('uploads')
-      .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
+      .filter((q) => q.eq(q.field('storageId'), storageId))
       .first()
   })
 }
