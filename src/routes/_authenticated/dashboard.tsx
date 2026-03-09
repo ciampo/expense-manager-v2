@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { toast } from 'sonner'
 import { Suspense, useMemo, useState, useTransition } from 'react'
@@ -210,10 +211,7 @@ function ExpenseTable() {
                 </TableCell>
                 <TableCell>
                   {expense.attachmentId ? (
-                    <>
-                      <span aria-hidden="true">📎</span>
-                      <span className="sr-only">Has attachment</span>
-                    </>
+                    <AttachmentHoverCard storageId={expense.attachmentId} />
                   ) : (
                     '-'
                   )}
@@ -331,6 +329,80 @@ function ExpenseTable() {
           )}
         </nav>
       )}
+    </div>
+  )
+}
+
+function AttachmentHoverCard({ storageId }: { storageId: Id<'_storage'> }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const { data: url, isLoading } = useQuery({
+    ...convexQuery(api.storage.getUrl, { storageId }),
+    enabled: isOpen,
+    // storage.getUrl returns a temporary signed URL — override Convex's
+    // default staleTime (Infinity) so cached URLs are refreshed before
+    // they expire.
+    staleTime: 5 * 60 * 1000,
+  })
+
+  return (
+    <HoverCard open={isOpen} onOpenChange={setIsOpen}>
+      <HoverCardTrigger
+        delay={200}
+        closeDelay={150}
+        render={<button type="button" className="cursor-default border-0 bg-transparent p-0" />}
+      >
+        <span aria-hidden="true">📎</span>
+        <span className="sr-only">Has attachment</span>
+      </HoverCardTrigger>
+      {isOpen && (
+        <HoverCardContent className="w-auto max-w-[220px] p-2" side="top" sideOffset={8}>
+          <AttachmentPreviewContent url={url} isLoading={isLoading} />
+        </HoverCardContent>
+      )}
+    </HoverCard>
+  )
+}
+
+function AttachmentPreviewContent({
+  url,
+  isLoading,
+}: {
+  url: string | null | undefined
+  isLoading: boolean
+}) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+
+  if (isLoading) {
+    return <Skeleton className="h-[150px] w-[200px] rounded-md" />
+  }
+
+  if (!url) {
+    return <p className="text-muted-foreground text-xs">Attachment not available</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {url !== failedUrl ? (
+        <img
+          src={url}
+          alt="Attachment preview"
+          className="max-h-[200px] max-w-[200px] rounded-md object-contain"
+          onError={() => setFailedUrl(url)}
+        />
+      ) : (
+        <div className="flex items-center gap-2 py-2">
+          <span aria-hidden="true">📄</span>
+          <span className="text-sm">File attachment</span>
+        </div>
+      )}
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary text-xs hover:underline"
+      >
+        View full →
+      </a>
     </div>
   )
 }

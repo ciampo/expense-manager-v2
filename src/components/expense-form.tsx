@@ -158,7 +158,7 @@ function AttachmentPreview({ attachmentId }: { attachmentId: Id<'_storage'> }) {
           rel="noopener noreferrer"
           className="text-primary inline-flex items-center gap-2 text-sm hover:underline"
         >
-          <span aria-hidden="true">📄</span> View PDF attachment
+          <span aria-hidden="true">📄</span> View attachment
         </a>
       )}
     </div>
