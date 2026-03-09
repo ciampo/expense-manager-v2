@@ -14,6 +14,7 @@ This document lists all environment variables used in the Expense Manager projec
 | `CLOUDFLARE_API_TOKEN`  | GitHub Secrets             | Deploy to Cloudflare Workers                                  |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets             | Cloudflare account identifier                                 |
 | `AUTH_RESEND_KEY`       | Convex Environment         | Resend API key for password reset emails                      |
+| `AUTH_RESEND_FROM`      | Convex Environment         | Sender address for password reset emails (optional)           |
 
 ---
 
@@ -166,11 +167,13 @@ npx convex env set VARIABLE_NAME value
 
 ### Application Variables
 
-| Variable          | Required for              | Description                              |
-| ----------------- | ------------------------- | ---------------------------------------- |
-| `AUTH_RESEND_KEY` | Password reset (optional) | Resend API key for password reset emails |
+| Variable           | Required for              | Description                                                                                                                              |
+| ------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTH_RESEND_KEY`  | Password reset (optional) | Resend API key for password reset emails                                                                                                 |
+| `AUTH_RESEND_FROM` | Production (optional)     | Sender address for password reset emails (e.g., `App <noreply@yourdomain.com>`). Falls back to `Expense Manager <onboarding@resend.dev>` |
 
 The app runs without `AUTH_RESEND_KEY`, but the forgot-password flow will not work.
+`AUTH_RESEND_FROM` is optional — omit it during development to use Resend's sandbox sender.
 
 ### Setting Up Email Provider
 
@@ -178,6 +181,9 @@ The app runs without `AUTH_RESEND_KEY`, but the forgot-password flow will not wo
 
 ```bash
 npx convex env set AUTH_RESEND_KEY re_xxxxx
+
+# Production only — use a verified domain sender:
+npx convex env set AUTH_RESEND_FROM 'Your App <noreply@yourdomain.com>'
 ```
 
 **How to get it:**
@@ -186,7 +192,7 @@ npx convex env set AUTH_RESEND_KEY re_xxxxx
 2. Go to API Keys → Create API Key
 3. Copy the key (starts with `re_`)
 
-> **Note:** Set this variable in every Convex deployment where password reset should work (development, production, test projects). See [SETUP.md](./SETUP.md#18-configure-email-provider-password-reset) for details.
+> **Note:** Set `AUTH_RESEND_KEY` in every Convex deployment where password reset should work (development, production, test projects). `AUTH_RESEND_FROM` is only needed in production — during development the default `onboarding@resend.dev` sandbox sender is used. See [SETUP.md](./SETUP.md#18-configure-email-provider-password-reset) for details.
 
 ---
 
@@ -325,4 +331,7 @@ CONVEX_TEST_DEPLOY_KEY     # For E2E tests
 ```bash
 # Set in Convex environment
 npx convex env set AUTH_RESEND_KEY re_xxxxx
+
+# Production only — verified domain sender
+npx convex env set AUTH_RESEND_FROM 'Your App <noreply@yourdomain.com>'
 ```

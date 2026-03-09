@@ -179,9 +179,12 @@ The forgot-password flow sends an OTP code via email using [Resend](https://rese
    ```bash
    CONVEX_DEPLOY_KEY=<test-deploy-key> npx convex env set AUTH_RESEND_KEY re_xxxxx
    ```
-5. For **production**, also verify your email domain in the Resend dashboard and update the sender address in `convex/ResendOTPPasswordReset.ts`
+5. For **production**, verify your email domain in the Resend dashboard and set the sender address:
+   ```bash
+   npx convex env set AUTH_RESEND_FROM 'Your App <noreply@yourdomain.com>'
+   ```
 
-> **Note:** During development, Resend's free tier allows sending to your own email using the `onboarding@resend.dev` sender. No domain verification is needed for development.
+> **Note:** During development, Resend's free tier allows sending to your own email using the default `onboarding@resend.dev` sender. No domain verification or `AUTH_RESEND_FROM` configuration is needed for development.
 
 ---
 
