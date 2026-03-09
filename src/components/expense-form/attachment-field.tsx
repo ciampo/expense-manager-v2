@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react'
+import { useState, type ChangeEvent, type RefObject } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,7 @@ interface AttachmentFieldProps {
   isLoading: boolean
   isUploading: boolean
   fileInputRef: RefObject<HTMLInputElement | null>
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onFileChange: (e: ChangeEvent<HTMLInputElement>) => void
   onRemoveAttachment: () => void
 }
 

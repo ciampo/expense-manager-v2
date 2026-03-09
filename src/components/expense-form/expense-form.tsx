@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, type ChangeEvent } from 'react'
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -144,7 +144,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   })
 
   const handleFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
