@@ -95,7 +95,8 @@ function TableSkeleton() {
 
 function ExpenseTable() {
   const queryClient = useQueryClient()
-  const { data: expenses } = useSuspenseQuery(convexQuery(api.expenses.list, {}))
+  const { data: expensesPage } = useSuspenseQuery(convexQuery(api.expenses.list, {}))
+  const expenses = expensesPage?.expenses
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
 
   const [deletingId, setDeletingId] = useState<Id<'expenses'> | null>(null)
@@ -112,8 +113,8 @@ function ExpenseTable() {
       const previousExpenses = queryClient.getQueryData(expensesQueryKey)
 
       // Optimistically remove from cache
-      queryClient.setQueryData(expensesQueryKey, (old: typeof expenses) =>
-        old?.filter((e) => e._id !== args.id),
+      queryClient.setQueryData(expensesQueryKey, (old: typeof expensesPage) =>
+        old ? { ...old, expenses: old.expenses.filter((e) => e._id !== args.id) } : old,
       )
 
       return { previousExpenses }

@@ -30,28 +30,37 @@ export async function upsertMerchant(
 }
 
 /**
- * List all expenses for the current user, sorted by date (most recent first)
+ * List expenses for the current user, sorted by date (most recent first).
+ * Supports cursor-based pagination; defaults to 50 items per page (max 100).
+ *
+ * Returns `{ expenses, continueCursor, isDone }`. The dashboard currently
+ * fetches only the first page; client-side pagination UI is in PR #163.
  */
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    cursor: v.optional(v.union(v.string(), v.null())),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx)
     if (!userId) {
-      return []
+      return { expenses: [], continueCursor: null, isDone: true }
     }
 
-    const expenses = await ctx.db
+    const result = await ctx.db
       .query('expenses')
       .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
-      .collect()
+      .order('desc')
+      .paginate({
+        numItems: Math.max(1, Math.min(Math.trunc(args.limit ?? 50), 100)),
+        cursor: args.cursor ?? null,
+      })
 
-    // Sort by date descending (most recent first)
-    return expenses.sort((a, b) => {
-      const dateCompare = b.date.localeCompare(a.date)
-      if (dateCompare !== 0) return dateCompare
-      // If same date, sort by createdAt descending
-      return b.createdAt - a.createdAt
-    })
+    return {
+      expenses: result.page,
+      continueCursor: result.continueCursor,
+      isDone: result.isDone,
+    }
   },
 })
 

@@ -53,11 +53,149 @@ async function setupUploadRecord(
   })
 }
 
+async function insertExpense(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<'users'>,
+  categoryId: Id<'categories'>,
+  overrides: Partial<{ date: string; merchant: string; amount: number }> = {},
+) {
+  return await t.run(async (ctx) => {
+    return await ctx.db.insert('expenses', {
+      userId,
+      date: overrides.date ?? '2026-03-01',
+      merchant: overrides.merchant ?? 'Test Merchant',
+      amount: overrides.amount ?? 2500,
+      categoryId,
+      createdAt: Date.now(),
+    })
+  })
+}
+
 const VALID_EXPENSE_FIELDS = {
   date: '2026-03-01',
   merchant: 'Test Merchant',
   amount: 2500,
 } as const
+
+describe('expenses.list', () => {
+  it('returns paginated envelope for unauthenticated users', async () => {
+    const t = convexTest(schema, modules)
+    const result = await t.query(api.expenses.list, {})
+    expect(result).toEqual({ expenses: [], continueCursor: null, isDone: true })
+  })
+
+  it('returns expenses in descending date order', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-01-15' })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01' })
+    await insertExpense(t, userId, categoryId, { date: '2026-02-10' })
+
+    const result = await asUser.query(api.expenses.list, {})
+    expect(result.expenses).toHaveLength(3)
+    expect(result.expenses.map((e) => e.date)).toEqual(['2026-03-01', '2026-02-10', '2026-01-15'])
+    expect(result.isDone).toBe(true)
+  })
+
+  it('respects the limit parameter', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    for (let i = 1; i <= 5; i++) {
+      await insertExpense(t, userId, categoryId, {
+        date: `2026-03-${String(i).padStart(2, '0')}`,
+      })
+    }
+
+    const result = await asUser.query(api.expenses.list, { limit: 2 })
+    expect(result.expenses).toHaveLength(2)
+    expect(result.isDone).toBe(false)
+    expect(result.continueCursor).toBeTruthy()
+  })
+
+  it('paginates through all results using cursor', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    for (let i = 1; i <= 5; i++) {
+      await insertExpense(t, userId, categoryId, {
+        date: `2026-03-${String(i).padStart(2, '0')}`,
+      })
+    }
+
+    const page1 = await asUser.query(api.expenses.list, { limit: 3 })
+    expect(page1.expenses).toHaveLength(3)
+    expect(page1.isDone).toBe(false)
+
+    const page2 = await asUser.query(api.expenses.list, {
+      limit: 3,
+      cursor: page1.continueCursor,
+    })
+    expect(page2.expenses).toHaveLength(2)
+    expect(page2.isDone).toBe(true)
+
+    const allDates = [...page1.expenses, ...page2.expenses].map((e) => e.date)
+    expect(allDates).toEqual(['2026-03-05', '2026-03-04', '2026-03-03', '2026-03-02', '2026-03-01'])
+  })
+
+  it('caps limit at 100 even if a larger value is requested', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId)
+
+    const result = await asUser.query(api.expenses.list, { limit: 500 })
+    expect(result.expenses).toHaveLength(1)
+    expect(result.isDone).toBe(true)
+  })
+
+  it('clamps non-positive and fractional limit to at least 1', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-01-01' })
+    await insertExpense(t, userId, categoryId, { date: '2026-01-02' })
+
+    const zeroResult = await asUser.query(api.expenses.list, { limit: 0 })
+    expect(zeroResult.expenses).toHaveLength(1)
+
+    const negativeResult = await asUser.query(api.expenses.list, { limit: -5 })
+    expect(negativeResult.expenses).toHaveLength(1)
+
+    const fractionalResult = await asUser.query(api.expenses.list, { limit: 1.7 })
+    expect(fractionalResult.expenses).toHaveLength(1)
+  })
+
+  it('returns empty expenses for a user with no data', async () => {
+    const t = convexTest(schema, modules)
+    const { asUser } = await setupAuthenticatedUser(t)
+
+    const result = await asUser.query(api.expenses.list, {})
+    expect(result.expenses).toEqual([])
+    expect(result.isDone).toBe(true)
+  })
+
+  it('does not return expenses from other users', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+    const cat1 = await setupCategory(t, user1Id)
+    const cat2 = await setupCategory(t, user2Id)
+
+    await insertExpense(t, user1Id, cat1, { merchant: 'User1 Merchant' })
+    await insertExpense(t, user2Id, cat2, { merchant: 'User2 Merchant' })
+
+    const result = await asUser1.query(api.expenses.list, {})
+    expect(result.expenses).toHaveLength(1)
+    expect(result.expenses[0].merchant).toBe('User1 Merchant')
+  })
+})
 
 describe('expenses.update — attachment handling', () => {
   it('preserves existing attachment when attachmentId is omitted', async () => {
