@@ -13,7 +13,7 @@ function LandingPage() {
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <h1 className="text-xl font-bold">Expense Manager</h1>
-          <nav aria-label="Main">
+          <nav aria-label="Main navigation">
             <div className="flex gap-2">
               <Button variant="ghost" render={<Link to="/sign-in" />}>
                 Sign In

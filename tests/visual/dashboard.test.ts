@@ -48,7 +48,7 @@ test.describe('Visual Regression - Dashboard', () => {
   test('delete confirmation dialog', async ({ page }) => {
     await createExpense(page, 'Delete Test', '10,00')
 
-    await page.getByRole('button', { name: 'Delete' }).first().click()
+    await page.getByRole('button', { name: 'Delete Delete Test expense' }).click()
     await expect(page.getByRole('alertdialog')).toBeVisible()
 
     await expect(page).toHaveScreenshot('dashboard-delete-dialog.png', {

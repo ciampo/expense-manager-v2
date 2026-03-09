@@ -81,7 +81,7 @@ function AuthenticatedLayout() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav aria-label="Main" className="hidden items-center gap-6 md:flex">
+          <nav aria-label="Main navigation" className="hidden items-center gap-6 md:flex">
             <Link
               to="/dashboard"
               className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
@@ -127,7 +127,7 @@ function AuthenticatedLayout() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-xs">
               <DialogTitle>Menu</DialogTitle>
-              <nav aria-label="Main" className="mt-2 flex flex-col gap-4">
+              <nav aria-label="Mobile navigation" className="mt-2 flex flex-col gap-4">
                 <Link
                   to="/dashboard"
                   className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"

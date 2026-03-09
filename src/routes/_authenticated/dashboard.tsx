@@ -53,7 +53,7 @@ function DashboardPage() {
 function TableSkeleton() {
   return (
     <div className="rounded-md border">
-      <Table>
+      <Table aria-label="Expenses">
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
@@ -154,7 +154,7 @@ function ExpenseTable() {
 
   return (
     <div className="rounded-md border">
-      <Table>
+      <Table aria-label="Expenses">
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
@@ -189,6 +189,7 @@ function ExpenseTable() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    aria-label={`Edit ${expense.merchant} expense`}
                     render={<Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} />}
                   >
                     Edit
@@ -203,6 +204,7 @@ function ExpenseTable() {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive"
+                          aria-label={`Delete ${expense.merchant} expense`}
                         />
                       }
                     >
