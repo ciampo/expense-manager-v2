@@ -114,17 +114,7 @@ export const confirmUpload = mutation({
       throw new Error('Storage file does not exist')
     }
 
-    if (fileRecord.size != null && fileRecord.size > MAX_FILE_SIZE) {
-      await ctx.storage.delete(args.storageId)
-      throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB`)
-    }
-
-    if (fileRecord.contentType && !ALLOWED_CONTENT_TYPES_SET.has(fileRecord.contentType)) {
-      await ctx.storage.delete(args.storageId)
-      throw new Error('Unsupported file type. Use images (JPEG, PNG, GIF, WebP) or PDF.')
-    }
-
-    // Reject if another user already claimed via uploads table
+    // Ownership checks first — never delete another user's file.
     const existingUpload = await getUploadRecord(ctx, args.storageId)
     if (existingUpload) {
       if (existingUpload.userId !== userId) {
@@ -133,8 +123,6 @@ export const confirmUpload = mutation({
       return // idempotent — same user already registered
     }
 
-    // Reject if another user's expense already references this file
-    // (covers pre-existing data that predates the uploads table)
     const existingExpense = await ctx.db
       .query('expenses')
       .withIndex('by_attachment', (q) => q.eq('attachmentId', args.storageId))
@@ -142,6 +130,17 @@ export const confirmUpload = mutation({
 
     if (existingExpense && existingExpense.userId !== userId) {
       throw new Error('File already claimed by another user')
+    }
+
+    // Validate only unclaimed files (safe to delete if invalid).
+    if (fileRecord.size != null && fileRecord.size > MAX_FILE_SIZE) {
+      await ctx.storage.delete(args.storageId)
+      throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB`)
+    }
+
+    if (!fileRecord.contentType || !ALLOWED_CONTENT_TYPES_SET.has(fileRecord.contentType)) {
+      await ctx.storage.delete(args.storageId)
+      throw new Error('Unsupported file type. Use images (JPEG, PNG, GIF, WebP) or PDF.')
     }
 
     await ctx.db.insert('uploads', {
