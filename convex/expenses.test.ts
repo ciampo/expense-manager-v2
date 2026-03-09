@@ -154,6 +154,24 @@ describe('expenses.list', () => {
     expect(result.isDone).toBe(true)
   })
 
+  it('clamps non-positive and fractional limit to at least 1', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-01-01' })
+    await insertExpense(t, userId, categoryId, { date: '2026-01-02' })
+
+    const zeroResult = await asUser.query(api.expenses.list, { limit: 0 })
+    expect(zeroResult.expenses).toHaveLength(1)
+
+    const negativeResult = await asUser.query(api.expenses.list, { limit: -5 })
+    expect(negativeResult.expenses).toHaveLength(1)
+
+    const fractionalResult = await asUser.query(api.expenses.list, { limit: 1.7 })
+    expect(fractionalResult.expenses).toHaveLength(1)
+  })
+
   it('returns empty expenses for a user with no data', async () => {
     const t = convexTest(schema, modules)
     const { asUser } = await setupAuthenticatedUser(t)

@@ -51,7 +51,10 @@ export const list = query({
       .query('expenses')
       .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
       .order('desc')
-      .paginate({ numItems: Math.min(args.limit ?? 50, 100), cursor: args.cursor ?? null })
+      .paginate({
+        numItems: Math.max(1, Math.min(Math.trunc(args.limit ?? 50), 100)),
+        cursor: args.cursor ?? null,
+      })
 
     return {
       expenses: result.page,
