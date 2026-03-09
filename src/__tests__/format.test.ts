@@ -268,9 +268,7 @@ describe('getMonthName', () => {
       'December',
     ]
     for (let m = 1; m <= 12; m++) {
-      const result = getMonthName(m, 2026)
-      expect(result).toContain(expected[m - 1])
-      expect(result).toContain('2026')
+      expect(getMonthName(m, 2026)).toBe(`${expected[m - 1]} 2026`)
     }
   })
 
