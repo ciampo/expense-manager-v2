@@ -130,7 +130,7 @@ export const getTodayISO = (): string => toISODateString(new Date())
 const monthYearFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' })
 
 /**
- * Get month name in English.
+ * Get month and year in English (e.g., "January 2026").
  * Returns '—' if month is not an integer between 1 and 12.
  * @param month - Month number (1-12)
  * @param year - Year
