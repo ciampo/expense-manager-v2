@@ -208,7 +208,8 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     form.state.isSubmitting ||
     createExpense.isPending ||
     updateExpense.isPending ||
-    deleteExpense.isPending
+    deleteExpense.isPending ||
+    isUploading
 
   return (
     <form
