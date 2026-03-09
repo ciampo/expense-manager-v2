@@ -81,7 +81,7 @@ describe('expenses.list', () => {
   it('returns paginated envelope for unauthenticated users', async () => {
     const t = convexTest(schema, modules)
     const result = await t.query(api.expenses.list, {})
-    expect(result).toEqual({ expenses: [], continueCursor: '', isDone: true })
+    expect(result).toEqual({ expenses: [], continueCursor: null, isDone: true })
   })
 
   it('returns expenses in descending date order', async () => {

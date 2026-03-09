@@ -44,7 +44,7 @@ export const list = query({
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx)
     if (!userId) {
-      return { expenses: [], continueCursor: '', isDone: true }
+      return { expenses: [], continueCursor: null, isDone: true }
     }
 
     const result = await ctx.db
