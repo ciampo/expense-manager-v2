@@ -177,7 +177,10 @@ function ExpenseTable() {
               </TableCell>
               <TableCell>
                 {expense.attachmentId ? (
-                  <AttachmentHoverCard storageId={expense.attachmentId} />
+                  <>
+                    <span aria-hidden="true">📎</span>
+                    <span className="sr-only">Has attachment</span>
+                  </>
                 ) : (
                   '-'
                 )}
