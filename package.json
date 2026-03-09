@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
-    "build": "vite build && tsc --noEmit",
+    "build": "vite build && pnpm typecheck",
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler deploy",
     "migrate": "convex run seed:postDeploy",
