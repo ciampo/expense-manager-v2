@@ -308,7 +308,7 @@ function ExpenseTable() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => startTransition(() => setCursors(cursors.slice(0, -1)))}
+                  onClick={() => startTransition(() => setCursors((prev) => prev.slice(0, -1)))}
                   disabled={!canGoPrevious}
                 >
                   Previous
@@ -316,13 +316,12 @@ function ExpenseTable() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    startTransition(() => {
-                      if (expensesPage?.continueCursor) {
-                        setCursors([...cursors, expensesPage.continueCursor])
-                      }
-                    })
-                  }
+                  onClick={() => {
+                    const next = expensesPage?.continueCursor
+                    if (next) {
+                      startTransition(() => setCursors((prev) => [...prev, next]))
+                    }
+                  }}
                   disabled={!canGoNext}
                 >
                   Next
