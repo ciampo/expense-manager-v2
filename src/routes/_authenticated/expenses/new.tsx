@@ -11,10 +11,11 @@ export const Route = createFileRoute('/_authenticated/expenses/new')({
   head: () => ({
     meta: [{ title: 'New Expense — Expense Manager' }],
   }),
-  loader: ({ context }) => {
-    context.queryClient.ensureQueryData(convexQuery(api.categories.list, {}))
-    context.queryClient.ensureQueryData(convexQuery(api.expenses.getMerchants, {}))
-  },
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(convexQuery(api.categories.list, {})),
+      context.queryClient.ensureQueryData(convexQuery(api.expenses.getMerchants, {})),
+    ]),
 })
 
 function NewExpensePage() {
