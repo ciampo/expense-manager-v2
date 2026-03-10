@@ -5,6 +5,7 @@ import { api } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { MAX_FILE_SIZE } from './uploadLimits'
+import { validateFileMetadata } from './storage'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -33,11 +34,82 @@ function getUploadRecord(t: ReturnType<typeof convexTest>, storageId: Id<'_stora
   })
 }
 
-// convex-test does not populate contentType on system storage records, so
-// confirmUpload's content-type guard always rejects in this environment.
-// The tests below cover auth, ownership, size validation, and error
-// messages. Content-type acceptance paths are verified via manual testing
-// against a real Convex backend.
+// ── validateFileMetadata (pure function — no convex-test limitations) ────
+
+describe('validateFileMetadata', () => {
+  it('returns null for a valid JPEG', () => {
+    expect(validateFileMetadata({ size: 1024, contentType: 'image/jpeg' })).toBeNull()
+  })
+
+  it('returns null for a valid PDF', () => {
+    expect(
+      validateFileMetadata({ size: 5 * 1024 * 1024, contentType: 'application/pdf' }),
+    ).toBeNull()
+  })
+
+  it('accepts all allowed content types', () => {
+    const types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+    for (const contentType of types) {
+      expect(validateFileMetadata({ size: 100, contentType })).toBeNull()
+    }
+  })
+
+  it('rejects files exceeding the size limit', () => {
+    const result = validateFileMetadata({ size: MAX_FILE_SIZE + 1, contentType: 'image/jpeg' })
+    expect(result).toMatch(/exceeds maximum size/)
+  })
+
+  it('accepts files at exactly the size limit', () => {
+    expect(validateFileMetadata({ size: MAX_FILE_SIZE, contentType: 'image/jpeg' })).toBeNull()
+  })
+
+  it('rejects disallowed content types', () => {
+    expect(validateFileMetadata({ size: 100, contentType: 'text/plain' })).toMatch(
+      /Unsupported file type/,
+    )
+    expect(validateFileMetadata({ size: 100, contentType: 'application/zip' })).toMatch(
+      /Unsupported file type/,
+    )
+    expect(validateFileMetadata({ size: 100, contentType: 'video/mp4' })).toMatch(
+      /Unsupported file type/,
+    )
+  })
+
+  it('rejects missing content type', () => {
+    expect(validateFileMetadata({ size: 100, contentType: null })).toMatch(/Unsupported file type/)
+    expect(validateFileMetadata({ size: 100, contentType: undefined })).toMatch(
+      /Unsupported file type/,
+    )
+  })
+
+  it('rejects empty string content type', () => {
+    expect(validateFileMetadata({ size: 100, contentType: '' })).toMatch(/Unsupported file type/)
+  })
+
+  it('checks size before content type', () => {
+    const result = validateFileMetadata({ size: MAX_FILE_SIZE + 1, contentType: 'text/plain' })
+    expect(result).toMatch(/exceeds maximum size/)
+  })
+
+  it('skips size check when size is null/undefined', () => {
+    expect(validateFileMetadata({ size: null, contentType: 'image/jpeg' })).toBeNull()
+    expect(validateFileMetadata({ size: undefined, contentType: 'image/jpeg' })).toBeNull()
+  })
+})
+
+// ── confirmUpload integration tests ──────────────────────────────────────
+//
+// convex-test has two limitations that affect these tests:
+//
+// 1. contentType is not populated on system storage records, so
+//    confirmUpload's content-type guard always rejects. The happy path
+//    (valid file → upload record created) is tested above via the pure
+//    validateFileMetadata helper with synthetic metadata.
+//
+// 2. ctx.storage.delete() is a no-op in the in-memory store — getUrl()
+//    still returns a URL after deletion. We cannot assert that invalid
+//    files are removed from storage. This behavior is verified manually
+//    against the real Convex backend.
 
 describe('storage.confirmUpload', () => {
   it('rejects unauthenticated calls', async () => {
