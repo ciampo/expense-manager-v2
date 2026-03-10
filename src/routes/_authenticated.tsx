@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { RouteNotFoundComponent } from '@/components/route-not-found'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,7 @@ export const Route = createFileRoute('/_authenticated')({
     }
   },
   pendingComponent: AuthenticatedSkeleton,
+  notFoundComponent: RouteNotFoundComponent,
   component: AuthenticatedLayout,
 })
 
