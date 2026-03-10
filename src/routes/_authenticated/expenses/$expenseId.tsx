@@ -18,11 +18,18 @@ export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
 
 /**
  * Convex's `v.id()` validator rejects invalid ID formats before the query
- * handler runs. Map those errors to the 404 UI so users see "page not found"
- * instead of a generic error for bogus URLs like `/expenses/garbage`.
+ * handler runs, producing an error like:
+ *
+ *   ArgumentValidationError: Value does not match validator.
+ *   Path: .id
+ *   Validator: v.id("expenses")
+ *
+ * Map those errors to the 404 UI so users see "page not found" instead of
+ * a generic error for bogus URLs like `/expenses/garbage`.
  */
 function ExpenseIdErrorComponent(props: ErrorComponentProps): React.ReactNode {
-  if (/not a valid ID for table "expenses"/i.test(props.error?.message ?? '')) {
+  const message = props.error?.message ?? ''
+  if (/v\.id\("expenses"\)|not a valid ID for table "expenses"/i.test(message)) {
     return <RouteNotFoundComponent />
   }
   return <RouteErrorComponent {...props} />
