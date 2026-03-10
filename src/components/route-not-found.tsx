@@ -2,13 +2,17 @@ import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 
 /**
- * Not-found component for use inside layout routes (nav stays visible).
- * Contrasts with the root-level NotFoundComponent which renders full-page.
+ * Not-found component for authenticated/layout routes where the app chrome
+ * (nav, header, footer) should remain visible.
  *
- * Rendered directly by route components (not via `throw notFound()`) because
- * TanStack Router's notFound propagation always bubbles to the root 404
- * when the parent layout has `ssr: false`. Rendering inline keeps the
- * authenticated layout (header, nav, footer) visible.
+ * Used in two ways:
+ * - Registered as the `_authenticated` route's `notFoundComponent`, so
+ *   `throw notFound()` from its descendants shows an in-layout 404 instead
+ *   of the root-level full-page 404.
+ * - Rendered directly by route components that cannot rely on `throw notFound()`
+ *   because TanStack Router's notFound propagation always bubbles to the root
+ *   when a parent layout has `ssr: false`. Inline rendering keeps the
+ *   authenticated layout (header, nav, footer) visible in those cases.
  *
  * Overrides the page title via React 19's `<title>` hoisting so the parent
  * route's head() title (e.g. "Edit Expense") doesn't leak through.
