@@ -182,8 +182,9 @@ The app runs without `AUTH_RESEND_KEY`, but the forgot-password flow will not wo
 ```bash
 npx convex env set AUTH_RESEND_KEY re_xxxxx
 
-# Production only — use a verified domain sender:
-npx convex env set AUTH_RESEND_FROM 'Your App <noreply@yourdomain.com>'
+# Production — requires CONVEX_DEPLOY_KEY to target the production deployment:
+CONVEX_DEPLOY_KEY=<prod-deploy-key> npx convex env set AUTH_RESEND_KEY re_xxxxx
+CONVEX_DEPLOY_KEY=<prod-deploy-key> npx convex env set AUTH_RESEND_FROM 'Your App <noreply@yourdomain.com>'
 ```
 
 **How to get it:**
