@@ -46,7 +46,8 @@ export function CategoryField({
 }: CategoryFieldProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const hasErrors = categoryIdField.state.meta.errors.length > 0
+  const allErrors = [...categoryIdField.state.meta.errors, ...newCatField.state.meta.errors]
+  const hasErrors = allErrors.length > 0
   const selectedCategory = categories.find((c) => c._id === categoryIdField.state.value)
   const needsNewCategory = !categoryIdField.state.value && !!newCatField.state.value.trim()
 
@@ -137,7 +138,7 @@ export function CategoryField({
           </Command>
         </PopoverContent>
       </Popover>
-      <FieldError id="category-error" errors={categoryIdField.state.meta.errors} />
+      <FieldError id="category-error" errors={allErrors} />
     </Field>
   )
 }
