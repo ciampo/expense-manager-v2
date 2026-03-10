@@ -69,7 +69,7 @@ test.describe('Page titles — authenticated routes', () => {
     await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 
     await page.getByRole('combobox', { name: /category/i }).click()
-    await page.getByRole('option').first().click()
+    await page.getByRole('option', { name: /coworking/i }).click()
 
     await page.getByLabel(/amount/i).fill('10')
     await page.getByRole('button', { name: /create expense/i }).click()
