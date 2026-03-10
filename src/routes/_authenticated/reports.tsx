@@ -17,11 +17,16 @@ import { centsToInputValue, formatCurrency, getMonthName } from '@/lib/format'
 import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 import { toast } from 'sonner'
 import { Suspense, useState } from 'react'
+import { RouteErrorComponent } from '@/components/route-error'
 const loadFileSaver = () => import('file-saver').then((m) => m.saveAs)
 const loadJSZip = () => import('jszip').then((m) => m.default)
 
 export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
+  errorComponent: RouteErrorComponent,
+  head: () => ({
+    meta: [{ title: 'Reports — Expense Manager' }],
+  }),
 })
 
 function ReportsPage() {

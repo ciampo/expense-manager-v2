@@ -35,6 +35,7 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import { toast } from 'sonner'
 import { Suspense, useMemo, useState, useTransition } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { RouteErrorComponent } from '@/components/route-error'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 const PAGINATION_THRESHOLD = Math.min(...PAGE_SIZE_OPTIONS)
@@ -42,6 +43,10 @@ const DEFAULT_PAGE_SIZE = 25
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
+  errorComponent: RouteErrorComponent,
+  head: () => ({
+    meta: [{ title: 'Dashboard — Expense Manager' }],
+  }),
 })
 
 function DashboardPage() {

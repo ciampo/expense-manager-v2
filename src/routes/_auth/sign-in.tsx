@@ -19,6 +19,9 @@ import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/sign-in')({
   component: SignInPage,
+  head: () => ({
+    meta: [{ title: 'Sign In — Expense Manager' }],
+  }),
 })
 
 const signInSchema = z.object({
