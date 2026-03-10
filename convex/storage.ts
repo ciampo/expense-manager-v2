@@ -9,6 +9,25 @@ const ORPHAN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const CLEANUP_BATCH_SIZE = 100
 const ALLOWED_CONTENT_TYPES_SET = new Set<string>(ALLOWED_CONTENT_TYPES)
 
+/**
+ * Validate file metadata against upload constraints.
+ *
+ * Pure function — no side effects, no storage access. Returns `null`
+ * when the file is valid, or an error message string when invalid.
+ */
+export function validateFileMetadata(file: {
+  size?: number | null
+  contentType?: string | null
+}): string | null {
+  if (file.size != null && file.size > MAX_FILE_SIZE) {
+    return `File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB`
+  }
+  if (!file.contentType || !ALLOWED_CONTENT_TYPES_SET.has(file.contentType)) {
+    return 'Unsupported file type. Use images (JPEG, PNG, GIF, WebP) or PDF.'
+  }
+  return null
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────
 //
 // These are used by both storage.ts and expenses.ts.  They are
@@ -144,14 +163,10 @@ export const confirmUpload = mutation({
     }
 
     // Validate only truly unclaimed files (safe to delete if invalid).
-    if (fileRecord.size != null && fileRecord.size > MAX_FILE_SIZE) {
+    const validationError = validateFileMetadata(fileRecord)
+    if (validationError) {
       await ctx.storage.delete(args.storageId)
-      throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB`)
-    }
-
-    if (!fileRecord.contentType || !ALLOWED_CONTENT_TYPES_SET.has(fileRecord.contentType)) {
-      await ctx.storage.delete(args.storageId)
-      throw new Error('Unsupported file type. Use images (JPEG, PNG, GIF, WebP) or PDF.')
+      throw new Error(validationError)
     }
 
     await ctx.db.insert('uploads', {
