@@ -157,7 +157,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       }
 
       if (file.size > MAX_FILE_SIZE) {
-        toast.error('File too large. Maximum 10MB.')
+        toast.error(`File too large. Maximum ${Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB.`)
         return
       }
 

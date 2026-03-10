@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { AttachmentPreview } from './attachment-preview'
-import { ALLOWED_CONTENT_TYPES } from './schema'
+import { ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE } from './schema'
 
 interface AttachmentFieldProps {
   attachmentId: Id<'_storage'> | undefined
@@ -89,7 +89,9 @@ export function AttachmentField({
         />
       )}
       {isUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
-      <p className="text-muted-foreground text-xs">Images or PDF, maximum 10MB</p>
+      <p className="text-muted-foreground text-xs">
+        Images or PDF, maximum {Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB
+      </p>
     </div>
   )
 }
