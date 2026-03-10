@@ -2,7 +2,7 @@ import { useState, type ChangeEvent, type RefObject } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { FieldLabel } from '@/components/ui/field'
+import { FieldLabel, FieldTitle } from '@/components/ui/field'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +38,11 @@ export function AttachmentField({
 
   return (
     <div className="space-y-2">
-      <FieldLabel htmlFor="attachment-input">Attachment (optional)</FieldLabel>
+      {attachmentId ? (
+        <FieldTitle>Attachment (optional)</FieldTitle>
+      ) : (
+        <FieldLabel htmlFor="attachment-input">Attachment (optional)</FieldLabel>
+      )}
       {attachmentId ? (
         <div className="space-y-3 rounded-md border p-3">
           <AttachmentPreview attachmentId={attachmentId} />
