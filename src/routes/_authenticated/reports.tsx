@@ -1,4 +1,4 @@
-import { createFileRoute, type ErrorComponentProps } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
@@ -23,7 +23,7 @@ const loadJSZip = () => import('jszip').then((m) => m.default)
 
 export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
-  errorComponent: RouteErrorComponent as (props: ErrorComponentProps) => React.ReactNode,
+  errorComponent: RouteErrorComponent,
   head: () => ({
     meta: [{ title: 'Reports — Expense Manager' }],
   }),

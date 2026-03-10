@@ -1,4 +1,4 @@
-import { createFileRoute, Link, type ErrorComponentProps } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
@@ -43,7 +43,7 @@ const DEFAULT_PAGE_SIZE = 25
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
-  errorComponent: RouteErrorComponent as (props: ErrorComponentProps) => React.ReactNode,
+  errorComponent: RouteErrorComponent,
   head: () => ({
     meta: [{ title: 'Dashboard — Expense Manager' }],
   }),

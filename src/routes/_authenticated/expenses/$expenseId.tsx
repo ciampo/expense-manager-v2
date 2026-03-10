@@ -1,4 +1,4 @@
-import { createFileRoute, notFound, type ErrorComponentProps } from '@tanstack/react-router'
+import { createFileRoute, notFound } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../../../convex/_generated/api'
@@ -9,7 +9,7 @@ import { Suspense } from 'react'
 
 export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
   component: EditExpensePage,
-  errorComponent: RouteErrorComponent as (props: ErrorComponentProps) => React.ReactNode,
+  errorComponent: RouteErrorComponent,
   head: () => ({
     meta: [{ title: 'Edit Expense — Expense Manager' }],
   }),

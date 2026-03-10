@@ -1,11 +1,11 @@
-import { createFileRoute, type ErrorComponentProps } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { ExpenseForm, ExpenseFormSkeleton } from '@/components/expense-form'
 import { RouteErrorComponent } from '@/components/route-error'
 import { Suspense } from 'react'
 
 export const Route = createFileRoute('/_authenticated/expenses/new')({
   component: NewExpensePage,
-  errorComponent: RouteErrorComponent as (props: ErrorComponentProps) => React.ReactNode,
+  errorComponent: RouteErrorComponent,
   head: () => ({
     meta: [{ title: 'New Expense — Expense Manager' }],
   }),

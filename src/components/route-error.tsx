@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
  * Error component for use inside layout routes (nav stays visible).
  * Contrasts with the root-level error component which renders full-page.
  */
-export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
+export function RouteErrorComponent({ error, reset }: ErrorComponentProps): React.ReactNode {
   return (
     <div className="container mx-auto flex flex-col items-center justify-center px-4 py-16 text-center">
       <h1 className="text-foreground text-4xl font-bold">Something went wrong</h1>
