@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
  * instead of a generic error for bogus URLs like `/expenses/garbage`.
  */
 function ExpenseIdErrorComponent(props: ErrorComponentProps): React.ReactNode {
-  if (/not a valid ID for table/i.test(props.error.message)) {
+  if (/not a valid ID for table "expenses"/i.test(props.error?.message ?? '')) {
     return <RouteNotFoundComponent />
   }
   return <RouteErrorComponent {...props} />
