@@ -85,7 +85,7 @@ export function AttachmentField({
           type="file"
           accept={ALLOWED_CONTENT_TYPES.join(',')}
           onChange={onFileChange}
-          disabled={isUploading || isLoading}
+          disabled={isLoading}
         />
       )}
       {isUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
