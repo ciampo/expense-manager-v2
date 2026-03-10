@@ -289,7 +289,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               ? 'Create expense'
               : 'Save changes'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => navigate({ to: '/dashboard' })}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isLoading}
+          onClick={() => navigate({ to: '/dashboard' })}
+        >
           Cancel
         </Button>
 
