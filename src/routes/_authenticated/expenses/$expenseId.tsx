@@ -1,19 +1,32 @@
-import { createFileRoute, notFound } from '@tanstack/react-router'
+import { createFileRoute, notFound, type ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { ExpenseForm, ExpenseFormSkeleton } from '@/components/expense-form'
 import { RouteErrorComponent } from '@/components/route-error'
+import { RouteNotFoundComponent } from '@/components/route-not-found'
 import { Suspense } from 'react'
 
 export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
   component: EditExpensePage,
-  errorComponent: RouteErrorComponent,
+  errorComponent: ExpenseIdErrorComponent,
   head: () => ({
     meta: [{ title: 'Edit Expense — Expense Manager' }],
   }),
 })
+
+/**
+ * Convex's `v.id()` validator rejects invalid ID formats before the query
+ * handler runs. Map those errors to the 404 UI so users see "page not found"
+ * instead of a generic error for bogus URLs like `/expenses/garbage`.
+ */
+function ExpenseIdErrorComponent(props: ErrorComponentProps): React.ReactNode {
+  if (/not a valid ID for table/i.test(props.error.message)) {
+    return <RouteNotFoundComponent />
+  }
+  return <RouteErrorComponent {...props} />
+}
 
 function EditExpensePage() {
   const { expenseId } = Route.useParams()
