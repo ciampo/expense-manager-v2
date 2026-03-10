@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
-    "build": "vite build && tsc --noEmit",
+    "build": "vite build && pnpm typecheck",
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler deploy",
     "migrate": "convex run seed:postDeploy",
@@ -28,6 +28,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
     "setup": "bash scripts/setup.sh",
     "setup:e2e": "bash scripts/setup-e2e.sh",
     "prepare": "husky"
