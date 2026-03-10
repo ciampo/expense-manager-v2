@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
-import { MAX_FILE_SIZE } from './uploadLimits'
+import { ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE } from './uploadLimits'
 import { validateFileMetadata } from './storage'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -48,8 +48,7 @@ describe('validateFileMetadata', () => {
   })
 
   it('accepts all allowed content types', () => {
-    const types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
-    for (const contentType of types) {
+    for (const contentType of ALLOWED_CONTENT_TYPES) {
       expect(validateFileMetadata({ size: 100, contentType })).toBeNull()
     }
   })
