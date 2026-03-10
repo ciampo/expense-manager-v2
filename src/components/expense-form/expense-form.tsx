@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { parseCurrencyToCents, centsToInputValue, getTodayISO } from '@/lib/format'
 import { toast } from 'sonner'
-import { expenseFormSchema, MAX_FILE_SIZE, ACCEPTED_FILE_TYPES } from './schema'
+import { expenseFormSchema, MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from './schema'
 import { DateField } from './date-field'
 import { MerchantField } from './merchant-field'
 import { CategoryField } from './category-field'
@@ -151,7 +151,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       }
       if (!file) return
 
-      if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+      if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
         toast.error('Unsupported file type. Use images or PDF.')
         return
       }

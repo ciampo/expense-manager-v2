@@ -2,14 +2,7 @@ import { z } from 'zod'
 import { parseCurrencyToCents } from '@/lib/format'
 import { expenseDateSchema, expenseMerchantSchema, expenseAmountSchema } from '@/lib/schemas'
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024
-export const ACCEPTED_FILE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/pdf',
-]
+export { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from '../../../convex/uploadLimits'
 
 export const expenseFormSchema = z
   .object({

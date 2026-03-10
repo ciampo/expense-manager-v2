@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { AttachmentPreview } from './attachment-preview'
-import { ACCEPTED_FILE_TYPES } from './schema'
+import { ALLOWED_CONTENT_TYPES } from './schema'
 
 interface AttachmentFieldProps {
   attachmentId: Id<'_storage'> | undefined
@@ -83,7 +83,7 @@ export function AttachmentField({
           ref={fileInputRef}
           id="attachment-input"
           type="file"
-          accept={ACCEPTED_FILE_TYPES.join(',')}
+          accept={ALLOWED_CONTENT_TYPES.join(',')}
           onChange={onFileChange}
           disabled={isUploading || isLoading}
         />
