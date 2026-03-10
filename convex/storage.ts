@@ -3,9 +3,30 @@ import type { MutationCtx, QueryCtx } from './_generated/server'
 import { internalMutation, mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
+import { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from './uploadLimits'
 
 const ORPHAN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const CLEANUP_BATCH_SIZE = 100
+const ALLOWED_CONTENT_TYPES_SET = new Set<string>(ALLOWED_CONTENT_TYPES)
+
+/**
+ * Validate file metadata against upload constraints.
+ *
+ * Pure function — no side effects, no storage access. Returns `null`
+ * when the file is valid, or an error message string when invalid.
+ */
+export function validateFileMetadata(file: {
+  size?: number | null
+  contentType?: string | null
+}): string | null {
+  if (file.size != null && file.size > MAX_FILE_SIZE) {
+    return `File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB`
+  }
+  if (!file.contentType || !ALLOWED_CONTENT_TYPES_SET.has(file.contentType)) {
+    return 'Unsupported file type. Use images (JPEG, PNG, GIF, WebP) or PDF.'
+  }
+  return null
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 //
@@ -107,13 +128,12 @@ export const confirmUpload = mutation({
       throw new Error('Not authenticated')
     }
 
-    // Verify the storage file actually exists
     const fileRecord = await ctx.db.system.get(args.storageId)
     if (!fileRecord) {
       throw new Error('Storage file does not exist')
     }
 
-    // Reject if another user already claimed via uploads table
+    // Ownership checks first — never delete another user's file.
     const existingUpload = await getUploadRecord(ctx, args.storageId)
     if (existingUpload) {
       if (existingUpload.userId !== userId) {
@@ -122,15 +142,31 @@ export const confirmUpload = mutation({
       return // idempotent — same user already registered
     }
 
-    // Reject if another user's expense already references this file
-    // (covers pre-existing data that predates the uploads table)
     const existingExpense = await ctx.db
       .query('expenses')
       .withIndex('by_attachment', (q) => q.eq('attachmentId', args.storageId))
       .first()
 
-    if (existingExpense && existingExpense.userId !== userId) {
-      throw new Error('File already claimed by another user')
+    if (existingExpense) {
+      if (existingExpense.userId !== userId) {
+        throw new Error('File already claimed by another user')
+      }
+      // File is already attached to this user's expense (legacy data that
+      // predates validation). Backfill the upload record but never delete
+      // or re-validate — the file is in active use.
+      await ctx.db.insert('uploads', {
+        storageId: args.storageId,
+        userId,
+        createdAt: Date.now(),
+      })
+      return
+    }
+
+    // Validate only truly unclaimed files (safe to delete if invalid).
+    const validationError = validateFileMetadata(fileRecord)
+    if (validationError) {
+      await ctx.storage.delete(args.storageId)
+      throw new Error(validationError)
     }
 
     await ctx.db.insert('uploads', {
