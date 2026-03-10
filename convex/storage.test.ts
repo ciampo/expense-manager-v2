@@ -22,6 +22,8 @@ async function storeFile(t: ReturnType<typeof convexTest>, content: BlobPart = '
   })
 }
 
+// Uses .filter() instead of .withIndex() because ReturnType<typeof convexTest>
+// loses schema-specific index types, causing tsc errors with custom indexes.
 function getUploadRecord(t: ReturnType<typeof convexTest>, storageId: Id<'_storage'>) {
   return t.run(async (ctx) => {
     return await ctx.db
@@ -141,6 +143,41 @@ describe('storage.confirmUpload', () => {
         .collect()
     })
     expect(uploads).toHaveLength(1)
+  })
+
+  it('backfills upload record for legacy expense attachments without re-validating', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    // File has no contentType (would normally fail validation)
+    const storageId = await storeFile(t)
+
+    const categoryId = await t.run(async (ctx) => {
+      return await ctx.db.insert('categories', {
+        name: 'Legacy',
+        normalizedName: 'legacy',
+        userId,
+      })
+    })
+
+    // Simulate legacy expense that predates validation
+    await t.run(async (ctx) => {
+      await ctx.db.insert('expenses', {
+        userId,
+        date: '2026-01-01',
+        merchant: 'Legacy Shop',
+        amount: 500,
+        categoryId,
+        attachmentId: storageId,
+        createdAt: Date.now(),
+      })
+    })
+
+    // confirmUpload should backfill the upload record, NOT delete/reject
+    await asUser.mutation(api.storage.confirmUpload, { storageId })
+
+    const upload = await getUploadRecord(t, storageId)
+    expect(upload).not.toBeNull()
+    expect(upload?.userId).toBe(userId)
   })
 
   it('ownership checks run before validation to protect other users files', async () => {
