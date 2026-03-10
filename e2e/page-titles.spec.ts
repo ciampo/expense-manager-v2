@@ -57,6 +57,15 @@ test.describe('Page titles — authenticated routes', () => {
     await expect(page).toHaveTitle('New Expense — Expense Manager')
   })
 
+  test('invalid expense ID shows in-layout 404', async ({ page }) => {
+    await page.goto('/expenses/garbage')
+    await page.getByRole('heading', { name: '404' }).waitFor()
+
+    // Navigation stays visible (in-layout, not root full-page 404)
+    await expect(page.getByRole('navigation')).toBeVisible()
+    await expect(page.getByRole('link', { name: /back to dashboard/i })).toBeVisible()
+  })
+
   test('edit expense page has descriptive title', async ({ page }) => {
     // Create an expense to navigate to
     await page.getByRole('link', { name: /new expense/i }).click()
