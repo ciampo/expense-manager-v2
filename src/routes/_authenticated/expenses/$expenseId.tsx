@@ -11,7 +11,7 @@ import { Suspense } from 'react'
 // Convex document IDs are 32-character URL-safe base64 strings.
 // Reject obviously invalid formats early so the user sees a 404
 // instead of a generic Convex server error.
-const CONVEX_ID_RE = /^[A-Za-z0-9_-]{20,}$/
+const CONVEX_ID_RE = /^[A-Za-z0-9_-]{32}$/
 
 export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
   component: EditExpensePage,
