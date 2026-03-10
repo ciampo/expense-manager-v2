@@ -6,13 +6,16 @@ import { Button } from '@/components/ui/button'
  * (nav, header, footer) should remain visible.
  *
  * Used in two ways:
- * - Registered as the `_authenticated` route's `notFoundComponent`, so
- *   `throw notFound()` from its descendants shows an in-layout 404 instead
- *   of the root-level full-page 404.
- * - Rendered directly by route components that cannot rely on `throw notFound()`
- *   because TanStack Router's notFound propagation always bubbles to the root
- *   when a parent layout has `ssr: false`. Inline rendering keeps the
- *   authenticated layout (header, nav, footer) visible in those cases.
+ * - Registered as the `_authenticated` route's `notFoundComponent`. In the
+ *   current TanStack Router behavior, this mainly controls how unmatched
+ *   child paths under `_authenticated` are rendered. When a parent layout
+ *   has `ssr: false`, a thrown `notFound()` from descendants still bubbles
+ *   to the root-level full-page 404 due to a router limitation.
+ * - Rendered directly by route components that need an in-layout 404 while
+ *   keeping the authenticated layout (header, nav, footer) visible. This
+ *   inline rendering is the reliable approach when using layouts with
+ *   `ssr: false`, since thrown `notFound()` cannot currently be handled
+ *   by this in-layout `notFoundComponent`.
  *
  * Overrides the page title via React 19's `<title>` hoisting so the parent
  * route's head() title (e.g. "Edit Expense") doesn't leak through.

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 export function RouteErrorComponent({ error, reset }: ErrorComponentProps): React.ReactNode {
   return (
     <div className="container mx-auto flex flex-col items-center justify-center px-4 py-16 text-center">
+      <title>Error — Expense Manager</title>
       <h1 className="text-foreground text-4xl font-bold">Something went wrong</h1>
       <p className="text-muted-foreground mt-4 max-w-md text-sm">
         {error.message || 'An unexpected error occurred.'}
