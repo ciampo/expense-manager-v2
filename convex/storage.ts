@@ -128,11 +128,22 @@ export const confirmUpload = mutation({
       .withIndex('by_attachment', (q) => q.eq('attachmentId', args.storageId))
       .first()
 
-    if (existingExpense && existingExpense.userId !== userId) {
-      throw new Error('File already claimed by another user')
+    if (existingExpense) {
+      if (existingExpense.userId !== userId) {
+        throw new Error('File already claimed by another user')
+      }
+      // File is already attached to this user's expense (legacy data that
+      // predates validation). Backfill the upload record but never delete
+      // or re-validate — the file is in active use.
+      await ctx.db.insert('uploads', {
+        storageId: args.storageId,
+        userId,
+        createdAt: Date.now(),
+      })
+      return
     }
 
-    // Validate only unclaimed files (safe to delete if invalid).
+    // Validate only truly unclaimed files (safe to delete if invalid).
     if (fileRecord.size != null && fileRecord.size > MAX_FILE_SIZE) {
       await ctx.storage.delete(args.storageId)
       throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024} MB`)
