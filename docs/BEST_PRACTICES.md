@@ -48,6 +48,64 @@ import { Button } from '@/components/ui/button'
 
 This keeps routing behavior (client-side navigation, prefetch, active state) while applying consistent button styling. Avoid manually styling `<Link>` elements to look like buttons.
 
+### Explicit ref forwarding in wrapper components
+
+UI wrapper components that render a single DOM element or primitive should **explicitly destructure and pass `ref`** rather than relying on implicit `{...props}` spread. This makes the ref contract visible at a glance and prevents subtle bugs when the component is refactored.
+
+```tsx
+// Prefer: ref is explicit — intent is clear, reviewable, testable
+function Input({ className, type, ref, ...props }: React.ComponentProps<'input'>) {
+  return <InputPrimitive ref={ref} type={type} className={cn(...)} {...props} />
+}
+
+// Avoid: ref is hidden in ...props — easy to accidentally break
+function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
+  return <InputPrimitive type={type} className={cn(...)} {...props} />
+}
+```
+
+When a component needs a local ref (e.g., for internal focus management), always attach it to the rendered element. A common bug is creating a `useRef` but forgetting to pass it to the JSX:
+
+```tsx
+// Bug: localRef is never attached — localRef.current is always null
+function CalendarDayButton({ modifiers, ...props }) {
+  const localRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (modifiers.focused) localRef.current?.focus()
+  }, [modifiers.focused])
+  return <Button {...props} /> // ref not passed!
+}
+
+// Fix: pass the local ref explicitly
+function CalendarDayButton({ modifiers, ...props }) {
+  const localRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (modifiers.focused) localRef.current?.focus()
+  }, [modifiers.focused])
+  return <Button ref={localRef} {...props} />
+}
+```
+
+When a component needs both a local ref and a typed incoming ref, merge them via a callback ref:
+
+```tsx
+function MyInput({ ref: forwardedRef, ...props }: React.ComponentProps<'input'>) {
+  const localRef = useRef<HTMLInputElement>(null)
+  return (
+    <input
+      ref={(node: HTMLInputElement | null) => {
+        localRef.current = node
+        if (typeof forwardedRef === 'function') forwardedRef(node)
+        else if (forwardedRef) forwardedRef.current = node
+      }}
+      {...props}
+    />
+  )
+}
+```
+
+The `ref-forwarding.test.tsx` test suite verifies that `Input`, `Textarea`, and `Button` correctly forward refs to their underlying DOM elements.
+
 ### Tailwind class ordering
 
 Follow the convention of alphabetical ordering within each "group" of utility classes (layout, spacing, typography, color, state variants). When constraining width, pair `max-w-*` with `mx-auto` to center the element within its parent.
