@@ -96,7 +96,9 @@ function MyInput({ ref: forwardedRef, ...props }: React.ComponentProps<'input'>)
       ref={(node: HTMLInputElement | null) => {
         localRef.current = node
         if (typeof forwardedRef === 'function') forwardedRef(node)
-        else if (forwardedRef) forwardedRef.current = node
+        else if (forwardedRef && 'current' in forwardedRef) {
+          ;(forwardedRef as React.MutableRefObject<HTMLInputElement | null>).current = node
+        }
       }}
       {...props}
     />
