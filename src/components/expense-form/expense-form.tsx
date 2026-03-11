@@ -259,7 +259,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
       <AttachmentField
         attachmentId={attachmentId}
-        isPersistedAttachment={!!expense?.attachmentId}
+        isPersistedAttachment={attachmentId === expense?.attachmentId}
         isLoading={isLoading}
         isUploading={isUploading}
         fileInputRef={fileInputRef}
