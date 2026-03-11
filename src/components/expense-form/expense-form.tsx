@@ -198,7 +198,13 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     if (expense && attachmentId) {
       const previousId = attachmentId
       setAttachmentId(undefined)
-      removeAttachment.mutate({ id: expense._id }, { onError: () => setAttachmentId(previousId) })
+      removeAttachment.mutate(
+        { id: expense._id },
+        {
+          onError: () =>
+            setAttachmentId((current) => (current === undefined ? previousId : current)),
+        },
+      )
     } else {
       setAttachmentId(undefined)
     }
