@@ -215,6 +215,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     createExpense.isPending ||
     updateExpense.isPending ||
     deleteExpense.isPending ||
+    removeAttachment.isPending ||
     isUploading
 
   return (
