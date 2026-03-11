@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { convexQuery } from '@convex-dev/react-query'
+import { api } from '../../../../convex/_generated/api'
 import { ExpenseForm, ExpenseFormSkeleton } from '@/components/expense-form'
 import { RouteErrorComponent } from '@/components/route-error'
 import { Suspense } from 'react'
@@ -9,6 +11,12 @@ export const Route = createFileRoute('/_authenticated/expenses/new')({
   head: () => ({
     meta: [{ title: 'New Expense — Expense Manager' }],
   }),
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(convexQuery(api.categories.list, {})),
+      context.queryClient.ensureQueryData(convexQuery(api.expenses.getMerchants, {})),
+    ])
+  },
 })
 
 function NewExpensePage() {

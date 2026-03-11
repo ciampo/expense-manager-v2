@@ -27,6 +27,21 @@ export const Route = createFileRoute('/_authenticated/reports')({
   head: () => ({
     meta: [{ title: 'Reports — Expense Manager' }],
   }),
+  loader: async ({ context }) => {
+    const availableMonths = await context.queryClient.ensureQueryData(
+      convexQuery(api.reports.availableMonths, {}),
+    )
+
+    if (!availableMonths || availableMonths.length === 0) return
+
+    const { year, month } = availableMonths[0]
+    await Promise.all([
+      context.queryClient.ensureQueryData(convexQuery(api.reports.monthlyData, { year, month })),
+      context.queryClient.ensureQueryData(
+        convexQuery(api.reports.monthlyAttachments, { year, month }),
+      ),
+    ])
+  },
 })
 
 function ReportsPage() {
