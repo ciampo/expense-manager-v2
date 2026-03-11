@@ -21,11 +21,15 @@ export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
   }),
   loader: ({ context, params }) =>
     Promise.all([
-      context.queryClient.ensureQueryData(
-        convexQuery(api.expenses.get, { id: params.expenseId as Id<'expenses'> }),
-      ),
       context.queryClient.ensureQueryData(convexQuery(api.categories.list, {})),
       context.queryClient.ensureQueryData(convexQuery(api.expenses.getMerchants, {})),
+      ...(CONVEX_ID_RE.test(params.expenseId)
+        ? [
+            context.queryClient.ensureQueryData(
+              convexQuery(api.expenses.get, { id: params.expenseId as Id<'expenses'> }),
+            ),
+          ]
+        : []),
     ]),
 })
 
