@@ -6,6 +6,9 @@
  * client and server share a single source of truth.
  */
 export {
+  MERCHANT_MAX_LENGTH,
+  COMMENT_MAX_LENGTH,
+  CATEGORY_NAME_MAX_LENGTH,
   expenseDateSchema,
   expenseAmountSchema,
   expenseMerchantSchema,

@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
+  MERCHANT_MAX_LENGTH,
+  COMMENT_MAX_LENGTH,
+  CATEGORY_NAME_MAX_LENGTH,
   expenseDateSchema,
   expenseAmountSchema,
   expenseMerchantSchema,
@@ -142,16 +145,16 @@ describe('expenseMerchantSchema', () => {
     expectFailure(expenseMerchantSchema, '   ')
   })
 
-  it('accepts name at exactly 200 characters', () => {
-    expectSuccess(expenseMerchantSchema, 'A'.repeat(200))
+  it(`accepts name at exactly ${MERCHANT_MAX_LENGTH} characters`, () => {
+    expectSuccess(expenseMerchantSchema, 'A'.repeat(MERCHANT_MAX_LENGTH))
   })
 
-  it('rejects name over 200 characters after trim', () => {
-    expectFailure(expenseMerchantSchema, 'A'.repeat(201))
+  it(`rejects name over ${MERCHANT_MAX_LENGTH} characters after trim`, () => {
+    expectFailure(expenseMerchantSchema, 'A'.repeat(MERCHANT_MAX_LENGTH + 1))
   })
 
-  it('passes when trimmed content is within the 200-char limit', () => {
-    expectSuccess(expenseMerchantSchema, '  ' + 'A'.repeat(200) + '  ')
+  it(`passes when trimmed content is within the ${MERCHANT_MAX_LENGTH}-char limit`, () => {
+    expectSuccess(expenseMerchantSchema, '  ' + 'A'.repeat(MERCHANT_MAX_LENGTH) + '  ')
   })
 })
 
@@ -179,16 +182,16 @@ describe('expenseCommentSchema', () => {
     expect(result.data).toBeUndefined()
   })
 
-  it('accepts comment at exactly 1000 characters', () => {
-    expectSuccess(expenseCommentSchema, 'A'.repeat(1000))
+  it(`accepts comment at exactly ${COMMENT_MAX_LENGTH} characters`, () => {
+    expectSuccess(expenseCommentSchema, 'A'.repeat(COMMENT_MAX_LENGTH))
   })
 
-  it('rejects comment over 1000 characters after trim', () => {
-    expectFailure(expenseCommentSchema, 'A'.repeat(1001))
+  it(`rejects comment over ${COMMENT_MAX_LENGTH} characters after trim`, () => {
+    expectFailure(expenseCommentSchema, 'A'.repeat(COMMENT_MAX_LENGTH + 1))
   })
 
-  it('passes when trimmed content is within the 1000-char limit', () => {
-    expectSuccess(expenseCommentSchema, '  ' + 'A'.repeat(1000) + '  ')
+  it(`passes when trimmed content is within the ${COMMENT_MAX_LENGTH}-char limit`, () => {
+    expectSuccess(expenseCommentSchema, '  ' + 'A'.repeat(COMMENT_MAX_LENGTH) + '  ')
   })
 })
 
@@ -250,17 +253,20 @@ describe('categoryNameSchema', () => {
     expectFailure(categoryNameSchema, '   ')
   })
 
-  it('accepts name at exactly 100 characters', () => {
-    expectSuccess(categoryNameSchema, 'A'.repeat(100))
+  it(`accepts name at exactly ${CATEGORY_NAME_MAX_LENGTH} characters`, () => {
+    expectSuccess(categoryNameSchema, 'A'.repeat(CATEGORY_NAME_MAX_LENGTH))
   })
 
-  it('rejects name over 100 characters', () => {
-    expectFailure(categoryNameSchema, 'A'.repeat(101))
+  it(`rejects name over ${CATEGORY_NAME_MAX_LENGTH} characters`, () => {
+    expectFailure(categoryNameSchema, 'A'.repeat(CATEGORY_NAME_MAX_LENGTH + 1))
   })
 
-  it('accepts padded name within 100-char limit after trim', () => {
-    const result = expectSuccess(categoryNameSchema, '  ' + 'A'.repeat(100) + '  ')
-    expect(result.data).toBe('A'.repeat(100))
+  it(`accepts padded name within ${CATEGORY_NAME_MAX_LENGTH}-char limit after trim`, () => {
+    const result = expectSuccess(
+      categoryNameSchema,
+      '  ' + 'A'.repeat(CATEGORY_NAME_MAX_LENGTH) + '  ',
+    )
+    expect(result.data).toBe('A'.repeat(CATEGORY_NAME_MAX_LENGTH))
   })
 
   it('rejects very large name via pre-trim hard cap', () => {
@@ -387,7 +393,7 @@ describe('categorySchema', () => {
   })
 
   it('rejects when name exceeds limit', () => {
-    expectFailure(categorySchema, { name: 'A'.repeat(101) })
+    expectFailure(categorySchema, { name: 'A'.repeat(CATEGORY_NAME_MAX_LENGTH + 1) })
   })
 
   it('rejects when icon exceeds grapheme limit', () => {

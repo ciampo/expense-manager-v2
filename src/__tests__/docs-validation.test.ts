@@ -3,6 +3,8 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'fs'
 import { execSync } from 'child_process'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { MAX_FILE_SIZE } from '../../convex/uploadLimits'
+import { MERCHANT_MAX_LENGTH, COMMENT_MAX_LENGTH } from '../../convex/zodSchemas'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -138,6 +140,18 @@ describe('documentation validation', () => {
 
     expect(deploy).toContain('convex deploy')
     expect(deploy).toContain('CONVEX_PROD_DEPLOY_KEY')
+  })
+
+  it('README file-size reference matches MAX_FILE_SIZE constant', () => {
+    const readme = readFile('README.md')
+    const maxMB = Math.round(MAX_FILE_SIZE / (1024 * 1024))
+    expect(readme).toContain(`${maxMB}MB`)
+  })
+
+  it('README validation limits match shared constants', () => {
+    const readme = readFile('README.md')
+    expect(readme).toContain(`max ${MERCHANT_MAX_LENGTH} characters`)
+    expect(readme).toContain(`max ${COMMENT_MAX_LENGTH} characters`)
   })
 })
 

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { isValidDate, validateExpenseFields, validateCategoryFields } from '../../convex/validation'
+import {
+  MERCHANT_MAX_LENGTH,
+  COMMENT_MAX_LENGTH,
+  CATEGORY_NAME_MAX_LENGTH,
+} from '../../convex/zodSchemas'
 
 // ---------------------------------------------------------------------------
 // isValidDate
@@ -98,19 +103,20 @@ describe('validateExpenseFields', () => {
     expect(() => validateExpenseFields({ ...valid, merchant: '   ' })).toThrow('required')
   })
 
-  it('rejects merchant over 200 characters', () => {
-    expect(() => validateExpenseFields({ ...valid, merchant: 'A'.repeat(201) })).toThrow(
-      '200 characters',
-    )
+  it(`rejects merchant over ${MERCHANT_MAX_LENGTH} characters`, () => {
+    expect(() =>
+      validateExpenseFields({ ...valid, merchant: 'A'.repeat(MERCHANT_MAX_LENGTH + 1) }),
+    ).toThrow(`${MERCHANT_MAX_LENGTH} characters`)
   })
 
-  it('accepts merchant at exactly 200 characters', () => {
-    expect(() => validateExpenseFields({ ...valid, merchant: 'A'.repeat(200) })).not.toThrow()
+  it(`accepts merchant at exactly ${MERCHANT_MAX_LENGTH} characters`, () => {
+    expect(() =>
+      validateExpenseFields({ ...valid, merchant: 'A'.repeat(MERCHANT_MAX_LENGTH) }),
+    ).not.toThrow()
   })
 
   it('checks length on trimmed merchant', () => {
-    // 200 chars of content + surrounding whitespace should pass
-    const padded = '  ' + 'A'.repeat(200) + '  '
+    const padded = '  ' + 'A'.repeat(MERCHANT_MAX_LENGTH) + '  '
     expect(() => validateExpenseFields({ ...valid, merchant: padded })).not.toThrow()
   })
 
@@ -128,25 +134,28 @@ describe('validateExpenseFields', () => {
     expect(() => validateExpenseFields({ ...valid, comment: 'Quick note' })).not.toThrow()
   })
 
-  it('accepts comment at exactly 1000 characters', () => {
-    expect(() => validateExpenseFields({ ...valid, comment: 'A'.repeat(1000) })).not.toThrow()
+  it(`accepts comment at exactly ${COMMENT_MAX_LENGTH} characters`, () => {
+    expect(() =>
+      validateExpenseFields({ ...valid, comment: 'A'.repeat(COMMENT_MAX_LENGTH) }),
+    ).not.toThrow()
   })
 
-  it('rejects comment over 1000 characters', () => {
-    expect(() => validateExpenseFields({ ...valid, comment: 'A'.repeat(1001) })).toThrow(
-      '1000 characters',
-    )
+  it(`rejects comment over ${COMMENT_MAX_LENGTH} characters`, () => {
+    expect(() =>
+      validateExpenseFields({ ...valid, comment: 'A'.repeat(COMMENT_MAX_LENGTH + 1) }),
+    ).toThrow(`${COMMENT_MAX_LENGTH} characters`)
   })
 
   it('checks length on trimmed comment', () => {
-    // 1000 chars of content + surrounding whitespace should pass
-    const padded = '  ' + 'A'.repeat(1000) + '  '
+    const padded = '  ' + 'A'.repeat(COMMENT_MAX_LENGTH) + '  '
     expect(() => validateExpenseFields({ ...valid, comment: padded })).not.toThrow()
   })
 
-  it('rejects whitespace-padded comment over 1000 chars of content', () => {
-    const padded = '  ' + 'A'.repeat(1001) + '  '
-    expect(() => validateExpenseFields({ ...valid, comment: padded })).toThrow('1000 characters')
+  it(`rejects whitespace-padded comment over ${COMMENT_MAX_LENGTH} chars of content`, () => {
+    const padded = '  ' + 'A'.repeat(COMMENT_MAX_LENGTH + 1) + '  '
+    expect(() => validateExpenseFields({ ...valid, comment: padded })).toThrow(
+      `${COMMENT_MAX_LENGTH} characters`,
+    )
   })
 
   // -- return values ----------------------------------------------------------
@@ -201,21 +210,23 @@ describe('validateCategoryFields', () => {
     expect(() => validateCategoryFields({ name: '   ' })).toThrow('required')
   })
 
-  it('accepts name at exactly 100 characters', () => {
-    expect(validateCategoryFields({ name: 'A'.repeat(100) })).toEqual({
-      name: 'A'.repeat(100),
+  it(`accepts name at exactly ${CATEGORY_NAME_MAX_LENGTH} characters`, () => {
+    expect(validateCategoryFields({ name: 'A'.repeat(CATEGORY_NAME_MAX_LENGTH) })).toEqual({
+      name: 'A'.repeat(CATEGORY_NAME_MAX_LENGTH),
       icon: undefined,
     })
   })
 
-  it('rejects name over 100 characters after trim', () => {
-    expect(() => validateCategoryFields({ name: 'A'.repeat(101) })).toThrow('100 characters')
+  it(`rejects name over ${CATEGORY_NAME_MAX_LENGTH} characters after trim`, () => {
+    expect(() =>
+      validateCategoryFields({ name: 'A'.repeat(CATEGORY_NAME_MAX_LENGTH + 1) }),
+    ).toThrow(`${CATEGORY_NAME_MAX_LENGTH} characters`)
   })
 
   it('checks length on trimmed name', () => {
-    const padded = '  ' + 'A'.repeat(100) + '  '
+    const padded = '  ' + 'A'.repeat(CATEGORY_NAME_MAX_LENGTH) + '  '
     expect(validateCategoryFields({ name: padded })).toEqual({
-      name: 'A'.repeat(100),
+      name: 'A'.repeat(CATEGORY_NAME_MAX_LENGTH),
       icon: undefined,
     })
   })
