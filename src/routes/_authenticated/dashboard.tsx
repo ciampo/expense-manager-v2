@@ -136,8 +136,6 @@ function ExpenseTable() {
   const deleteExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.remove),
     onMutate: async (args: { id: Id<'expenses'> }) => {
-      await queryClient.cancelQueries({ queryKey: expensesQueryKey })
-
       const previousExpenses = queryClient.getQueryData(expensesQueryKey)
 
       queryClient.setQueryData(expensesQueryKey, (old: typeof expensesPage) =>
@@ -154,13 +152,6 @@ function ExpenseTable() {
     },
     onSuccess: () => {
       toast.success('Expense deleted')
-    },
-    onSettled: () => {
-      // Invalidate all expense list queries (deleting shifts data across pages)
-      queryClient.invalidateQueries({
-        queryKey: convexQuery(api.expenses.list, {}).queryKey,
-        exact: false,
-      })
     },
   })
 
