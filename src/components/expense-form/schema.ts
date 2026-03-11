@@ -1,9 +1,14 @@
 import { z } from 'zod'
 import { parseCurrencyToCents } from '@/lib/format'
-import { expenseDateSchema, expenseMerchantSchema, expenseAmountSchema } from '@/lib/schemas'
-import { CATEGORY_NAME_MAX_LENGTH, COMMENT_MAX_LENGTH } from '../../../convex/zodSchemas'
+import {
+  expenseDateSchema,
+  expenseMerchantSchema,
+  expenseAmountSchema,
+  CATEGORY_NAME_MAX_LENGTH,
+  COMMENT_MAX_LENGTH,
+} from '@/lib/schemas'
 
-export { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from '../../../convex/uploadLimits'
+export { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from '@/lib/schemas'
 
 export const expenseFormSchema = z
   .object({
