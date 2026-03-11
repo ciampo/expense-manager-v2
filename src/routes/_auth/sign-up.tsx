@@ -164,7 +164,11 @@ function SignUpPage() {
           </Button>
           <p className="text-muted-foreground text-center text-sm">
             Already have an account?{' '}
-            <Link to="/sign-in" className="text-primary hover:text-primary/80 underline">
+            <Link
+              to="/sign-in"
+              disabled={form.state.isSubmitting}
+              className="text-primary hover:text-primary/80 underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
+            >
               Sign In
             </Link>
           </p>

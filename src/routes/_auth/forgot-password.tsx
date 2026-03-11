@@ -136,7 +136,11 @@ function EmailStep({
           <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
             {form.state.isSubmitting ? 'Sending...' : 'Send verification code'}
           </Button>
-          <Link to="/sign-in" className="text-primary hover:text-primary/80 text-sm underline">
+          <Link
+            to="/sign-in"
+            disabled={form.state.isSubmitting}
+            className="text-primary hover:text-primary/80 text-sm underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
+          >
             Back to sign in
           </Link>
         </CardFooter>
@@ -284,7 +288,8 @@ function CodeStep({
           <button
             type="button"
             onClick={onBack}
-            className="text-primary hover:text-primary/80 text-sm underline"
+            disabled={form.state.isSubmitting}
+            className="text-primary hover:text-primary/80 text-sm underline disabled:pointer-events-none disabled:opacity-50"
           >
             Use a different email
           </button>

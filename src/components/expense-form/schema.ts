@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { parseCurrencyToCents } from '@/lib/format'
 import { expenseDateSchema, expenseMerchantSchema, expenseAmountSchema } from '@/lib/schemas'
+import { CATEGORY_NAME_MAX_LENGTH, COMMENT_MAX_LENGTH } from '../../../convex/zodSchemas'
 
 export { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from '../../../convex/uploadLimits'
 
@@ -13,14 +14,14 @@ export const expenseFormSchema = z
     // categoryNameSchema enforces min(1), which would wrongly fail when
     // an existing category is selected. The cross-field refine handles
     // the "required" case; the max mirrors categoryNameSchema.
-    newCategoryName: z.string().max(100, {
-      message: 'Category name must be 100 characters or less.',
+    newCategoryName: z.string().max(CATEGORY_NAME_MAX_LENGTH, {
+      message: `Category name must be ${CATEGORY_NAME_MAX_LENGTH} characters or less.`,
     }),
     // expenseCommentSchema is .optional() (accepts undefined), which is
     // incompatible with the form's always-string value. Mirror its
     // max-length constraint inline.
-    comment: z.string().max(1000, {
-      message: 'Comment must be 1000 characters or less.',
+    comment: z.string().max(COMMENT_MAX_LENGTH, {
+      message: `Comment must be ${COMMENT_MAX_LENGTH} characters or less.`,
     }),
   })
   .refine((data) => data.categoryId !== null || data.newCategoryName.trim().length > 0, {

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { MAX_FILE_SIZE } from '../../convex/uploadLimits'
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -70,7 +71,8 @@ function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-sm">
-                  Support for images and PDFs up to 10MB. Bulk download in ZIP format.
+                  Support for images and PDFs up to {Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB.
+                  Bulk download in ZIP format.
                 </p>
               </CardContent>
             </Card>

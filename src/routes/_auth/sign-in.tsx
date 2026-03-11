@@ -107,7 +107,8 @@ function SignInPage() {
                     <FieldLabel htmlFor="password">Password</FieldLabel>
                     <Link
                       to="/forgot-password"
-                      className="text-muted-foreground hover:text-primary text-sm underline"
+                      disabled={form.state.isSubmitting}
+                      className="text-muted-foreground hover:text-primary text-sm underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
                     >
                       Forgot password?
                     </Link>
@@ -140,7 +141,11 @@ function SignInPage() {
           </Button>
           <p className="text-muted-foreground text-center text-sm">
             Don&apos;t have an account?{' '}
-            <Link to="/sign-up" className="text-primary hover:text-primary/80 underline">
+            <Link
+              to="/sign-up"
+              disabled={form.state.isSubmitting}
+              className="text-primary hover:text-primary/80 underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
+            >
               Sign Up
             </Link>
           </p>
