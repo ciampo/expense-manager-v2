@@ -19,18 +19,16 @@ export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
   head: () => ({
     meta: [{ title: 'Edit Expense — Expense Manager' }],
   }),
-  loader: ({ context, params }) =>
-    Promise.all([
+  loader: ({ context, params }) => {
+    if (!CONVEX_ID_RE.test(params.expenseId)) return
+    return Promise.all([
+      context.queryClient.ensureQueryData(
+        convexQuery(api.expenses.get, { id: params.expenseId as Id<'expenses'> }),
+      ),
       context.queryClient.ensureQueryData(convexQuery(api.categories.list, {})),
       context.queryClient.ensureQueryData(convexQuery(api.expenses.getMerchants, {})),
-      ...(CONVEX_ID_RE.test(params.expenseId)
-        ? [
-            context.queryClient.ensureQueryData(
-              convexQuery(api.expenses.get, { id: params.expenseId as Id<'expenses'> }),
-            ),
-          ]
-        : []),
-    ]),
+    ])
+  },
 })
 
 function EditExpensePage() {
