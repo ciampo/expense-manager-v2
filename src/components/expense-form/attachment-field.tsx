@@ -71,8 +71,8 @@ export function AttachmentField({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
-                    onRemoveAttachment()
                     setShowDeleteDialog(false)
+                    onRemoveAttachment()
                   }}
                   className="bg-destructive text-destructive-foreground"
                 >

@@ -193,6 +193,34 @@ When a form is submitting (or performing mutations), disable:
 </button>
 ```
 
+### Close confirmation dialogs before firing mutations
+
+When an `AlertDialog` action triggers a mutation, close the dialog **before** calling the mutation to prevent accidental double-clicks from firing duplicate requests. The mutation's `isPending` state (reflected via `isLoading`) provides visual feedback that the operation is in progress.
+
+```tsx
+// Correct: close-first pattern
+<AlertDialogAction
+  onClick={() => {
+    setShowDialog(false)
+    deleteThing.mutate({ id })
+  }}
+>
+  Delete
+</AlertDialogAction>
+
+// Wrong: mutation fires while the dialog (and its action button) remain open
+<AlertDialogAction
+  onClick={() => {
+    deleteThing.mutate({ id })
+    setShowDialog(false)
+  }}
+>
+  Delete
+</AlertDialogAction>
+```
+
+This pattern is applied consistently in `expense-form.tsx`, `attachment-field.tsx`, and `dashboard.tsx`.
+
 ### Include all mutation `isPending` states in `isLoading`
 
 When a form orchestrates multiple mutations (create, update, delete, upload), combine all their `isPending` flags into a single `isLoading` boolean used for disabling UI.
