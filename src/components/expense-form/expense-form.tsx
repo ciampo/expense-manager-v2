@@ -190,6 +190,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
   const handleDeleteExpense = () => {
     if (expense) {
+      setShowDeleteExpense(false)
       deleteExpense.mutate({ id: expense._id })
     }
   }
