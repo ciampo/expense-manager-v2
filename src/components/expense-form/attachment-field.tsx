@@ -19,6 +19,7 @@ import { ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE } from './schema'
 
 interface AttachmentFieldProps {
   attachmentId: Id<'_storage'> | undefined
+  isPersistedAttachment: boolean
   isLoading: boolean
   isUploading: boolean
   fileInputRef: RefObject<HTMLInputElement | null>
@@ -28,6 +29,7 @@ interface AttachmentFieldProps {
 
 export function AttachmentField({
   attachmentId,
+  isPersistedAttachment,
   isLoading,
   isUploading,
   fileInputRef,
@@ -64,7 +66,9 @@ export function AttachmentField({
               <AlertDialogHeader>
                 <AlertDialogTitle>Remove attachment?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  The attachment will be permanently deleted.
+                  {isPersistedAttachment
+                    ? 'The attachment will be permanently deleted.'
+                    : 'The uploaded file will be removed from this expense.'}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
