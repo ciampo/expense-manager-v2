@@ -196,7 +196,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   }
 
   const handleRemoveAttachment = () => {
-    if (expense && attachmentId) {
+    if (expense && attachmentId && attachmentId === expense.attachmentId) {
       const previousId = attachmentId
       setAttachmentId(undefined)
       removeAttachment.mutate(
