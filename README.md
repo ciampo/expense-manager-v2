@@ -151,6 +151,8 @@ expense-manager-v2/
 pnpm test:unit
 ```
 
+Unit tests live in `src/__tests__/`. Shared Zod schema assertion helpers (`expectSuccess`, `expectFailure`, `getErrorMessages`) are in `src/__tests__/test-utils.ts`.
+
 ### E2E Tests
 
 E2E tests run against the **production deployment** of a dedicated Convex test project (separate from your dev project). See [Convex deployments](#convex) below for background on the project/deployment model.

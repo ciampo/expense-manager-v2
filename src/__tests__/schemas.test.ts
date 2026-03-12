@@ -14,37 +14,7 @@ import {
   emailSchema,
   passwordSchema,
 } from '@/lib/schemas'
-
-function expectSuccess(
-  schema: { safeParse: (v: unknown) => { success: boolean; data?: unknown } },
-  value: unknown,
-) {
-  const result = schema.safeParse(value)
-  expect(result.success).toBe(true)
-  return result
-}
-
-function expectFailure(
-  schema: {
-    safeParse: (v: unknown) => { success: boolean; error?: { issues: Array<{ message: string }> } }
-  },
-  value: unknown,
-) {
-  const result = schema.safeParse(value)
-  expect(result.success).toBe(false)
-  return result
-}
-
-function getErrorMessages(
-  schema: {
-    safeParse: (v: unknown) => { success: boolean; error?: { issues: Array<{ message: string }> } }
-  },
-  value: unknown,
-): string[] {
-  const result = schema.safeParse(value)
-  if (result.success) return []
-  return result.error!.issues.map((i) => i.message)
-}
+import { expectSuccess, expectFailure, getErrorMessages } from './test-utils'
 
 // ---------------------------------------------------------------------------
 // expenseDateSchema
