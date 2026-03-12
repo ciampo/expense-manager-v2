@@ -84,7 +84,7 @@ test.describe('Merchant Autocomplete', () => {
     await selectMerchant(page, 'Beta Deli')
 
     await page.getByRole('button', { name: /save changes/i }).click()
-    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    await page.waitForURL('**/dashboard', { timeout: 15_000 })
 
     await openMerchantCombobox(page)
     await expect(page.getByRole('option', { name: 'Alpha Market' })).toBeVisible()
