@@ -212,23 +212,30 @@ These are automatically set by GitHub Actions or defined in workflow files.
 | `CI`           | GitHub Actions | Indicates running in CI environment |
 | `GITHUB_TOKEN` | GitHub Actions | Token for GitHub API operations     |
 
-### Set in Workflows
+### Set as Environment Variables in Workflows
 
-| Variable                | Workflow File            | Value                                   |
-| ----------------------- | ------------------------ | --------------------------------------- |
-| `VITE_CONVEX_URL`       | `deploy.yml`             | `${{ secrets.CONVEX_PROD_URL }}`        |
-| `CONVEX_DEPLOY_KEY`     | `deploy.yml`             | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}` |
-| `CLOUDFLARE_API_TOKEN`  | `deploy.yml`             | `${{ secrets.CLOUDFLARE_API_TOKEN }}`   |
-| `CLOUDFLARE_ACCOUNT_ID` | `deploy.yml`             | `${{ secrets.CLOUDFLARE_ACCOUNT_ID }}`  |
-| `VITE_CONVEX_URL`       | `preview.yml`            | `${{ secrets.CONVEX_DEV_URL }}`         |
-| `CLOUDFLARE_API_TOKEN`  | `preview.yml`            | `${{ secrets.CLOUDFLARE_API_TOKEN }}`   |
-| `CLOUDFLARE_ACCOUNT_ID` | `preview.yml`            | `${{ secrets.CLOUDFLARE_ACCOUNT_ID }}`  |
-| `VITE_CONVEX_URL`       | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY`     | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
-| `VITE_CONVEX_URL`       | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY`     | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
-| `VITE_CONVEX_URL`       | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY`     | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| Variable            | Workflow File            | Value                                   |
+| ------------------- | ------------------------ | --------------------------------------- |
+| `VITE_CONVEX_URL`   | `deploy.yml`             | `${{ secrets.CONVEX_PROD_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `deploy.yml`             | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}` |
+| `VITE_CONVEX_URL`   | `preview.yml`            | `${{ secrets.CONVEX_DEV_URL }}`         |
+| `VITE_CONVEX_URL`   | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| `VITE_CONVEX_URL`   | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| `VITE_CONVEX_URL`   | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+
+### Secrets Passed as Action Inputs
+
+These GitHub Secrets are passed directly as inputs to third-party actions (not exported as environment variables in the job):
+
+| Secret                  | Workflow File | Passed As         | Action                          |
+| ----------------------- | ------------- | ----------------- | ------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | `deploy.yml`  | `apiToken` input  | `cloudflare/wrangler-action@v3` |
+| `CLOUDFLARE_ACCOUNT_ID` | `deploy.yml`  | `accountId` input | `cloudflare/wrangler-action@v3` |
+| `CLOUDFLARE_API_TOKEN`  | `preview.yml` | `apiToken` input  | `cloudflare/wrangler-action@v3` |
+| `CLOUDFLARE_ACCOUNT_ID` | `preview.yml` | `accountId` input | `cloudflare/wrangler-action@v3` |
 
 ---
 
