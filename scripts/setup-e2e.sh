@@ -15,7 +15,7 @@ command -v pnpm >/dev/null 2>&1 || { echo "Error: pnpm is required. Run: corepac
 
 # Validate Node.js version against .nvmrc
 if [ -f .nvmrc ]; then
-  REQUIRED_NODE=$(cat .nvmrc | tr -d '[:space:]')
+  REQUIRED_NODE=$(cat .nvmrc | tr -d '[:space:]' | sed 's/^v//')
   CURRENT_NODE=$(node -v | sed 's/^v//')
   REQUIRED_MAJOR=$(echo "$REQUIRED_NODE" | cut -d. -f1)
   CURRENT_MAJOR=$(echo "$CURRENT_NODE" | cut -d. -f1)
