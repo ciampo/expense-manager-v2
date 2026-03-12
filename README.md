@@ -219,13 +219,14 @@ The project uses three **fully isolated** Convex environments. Each has its own 
 
 No CI workflow ever writes to an environment it shouldn't:
 
-| Workflow          | Trigger                 | Convex environment touched             | What it does                                                           |
-| ----------------- | ----------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
-| `test-e2e.yml`    | PR, push to `main`      | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after           |
-| `test-visual.yml` | PR, push to `main`      | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs visual regression tests, cleans up   |
-| `preview.yml`     | PR open/sync            | **Dev** project (read-only via URL)    | Builds frontend preview pointing to the dev backend — no deploy        |
-| `deploy.yml`      | Push to `main` **only** | **Production** project (deploy)        | Deploys Convex backend, then builds and deploys frontend to CF Workers |
-| Others            | PR, push to `main`      | None                                   | Lint, typecheck, unit tests — no Convex interaction                    |
+| Workflow                 | Trigger                    | Convex environment touched             | What it does                                                              |
+| ------------------------ | -------------------------- | -------------------------------------- | ------------------------------------------------------------------------- |
+| `test-e2e.yml`           | PR, push to `main`         | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after              |
+| `test-visual.yml`        | PR, push to `main`         | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs visual regression tests, cleans up      |
+| `update-screenshots.yml` | Manual (workflow_dispatch) | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up |
+| `preview.yml`            | PR open/sync               | **Dev** project (read-only via URL)    | Builds frontend preview pointing to the dev backend — no deploy           |
+| `deploy.yml`             | Push to `main` **only**    | **Production** project (deploy)        | Deploys Convex backend, then builds and deploys frontend to CF Workers    |
+| Others                   | PR, push to `main`         | None                                   | Lint, typecheck, unit tests — no Convex interaction                       |
 
 **Key guarantee:** Only merges to `main` trigger production deployment. PRs are tested entirely against the isolated test project.
 
