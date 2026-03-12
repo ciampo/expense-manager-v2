@@ -4,7 +4,7 @@ type SafeParsable = {
   safeParse: (v: unknown) => {
     success: boolean
     data?: unknown
-    error?: { issues: Array<{ message: string; path: (string | number)[] }> }
+    error?: { issues: Array<{ message: string; path: PropertyKey[] }> }
   }
 }
 
