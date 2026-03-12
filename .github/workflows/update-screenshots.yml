@@ -17,10 +17,9 @@ jobs:
     timeout-minutes: 20
     # Safety: don't run on main
     if: github.ref_name != github.event.repository.default_branch
-    # One at a time per branch
     concurrency:
-      group: visual-regression-screenshots@${{ github.ref_name }}
-      cancel-in-progress: true
+      group: convex-test-deploy
+      cancel-in-progress: false
     permissions:
       contents: write
     container:
@@ -46,8 +45,29 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Deploy Convex functions
+        run: npx convex deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+
+      - name: Run post-deploy migrations
+        run: npx convex run seed:postDeploy --prod
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+
+      - name: Seed test data
+        run: pnpm test:e2e:seed
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+
       - name: Update Visual Regression Screenshots
         run: pnpm run test:visual:update
+
+      - name: Cleanup test data (safety net)
+        if: always()
+        run: pnpm test:e2e:cleanup
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
 
       - name: Check for changes
         id: check_changes

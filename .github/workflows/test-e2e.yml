@@ -8,7 +8,7 @@ env:
   VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
 
 concurrency:
-  group: e2e-convex-test-deploy
+  group: convex-test-deploy
   cancel-in-progress: false
 
 jobs:
