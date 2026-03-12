@@ -1,9 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
-import { Buffer } from 'buffer'
 
 /**
- * Minimal valid 1x1 pixel red PNG (67 bytes).
+ * Minimal valid 1×1 pixel red PNG (67 bytes).
  * Used as a lightweight test fixture for attachment upload.
  */
 const TEST_PNG_BASE64 =
