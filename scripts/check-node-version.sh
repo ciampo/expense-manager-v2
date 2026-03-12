@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Validates that the running Node.js version satisfies .nvmrc (full semver).
+# Validates that the running Node.js version (numeric major.minor.patch)
+# satisfies the minimum version specified in .nvmrc.
 # Source this from setup scripts: source "$(dirname ...)/check-node-version.sh"
 #
 # Expects REPO_ROOT to be set by the caller (the directory containing .nvmrc).
@@ -7,14 +8,9 @@
 set -euo pipefail
 
 version_ge() {
-  local IFS=.
   local c_major c_minor c_patch r_major r_minor r_patch
-  read -r c_major c_minor c_patch <<EOF
-$1
-EOF
-  read -r r_major r_minor r_patch <<EOF
-$2
-EOF
+  IFS=. read -r c_major c_minor c_patch <<<"$1"
+  IFS=. read -r r_major r_minor r_patch <<<"$2"
   c_minor=${c_minor:-0}; c_patch=${c_patch:-0}
   r_minor=${r_minor:-0}; r_patch=${r_patch:-0}
 
