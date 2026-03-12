@@ -261,7 +261,7 @@ Click "New repository secret" for each:
 4. Enable these options:
    - ✅ Require a pull request before merging
    - ✅ Require status checks to pass before merging
-     - Search and add: `Unit Tests`, `E2E Tests`, `Visual Regression Tests`
+     - Search and add: `unit`, `e2e`, `visual`, `lint`, `typecheck`
    - ✅ Require branches to be up to date before merging
    - ✅ (Optional) Require approvals: 1
 5. Click "Create"

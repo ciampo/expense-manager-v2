@@ -353,4 +353,4 @@ Prefer `withIndex()` over `filter()` for all queries. Full table scans (`filter(
 ### Routes
 
 - Add `errorComponent` to child routes so errors render within the layout (nav stays visible).
-- Use `notFound()` from TanStack Router for missing resources instead of inline fallback UI.
+- Render `<RouteNotFoundComponent />` inline for missing resources (e.g., invalid ID format, null query result). TanStack Router's `notFound()` does not bubble correctly inside layout routes with `ssr: false` — see the JSDoc in `route-not-found.tsx` for details.

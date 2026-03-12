@@ -13,6 +13,8 @@ This document lists all environment variables used in the Expense Manager projec
 | `CONVEX_DEPLOY_KEY`     | `.env.e2e`, GitHub Secrets | Deploy/run functions on Convex projects (test and production) |
 | `CLOUDFLARE_API_TOKEN`  | GitHub Secrets             | Deploy to Cloudflare Workers                                  |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets             | Cloudflare account identifier                                 |
+| `JWT_PRIVATE_KEY`       | Convex Environment         | Private key for signing JWTs (auto-set by auth setup)         |
+| `JWKS`                  | Convex Environment         | JSON Web Key Set for verifying JWTs (auto-set by auth setup)  |
 | `AUTH_RESEND_KEY`       | Convex Environment         | Resend API key for password reset emails                      |
 | `AUTH_RESEND_FROM`      | Convex Environment         | Sender address for password reset emails (optional)           |
 
@@ -210,17 +212,21 @@ These are automatically set by GitHub Actions or defined in workflow files.
 
 ### Set in Workflows
 
-| Variable            | Workflow File            | Value                                   |
-| ------------------- | ------------------------ | --------------------------------------- |
-| `VITE_CONVEX_URL`   | `deploy.yml`             | `${{ secrets.CONVEX_PROD_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `deploy.yml`             | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}` |
-| `VITE_CONVEX_URL`   | `preview.yml`            | `${{ secrets.CONVEX_DEV_URL }}`         |
-| `VITE_CONVEX_URL`   | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
-| `VITE_CONVEX_URL`   | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
-| `VITE_CONVEX_URL`   | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| Variable                | Workflow File            | Value                                   |
+| ----------------------- | ------------------------ | --------------------------------------- |
+| `VITE_CONVEX_URL`       | `deploy.yml`             | `${{ secrets.CONVEX_PROD_URL }}`        |
+| `CONVEX_DEPLOY_KEY`     | `deploy.yml`             | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}` |
+| `CLOUDFLARE_API_TOKEN`  | `deploy.yml`             | `${{ secrets.CLOUDFLARE_API_TOKEN }}`   |
+| `CLOUDFLARE_ACCOUNT_ID` | `deploy.yml`             | `${{ secrets.CLOUDFLARE_ACCOUNT_ID }}`  |
+| `VITE_CONVEX_URL`       | `preview.yml`            | `${{ secrets.CONVEX_DEV_URL }}`         |
+| `CLOUDFLARE_API_TOKEN`  | `preview.yml`            | `${{ secrets.CLOUDFLARE_API_TOKEN }}`   |
+| `CLOUDFLARE_ACCOUNT_ID` | `preview.yml`            | `${{ secrets.CLOUDFLARE_ACCOUNT_ID }}`  |
+| `VITE_CONVEX_URL`       | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY`     | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| `VITE_CONVEX_URL`       | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY`     | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| `VITE_CONVEX_URL`       | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY`     | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
 
 ---
 
@@ -228,40 +234,36 @@ These are automatically set by GitHub Actions or defined in workflow files.
 
 ### `.env.local` Template
 
+Based on `.env.example` (committed to git):
+
 ```env
-# Convex Development URL
-# Get from: https://dashboard.convex.dev/ → Your Project → Deployment URL
+# === Local Development ===
+
+# Convex development deployment URL
+# Get from: Convex Dashboard → your project → Settings → URL
 VITE_CONVEX_URL=https://your-project.convex.cloud
 
 # Convex deployment identifier (auto-populated by `npx convex dev`)
 CONVEX_DEPLOYMENT=dev:your-project
+
+# === Production Deployment (optional, for manual deploys) ===
+
+# Production deploy key for Convex backend deployment
+# Get from: Convex Dashboard → your project → Settings → Deploy Keys
+# CONVEX_DEPLOY_KEY=prod:your-project-deploy-key
 ```
 
 ### `.env.e2e` Template
 
+Based on `.env.e2e.example` (committed to git):
+
 ```env
-# expense-manager-test project → production deployment URL
-# Get from: https://dashboard.convex.dev/ → expense-manager-test → Production deployment URL
+# E2E Test Convex deployment URL (production deployment of test project)
 VITE_CONVEX_URL=https://your-test-project.convex.cloud
 
-# expense-manager-test project → production deploy key (used by E2E test seed/cleanup)
-# Get from: Convex Dashboard → expense-manager-test → Settings → Deploy Keys
+# Production deploy key for the test Convex project
+# Get from: Convex Dashboard → test project → Settings → Deploy Keys
 CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
-```
-
-### `.env.example` (Committed to Git)
-
-```env
-# Convex deployment URL
-# Get from: https://dashboard.convex.dev/
-VITE_CONVEX_URL=https://your-project.convex.cloud
-
-# Convex deployment identifier (auto-populated by `npx convex dev`)
-CONVEX_DEPLOYMENT=dev:your-project
-
-# Production deploy key for Convex backend deployment (optional, for manual deploys)
-# Get from: Convex Dashboard → your project → Settings → Deploy Keys
-# CONVEX_DEPLOY_KEY=prod:your-project-deploy-key
 ```
 
 ---
