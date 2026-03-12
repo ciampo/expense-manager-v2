@@ -189,7 +189,7 @@ For E2E test authoring conventions (locator strategy, selector patterns), see [`
 
 ### Visual Regression Tests
 
-Visual tests run in Docker to ensure consistent screenshots:
+Visual tests run in Docker to ensure consistent screenshots. In CI, the `test-visual.yml` and `update-screenshots.yml` workflows automatically deploy the Convex backend, run `seed:postDeploy` migrations, seed test data, and clean up afterward — matching the E2E pattern.
 
 ```bash
 # Run tests (in Docker for consistent screenshots)
@@ -222,7 +222,7 @@ No CI workflow ever writes to an environment it shouldn't:
 | Workflow          | Trigger                 | Convex environment touched             | What it does                                                           |
 | ----------------- | ----------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
 | `test-e2e.yml`    | PR, push to `main`      | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after           |
-| `test-visual.yml` | PR, push to `main`      | **Test** project (read-only via URL)   | Runs visual regression tests against test data                         |
+| `test-visual.yml` | PR, push to `main`      | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs visual regression tests, cleans up   |
 | `preview.yml`     | PR open/sync            | **Dev** project (read-only via URL)    | Builds frontend preview pointing to the dev backend — no deploy        |
 | `deploy.yml`      | Push to `main` **only** | **Production** project (deploy)        | Deploys Convex backend, then builds and deploys frontend to CF Workers |
 | Others            | PR, push to `main`      | None                                   | Lint, typecheck, unit tests — no Convex interaction                    |
@@ -296,7 +296,7 @@ Configure these GitHub Actions secrets:
 
 Schema backfills (e.g., populating a new field for existing records) are managed by idempotent migration functions in `convex/seed.ts`, orchestrated by `seed:postDeploy`:
 
-- **CI (automatic):** `deploy.yml` and `test-e2e.yml` run `npx convex run seed:postDeploy --prod` after every `npx convex deploy`. No manual intervention needed.
+- **CI (automatic):** `deploy.yml`, `test-e2e.yml`, `test-visual.yml`, and `update-screenshots.yml` run `npx convex run seed:postDeploy --prod` after every `npx convex deploy`. No manual intervention needed.
 - **Local dev (manual):** Run `pnpm migrate` after pulling changes that include schema migrations. This is included in `pnpm setup` for fresh setups.
 
 Migrations are idempotent and safe to run multiple times. Those that can short-circuit (e.g., merchants backfill) include an O(1) precondition check; others scan existing rows but only patch those still needing updates. To add a new migration, create a handler function in `convex/seed.ts` and call it from `postDeploy`.
