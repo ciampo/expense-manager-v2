@@ -49,7 +49,7 @@ test.describe('Visual Regression - Reports', () => {
       mask: [
         page.locator('footer'),
         page.getByRole('combobox', { name: /select month/i }),
-        page.getByRole('listbox'),
+        page.getByRole('option'),
       ],
     })
   })
