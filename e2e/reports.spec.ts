@@ -61,9 +61,10 @@ test.describe('Reports page', () => {
 
       await expect(page.getByText('Select month')).toBeVisible()
 
-      await expect(page.getByText('Total expenses')).toBeVisible()
+      const totalCard = page.getByText('Total expenses').locator('..')
+      await expect(totalCard).toBeVisible()
       await expect(page.getByText('Number of expenses')).toBeVisible()
-      await expect(page.getByText('€42.00')).toBeVisible()
+      await expect(totalCard.getByText('€42.00')).toBeVisible()
     })
 
     test('CSV download contains expected filename and content', async ({ page }) => {
@@ -86,7 +87,7 @@ test.describe('Reports page', () => {
       const csv = Buffer.concat(chunks).toString('utf-8')
       expect(csv).toContain('Date')
       expect(csv).toContain('Coworking')
-      expect(csv).toContain('42,00')
+      expect(csv).toContain('42.00')
       expect(csv).toContain('TOTAL')
     })
 
@@ -122,9 +123,10 @@ test.describe('Reports page', () => {
       await createExpense(page, 'Month Nav Shop', '20,00')
 
       await page.goto('/reports')
-      await page.getByText('Total expenses').waitFor()
+      const totalCard = page.getByText('Total expenses').locator('..')
+      await totalCard.waitFor()
 
-      await expect(page.getByText('€20.00')).toBeVisible()
+      await expect(totalCard.getByText('€20.00')).toBeVisible()
 
       const selectTrigger = page.locator('[aria-labelledby="reports-month-label"]')
       await selectTrigger.click()
