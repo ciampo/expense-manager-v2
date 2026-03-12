@@ -218,7 +218,9 @@ These are automatically set by GitHub Actions or defined in workflow files.
 | `VITE_CONVEX_URL`   | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_URL }}`        |
 | `CONVEX_DEPLOY_KEY` | `test-e2e.yml`           | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
 | `VITE_CONVEX_URL`   | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `test-visual.yml`        | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
 | `VITE_CONVEX_URL`   | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
+| `CONVEX_DEPLOY_KEY` | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
 
 ---
 
