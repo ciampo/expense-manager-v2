@@ -27,8 +27,10 @@ test.describe('Forgot-password form validation — email step', () => {
   test('email error uses role="alert" and wires aria attributes', async ({ page }) => {
     await page.getByRole('button', { name: 'Send verification code' }).click()
 
-    const emailError = page.locator('#email-error')
-    await expect(emailError).toHaveAttribute('role', 'alert')
+    const emailAlert = page.getByRole('alert').filter({ hasText: 'Email is required.' })
+    await expect(emailAlert).toBeVisible()
+    await expect(emailAlert).toHaveAttribute('id', 'email-error')
+
     await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true')
     await expect(page.getByLabel('Email')).toHaveAttribute('aria-describedby', 'email-error')
   })

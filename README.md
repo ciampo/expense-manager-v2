@@ -183,6 +183,8 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
 
 Test data (including auth users) is cleaned up automatically after each run via Playwright's `globalTeardown`.
 
+For E2E test authoring conventions (locator strategy, selector patterns), see [`docs/BEST_PRACTICES.md`](docs/BEST_PRACTICES.md#e2e-testing).
+
 ### Visual Regression Tests
 
 Visual tests run in Docker to ensure consistent screenshots:

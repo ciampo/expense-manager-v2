@@ -9,7 +9,7 @@ import { createExpense } from '../tests/shared/expenses'
  * of either variant, so a single locator covers both paths.
  */
 async function selectMerchant(page: Page, merchantName: string) {
-  await page.locator('#merchant-combobox').click()
+  await page.getByRole('combobox', { name: /merchant/i }).click()
   const input = page.getByPlaceholder('Search or create...')
   await expect(input).toBeVisible()
   await input.fill(merchantName)
@@ -20,7 +20,7 @@ async function selectMerchant(page: Page, merchantName: string) {
 async function openMerchantCombobox(page: Page) {
   await page.goto('/expenses/new')
   await page.getByRole('button', { name: /create expense/i }).waitFor()
-  await page.locator('#merchant-combobox').click()
+  await page.getByRole('combobox', { name: /merchant/i }).click()
 }
 
 test.describe('Merchant Autocomplete', () => {
@@ -79,7 +79,7 @@ test.describe('Merchant Autocomplete', () => {
     await page.getByRole('heading', { name: /edit expense/i }).waitFor()
 
     // Wait for the expense data to populate the merchant combobox
-    await expect(page.locator('#merchant-combobox')).toHaveText('Alpha Market')
+    await expect(page.getByRole('combobox', { name: /merchant/i })).toHaveText('Alpha Market')
 
     await selectMerchant(page, 'Beta Deli')
 

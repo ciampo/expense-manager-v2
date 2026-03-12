@@ -37,9 +37,19 @@ test.describe('Expense form validation', () => {
   test('error messages use role="alert" for screen readers', async ({ page }) => {
     await page.getByRole('button', { name: /create expense/i }).click()
 
-    await expect(page.locator('#merchant-error')).toHaveAttribute('role', 'alert')
-    await expect(page.locator('#amount-error')).toHaveAttribute('role', 'alert')
-    await expect(page.locator('#category-error')).toHaveAttribute('role', 'alert')
+    const merchantAlert = page.getByRole('alert').filter({ hasText: 'Merchant name is required.' })
+    await expect(merchantAlert).toBeVisible()
+    await expect(merchantAlert).toHaveAttribute('id', 'merchant-error')
+
+    const amountAlert = page.getByRole('alert').filter({ hasText: 'Amount must be positive.' })
+    await expect(amountAlert).toBeVisible()
+    await expect(amountAlert).toHaveAttribute('id', 'amount-error')
+
+    const categoryAlert = page.getByRole('alert').filter({
+      hasText: 'Select or create a category.',
+    })
+    await expect(categoryAlert).toBeVisible()
+    await expect(categoryAlert).toHaveAttribute('id', 'category-error')
   })
 
   test('invalid fields have aria-invalid="true"', async ({ page }) => {
