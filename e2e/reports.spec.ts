@@ -1,6 +1,36 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
 import { createExpense } from '../tests/shared/expenses'
+
+/** Minimal valid 1×1 pixel red PNG (67 bytes). */
+const TEST_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg=='
+
+async function createExpenseWithAttachment(page: Page, merchant: string, amount: string) {
+  await page.goto('/expenses/new')
+  await page.getByRole('button', { name: /create expense/i }).waitFor()
+
+  await page.getByRole('combobox', { name: /merchant/i }).click()
+  await page.getByPlaceholder(/search or create/i).fill(merchant)
+  await page.getByRole('option', { name: merchant }).first().click()
+  await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
+
+  await page.getByRole('combobox', { name: /category/i }).click()
+  await page.getByRole('option', { name: /coworking/i }).click()
+
+  await page.getByLabel(/amount/i).fill(amount)
+
+  const fileInput = page.locator('#attachment-input')
+  await fileInput.setInputFiles({
+    name: 'test-receipt.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(TEST_PNG_BASE64, 'base64'),
+  })
+  await expect(page.getByText('File uploaded')).toBeVisible({ timeout: 15_000 })
+
+  await page.getByRole('button', { name: /create expense/i }).click()
+  await page.waitForURL('**/dashboard', { timeout: 15_000 })
+}
 
 test.describe('Reports page', () => {
   test.setTimeout(60_000)
@@ -36,7 +66,7 @@ test.describe('Reports page', () => {
       await expect(page.getByText('€42.00')).toBeVisible()
     })
 
-    test('CSV download button is present and clickable', async ({ page }) => {
+    test('CSV download contains expected filename and content', async ({ page }) => {
       await page.goto('/reports')
       await page.getByText('Total expenses').waitFor()
 
@@ -47,6 +77,17 @@ test.describe('Reports page', () => {
       const [download] = await Promise.all([page.waitForEvent('download'), csvButton.click()])
 
       expect(download.suggestedFilename()).toMatch(/^expenses-.*\.csv$/)
+
+      const stream = await download.createReadStream()
+      const chunks: Buffer[] = []
+      for await (const chunk of stream) {
+        chunks.push(chunk as Buffer)
+      }
+      const csv = Buffer.concat(chunks).toString('utf-8')
+      expect(csv).toContain('Date')
+      expect(csv).toContain('Coworking')
+      expect(csv).toContain('42,00')
+      expect(csv).toContain('TOTAL')
     })
 
     test('category breakdown shows the expense category', async ({ page }) => {
@@ -92,6 +133,26 @@ test.describe('Reports page', () => {
       expect(optionCount).toBeGreaterThanOrEqual(1)
 
       await page.keyboard.press('Escape')
+    })
+  })
+
+  test.describe('ZIP download', () => {
+    test.setTimeout(90_000)
+
+    test('downloads a ZIP when an expense has an attachment', async ({ page }) => {
+      await signUpTestUser(page)
+      await createExpenseWithAttachment(page, 'Zip Shop', '10,00')
+
+      await page.goto('/reports')
+      await page.getByText('Total expenses').waitFor()
+
+      const zipButton = page.getByRole('button', { name: /download attachments/i })
+      await expect(zipButton).toBeVisible()
+      await expect(zipButton).toBeEnabled()
+
+      const [download] = await Promise.all([page.waitForEvent('download'), zipButton.click()])
+
+      expect(download.suggestedFilename()).toMatch(/^attachments-.*\.zip$/)
     })
   })
 })
