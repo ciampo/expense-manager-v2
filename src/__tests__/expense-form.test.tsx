@@ -143,6 +143,10 @@ describe('expenseFormSchema', () => {
 
 // ---------------------------------------------------------------------------
 // Mocks for component-level tests
+//
+// Each Convex API method gets its own spy via useConvexMutation so tests can
+// assert which specific mutation was called and with what arguments.
+// useMutation delegates mutate/mutateAsync to the underlying mutationFn.
 // ---------------------------------------------------------------------------
 
 const mockNavigate = vi.fn()
@@ -151,22 +155,26 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
 }))
 
-const mockMutateAsync = vi.fn().mockResolvedValue(undefined)
-const mockMutate = vi.fn()
+const convexMutationSpies: Record<string, ReturnType<typeof vi.fn>> = {}
+
+vi.mock('@convex-dev/react-query', () => ({
+  convexQuery: vi.fn((...args: unknown[]) => args),
+  useConvexMutation: vi.fn((apiRef: string) => {
+    if (!convexMutationSpies[apiRef]) {
+      convexMutationSpies[apiRef] = vi.fn()
+    }
+    return convexMutationSpies[apiRef]
+  }),
+}))
 
 vi.mock('@tanstack/react-query', () => ({
   useSuspenseQuery: vi.fn(),
   useQuery: vi.fn(() => ({ data: null, isLoading: false })),
-  useMutation: vi.fn(() => ({
-    mutate: mockMutate,
-    mutateAsync: mockMutateAsync,
+  useMutation: vi.fn((config: { mutationFn?: (...args: unknown[]) => unknown }) => ({
+    mutate: vi.fn((...args: unknown[]) => config.mutationFn?.(...args)),
+    mutateAsync: vi.fn((...args: unknown[]) => Promise.resolve(config.mutationFn?.(...args))),
     isPending: false,
   })),
-}))
-
-vi.mock('@convex-dev/react-query', () => ({
-  convexQuery: vi.fn((...args: unknown[]) => args),
-  useConvexMutation: vi.fn(() => vi.fn()),
 }))
 
 vi.mock('../../convex/_generated/api', () => ({
@@ -405,13 +413,21 @@ describe('ExpenseForm component', () => {
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' })
     })
 
-    it('submits pre-filled edit form and calls mutateAsync', async () => {
+    it('submits pre-filled edit form and calls update mutation with correct payload', async () => {
       render(<ExpenseForm mode="edit" expense={mockExpense} />)
 
       fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
       await waitFor(() => {
-        expect(mockMutateAsync).toHaveBeenCalled()
+        expect(convexMutationSpies['expenses.update']).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: mockExpense._id,
+            date: '2026-03-15',
+            merchant: 'Coffee Shop',
+            amount: 1250,
+            categoryId: mockExpense.categoryId,
+          }),
+        )
       })
     })
 
@@ -428,7 +444,9 @@ describe('ExpenseForm component', () => {
       fireEvent.click(deleteButtons[deleteButtons.length - 1])
 
       await waitFor(() => {
-        expect(mockMutate).toHaveBeenCalled()
+        expect(convexMutationSpies['expenses.remove']).toHaveBeenCalledWith({
+          id: mockExpense._id,
+        })
       })
     })
   })
