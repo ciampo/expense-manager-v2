@@ -334,7 +334,7 @@ Use the shared Zod schemas in `convex/zodSchemas.ts` as the single source of tru
 
 ### Indexes
 
-Prefer `withIndex()` over `filter()` for all queries. Full table scans (`filter()`) don't scale and consume excessive read bandwidth.
+Prefer `withIndex()` to bound queries whenever an appropriate index exists. Avoid standalone `filter()` as the only selector when an index can be used — full table scans don't scale and consume excessive read bandwidth. Using `filter()` to further narrow an already-indexed result set is fine, as is using it when no suitable index exists (e.g., system tables, non-indexable predicates).
 
 ---
 
