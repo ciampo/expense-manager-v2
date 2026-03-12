@@ -1,27 +1,9 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { signUpTestUser } from '../shared/auth'
+import { createExpense } from '../shared/expenses'
 
 test.describe('Visual Regression - Dashboard', () => {
   test.setTimeout(60_000)
-
-  async function createExpense(page: Page, merchant: string, amount: string) {
-    await page.getByRole('link', { name: /new expense/i }).click()
-    await page.waitForURL('**/expenses/new')
-    await page.getByRole('button', { name: /create expense/i }).waitFor()
-
-    await page.getByRole('combobox', { name: /merchant/i }).click()
-    await page.getByPlaceholder(/search or create/i).fill(merchant)
-    await page.getByRole('option', { name: `+ Use "${merchant}"`, exact: true }).click()
-    await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
-
-    await page.getByRole('combobox', { name: /category/i }).click()
-    await page.getByRole('option', { name: /coworking/i }).click()
-
-    await page.getByLabel(/amount/i).fill(amount)
-
-    await page.getByRole('button', { name: /create expense/i }).click()
-    await page.waitForURL('**/dashboard', { timeout: 15000 })
-  }
 
   test.beforeEach(async ({ page }) => {
     await signUpTestUser(page)
