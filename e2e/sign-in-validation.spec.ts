@@ -38,8 +38,13 @@ test.describe('Sign-in form validation', () => {
   test('error messages use role="alert" for screen readers', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign In' }).click()
 
-    await expect(page.getByRole('alert').filter({ hasText: 'Email is required.' })).toBeVisible()
-    await expect(page.getByRole('alert').filter({ hasText: 'Password is required.' })).toBeVisible()
+    const emailAlert = page.getByRole('alert').filter({ hasText: 'Email is required.' })
+    await expect(emailAlert).toBeVisible()
+    await expect(emailAlert).toHaveAttribute('id', 'email-error')
+
+    const passwordAlert = page.getByRole('alert').filter({ hasText: 'Password is required.' })
+    await expect(passwordAlert).toBeVisible()
+    await expect(passwordAlert).toHaveAttribute('id', 'password-error')
   })
 
   test('invalid fields have aria-invalid="true"', async ({ page }) => {
