@@ -170,9 +170,21 @@ vi.mock('@convex-dev/react-query', () => ({
 vi.mock('@tanstack/react-query', () => ({
   useSuspenseQuery: vi.fn(),
   useQuery: vi.fn(() => ({ data: null, isLoading: false })),
-  useMutation: vi.fn((config: { mutationFn?: (...args: unknown[]) => unknown }) => ({
-    mutate: vi.fn((...args: unknown[]) => config.mutationFn?.(...args)),
-    mutateAsync: vi.fn((...args: unknown[]) => Promise.resolve(config.mutationFn?.(...args))),
+  useMutation: vi.fn((config: { mutationFn?: (variables: unknown) => unknown }) => ({
+    mutate: vi.fn((variables?: unknown) => {
+      try {
+        config.mutationFn?.(variables)
+      } catch {
+        // mutate swallows errors — callers use onError callbacks instead
+      }
+    }),
+    mutateAsync: vi.fn((variables?: unknown) => {
+      try {
+        return Promise.resolve(config.mutationFn?.(variables))
+      } catch (error) {
+        return Promise.reject(error)
+      }
+    }),
     isPending: false,
   })),
 }))
