@@ -48,7 +48,7 @@ test.describe('Visual Regression - Reports', () => {
 
     await expect(page).toHaveScreenshot('reports-with-data.png', {
       fullPage: true,
-      mask: [page.locator('footer')],
+      mask: [page.locator('footer'), page.getByRole('combobox', { name: /select month/i })],
     })
   })
 
@@ -64,7 +64,11 @@ test.describe('Visual Regression - Reports', () => {
 
     await expect(page).toHaveScreenshot('reports-month-selector.png', {
       fullPage: true,
-      mask: [page.locator('footer')],
+      mask: [
+        page.locator('footer'),
+        page.getByRole('combobox', { name: /select month/i }),
+        page.getByRole('listbox'),
+      ],
     })
   })
 })
