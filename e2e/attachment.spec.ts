@@ -21,7 +21,7 @@ async function navigateToNewExpense(page: Page) {
 async function fillExpenseForm(page: Page, merchant: string) {
   await page.getByRole('combobox', { name: /merchant/i }).click()
   await page.getByPlaceholder(/search or create/i).fill(merchant)
-  await page.getByRole('option', { name: merchant }).first().click()
+  await page.getByRole('option', { name: `+ Use "${merchant}"`, exact: true }).click()
   await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 
   await page.getByRole('combobox', { name: /category/i }).click()
