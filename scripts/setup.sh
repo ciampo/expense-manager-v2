@@ -13,18 +13,7 @@ echo ""
 command -v node >/dev/null 2>&1 || { echo "Error: Node.js is required. Install from https://nodejs.org"; exit 1; }
 command -v pnpm >/dev/null 2>&1 || { echo "Error: pnpm is required. Run: corepack enable pnpm"; exit 1; }
 
-# Validate Node.js version against .nvmrc
-if [ -f .nvmrc ]; then
-  REQUIRED_NODE=$(cat .nvmrc | tr -d '[:space:]' | sed 's/^v//')
-  CURRENT_NODE=$(node -v | sed 's/^v//')
-  REQUIRED_MAJOR=$(echo "$REQUIRED_NODE" | cut -d. -f1)
-  CURRENT_MAJOR=$(echo "$CURRENT_NODE" | cut -d. -f1)
-  if [ "$CURRENT_MAJOR" -lt "$REQUIRED_MAJOR" ]; then
-    echo "Error: Node.js >= $REQUIRED_NODE is required (found $CURRENT_NODE)."
-    echo "Run: nvm install $REQUIRED_NODE"
-    exit 1
-  fi
-fi
+source scripts/check-node-version.sh
 
 echo "1. Installing dependencies..."
 pnpm install
