@@ -17,10 +17,9 @@ jobs:
     timeout-minutes: 20
     # Safety: don't run on main
     if: github.ref_name != github.event.repository.default_branch
-    # One at a time per branch
     concurrency:
-      group: visual-regression-screenshots@${{ github.ref_name }}
-      cancel-in-progress: true
+      group: convex-test-deploy
+      cancel-in-progress: false
     permissions:
       contents: write
     container:
