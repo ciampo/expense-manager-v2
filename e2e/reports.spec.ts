@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
 import { createExpense } from '../tests/shared/expenses'
@@ -61,7 +62,7 @@ test.describe('Reports page', () => {
 
       await expect(page.getByText('Select month')).toBeVisible()
 
-      const totalCard = page.getByText('Total expenses').locator('..')
+      const totalCard = page.locator('[data-slot="card"]').filter({ hasText: 'Total expenses' })
       await expect(totalCard).toBeVisible()
       await expect(page.getByText('Number of expenses')).toBeVisible()
       await expect(totalCard.getByText('€42.00')).toBeVisible()
@@ -79,12 +80,9 @@ test.describe('Reports page', () => {
 
       expect(download.suggestedFilename()).toMatch(/^expenses-.*\.csv$/)
 
-      const stream = await download.createReadStream()
-      const chunks: Buffer[] = []
-      for await (const chunk of stream) {
-        chunks.push(chunk as Buffer)
-      }
-      const csv = Buffer.concat(chunks).toString('utf-8')
+      const filePath = await download.path()
+      expect(filePath).toBeTruthy()
+      const csv = readFileSync(filePath!, 'utf-8')
       expect(csv).toContain('Date')
       expect(csv).toContain('Coworking')
       expect(csv).toContain('42.00')
@@ -123,7 +121,7 @@ test.describe('Reports page', () => {
       await createExpense(page, 'Month Nav Shop', '20,00')
 
       await page.goto('/reports')
-      const totalCard = page.getByText('Total expenses').locator('..')
+      const totalCard = page.locator('[data-slot="card"]').filter({ hasText: 'Total expenses' })
       await totalCard.waitFor()
 
       await expect(totalCard.getByText('€20.00')).toBeVisible()
