@@ -51,6 +51,11 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
 
+      - name: Run post-deploy migrations
+        run: npx convex run seed:postDeploy --prod
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+
       - name: Seed test data
         run: pnpm test:e2e:seed
         env:
