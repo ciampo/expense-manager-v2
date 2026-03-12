@@ -1,64 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { z } from 'zod'
-import { expenseDateSchema, expenseMerchantSchema, expenseAmountSchema } from '@/lib/schemas'
-import { parseCurrencyToCents } from '@/lib/format'
+import { CATEGORY_NAME_MAX_LENGTH, COMMENT_MAX_LENGTH } from '@/lib/schemas'
+import { expenseFormSchema } from '@/components/expense-form/schema'
+import { expectSuccess, getErrorMessages } from './test-utils'
+import type { Id } from '../../convex/_generated/dataModel'
 
 // ---------------------------------------------------------------------------
-// Recreate expenseFormSchema (not exported from the component module).
-// Mirrors the schema defined in src/components/expense-form.tsx.
-// ---------------------------------------------------------------------------
-
-const expenseFormSchema = z
-  .object({
-    date: expenseDateSchema,
-    merchant: expenseMerchantSchema,
-    amount: z.string().transform(parseCurrencyToCents).pipe(expenseAmountSchema),
-    categoryId: z.union([z.string(), z.null()]),
-    newCategoryName: z.string().max(100, {
-      message: 'Category name must be 100 characters or less.',
-    }),
-    comment: z.string().max(1000, {
-      message: 'Comment must be 1000 characters or less.',
-    }),
-  })
-  .refine((data) => data.categoryId !== null || data.newCategoryName.trim().length > 0, {
-    message: 'Select or create a category.',
-    path: ['categoryId'],
-  })
-
-// ---------------------------------------------------------------------------
-// Schema test helpers (same pattern as schemas.test.ts)
-// ---------------------------------------------------------------------------
-
-type SafeParsable = {
-  safeParse: (v: unknown) => {
-    success: boolean
-    data?: unknown
-    error?: { issues: Array<{ message: string; path: (string | number)[] }> }
-  }
-}
-
-function expectSuccess(schema: SafeParsable, value: unknown) {
-  const result = schema.safeParse(value)
-  expect(result.success).toBe(true)
-  return result
-}
-
-function expectFailure(schema: SafeParsable, value: unknown) {
-  const result = schema.safeParse(value)
-  expect(result.success).toBe(false)
-  return result
-}
-
-function getErrorMessages(schema: SafeParsable, value: unknown): string[] {
-  const result = schema.safeParse(value)
-  if (result.success) return []
-  return result.error!.issues.map((i) => i.message)
-}
-
-// ---------------------------------------------------------------------------
-// 1. Schema validation (pure logic — no component rendering)
+// 1. Schema validation — form-specific concerns only
+//
+// Individual field schemas (date, merchant, amount, comment) are already
+// tested in schemas.test.ts. These tests focus on:
+//   - the string→cents transform pipeline (amount is a string in the form)
+//   - the cross-field category refinement
+//   - boundary values for fields whose form schema differs from the shared
+//     field schemas (e.g. comment is not optional in the form)
 // ---------------------------------------------------------------------------
 
 describe('expenseFormSchema', () => {
@@ -71,42 +26,8 @@ describe('expenseFormSchema', () => {
     comment: '',
   }
 
-  describe('valid inputs', () => {
-    it('accepts valid input with existing category', () => {
-      expectSuccess(expenseFormSchema, validInput)
-    })
-
-    it('accepts valid input with new category name instead of categoryId', () => {
-      expectSuccess(expenseFormSchema, {
-        ...validInput,
-        categoryId: null,
-        newCategoryName: 'New Category',
-      })
-    })
-
-    it('accepts comma-formatted amount (European style)', () => {
-      expectSuccess(expenseFormSchema, { ...validInput, amount: '12,50' })
-    })
-
-    it('accepts empty comment', () => {
-      expectSuccess(expenseFormSchema, { ...validInput, comment: '' })
-    })
-
-    it('accepts comment at boundary (1000 chars)', () => {
-      expectSuccess(expenseFormSchema, { ...validInput, comment: 'A'.repeat(1000) })
-    })
-
-    it('accepts newCategoryName at boundary (100 chars)', () => {
-      expectSuccess(expenseFormSchema, {
-        ...validInput,
-        categoryId: null,
-        newCategoryName: 'A'.repeat(100),
-      })
-    })
-  })
-
-  describe('transforms', () => {
-    it('transforms amount string to cents', () => {
+  describe('amount transform pipeline', () => {
+    it('transforms dot-separated amount string to cents', () => {
       const result = expenseFormSchema.safeParse(validInput)
       expect(result.success).toBe(true)
       if (result.success) {
@@ -114,44 +35,12 @@ describe('expenseFormSchema', () => {
       }
     })
 
-    it('transforms comma amount to cents', () => {
+    it('transforms comma-separated amount string to cents', () => {
       const result = expenseFormSchema.safeParse({ ...validInput, amount: '9,99' })
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.amount).toBe(999)
       }
-    })
-
-    it('trims merchant whitespace', () => {
-      const result = expenseFormSchema.safeParse({
-        ...validInput,
-        merchant: '  Coffee Shop  ',
-      })
-      expect(result.success).toBe(true)
-      if (result.success) {
-        expect(result.data.merchant).toBe('Coffee Shop')
-      }
-    })
-  })
-
-  describe('invalid inputs', () => {
-    it('rejects invalid date', () => {
-      const messages = getErrorMessages(expenseFormSchema, { ...validInput, date: 'bad' })
-      expect(messages).toContain('Invalid date. Expected a valid YYYY-MM-DD date.')
-    })
-
-    it('rejects impossible calendar date', () => {
-      expectFailure(expenseFormSchema, { ...validInput, date: '2026-02-30' })
-    })
-
-    it('rejects empty merchant', () => {
-      const messages = getErrorMessages(expenseFormSchema, { ...validInput, merchant: '' })
-      expect(messages).toContain('Merchant name is required.')
-    })
-
-    it('rejects whitespace-only merchant', () => {
-      const messages = getErrorMessages(expenseFormSchema, { ...validInput, merchant: '   ' })
-      expect(messages).toContain('Merchant name is required.')
     })
 
     it('rejects zero amount', () => {
@@ -163,22 +52,41 @@ describe('expenseFormSchema', () => {
       const messages = getErrorMessages(expenseFormSchema, { ...validInput, amount: 'abc' })
       expect(messages.some((m) => m.includes('positive'))).toBe(true)
     })
+  })
 
-    it('rejects comment over 1000 characters', () => {
-      const messages = getErrorMessages(expenseFormSchema, {
+  describe('field boundaries', () => {
+    it(`accepts comment at exactly ${COMMENT_MAX_LENGTH} characters`, () => {
+      expectSuccess(expenseFormSchema, {
         ...validInput,
-        comment: 'A'.repeat(1001),
+        comment: 'A'.repeat(COMMENT_MAX_LENGTH),
       })
-      expect(messages).toContain('Comment must be 1000 characters or less.')
     })
 
-    it('rejects newCategoryName over 100 characters', () => {
+    it(`rejects comment over ${COMMENT_MAX_LENGTH} characters`, () => {
+      const messages = getErrorMessages(expenseFormSchema, {
+        ...validInput,
+        comment: 'A'.repeat(COMMENT_MAX_LENGTH + 1),
+      })
+      expect(messages).toContain(`Comment must be ${COMMENT_MAX_LENGTH} characters or less.`)
+    })
+
+    it(`accepts newCategoryName at exactly ${CATEGORY_NAME_MAX_LENGTH} characters`, () => {
+      expectSuccess(expenseFormSchema, {
+        ...validInput,
+        categoryId: null,
+        newCategoryName: 'A'.repeat(CATEGORY_NAME_MAX_LENGTH),
+      })
+    })
+
+    it(`rejects newCategoryName over ${CATEGORY_NAME_MAX_LENGTH} characters`, () => {
       const messages = getErrorMessages(expenseFormSchema, {
         ...validInput,
         categoryId: null,
-        newCategoryName: 'A'.repeat(101),
+        newCategoryName: 'A'.repeat(CATEGORY_NAME_MAX_LENGTH + 1),
       })
-      expect(messages).toContain('Category name must be 100 characters or less.')
+      expect(messages).toContain(
+        `Category name must be ${CATEGORY_NAME_MAX_LENGTH} characters or less.`,
+      )
     })
   })
 
@@ -243,12 +151,15 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
 }))
 
+const mockMutateAsync = vi.fn().mockResolvedValue(undefined)
+const mockMutate = vi.fn()
+
 vi.mock('@tanstack/react-query', () => ({
   useSuspenseQuery: vi.fn(),
   useQuery: vi.fn(() => ({ data: null, isLoading: false })),
   useMutation: vi.fn(() => ({
-    mutate: vi.fn(),
-    mutateAsync: vi.fn().mockResolvedValue(undefined),
+    mutate: mockMutate,
+    mutateAsync: mockMutateAsync,
     isPending: false,
   })),
 }))
@@ -295,11 +206,11 @@ const mockCategories = [
 const mockMerchants = ['Coffee Shop', 'Grocery Store', 'Gas Station']
 
 const mockExpense = {
-  _id: 'exp1',
+  _id: 'exp1' as Id<'expenses'>,
   date: '2026-03-15',
   merchant: 'Coffee Shop',
   amount: 1250,
-  categoryId: 'cat1',
+  categoryId: 'cat1' as Id<'categories'>,
   comment: 'Latte',
 }
 
@@ -383,45 +294,39 @@ describe('ExpenseForm component', () => {
 
   describe('edit mode', () => {
     it('shows "Save changes" submit button', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render(<ExpenseForm mode="edit" expense={mockExpense as any} />)
+      render(<ExpenseForm mode="edit" expense={mockExpense} />)
 
       expect(screen.getByRole('button', { name: 'Save changes' })).toBeDefined()
     })
 
     it('shows "Delete" button', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render(<ExpenseForm mode="edit" expense={mockExpense as any} />)
+      render(<ExpenseForm mode="edit" expense={mockExpense} />)
 
       expect(screen.getByRole('button', { name: 'Delete' })).toBeDefined()
     })
 
     it('pre-fills the merchant field with the expense merchant', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render(<ExpenseForm mode="edit" expense={mockExpense as any} />)
+      render(<ExpenseForm mode="edit" expense={mockExpense} />)
 
       expect(screen.getByText('Coffee Shop')).toBeDefined()
     })
 
     it('pre-fills the amount input', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render(<ExpenseForm mode="edit" expense={mockExpense as any} />)
+      render(<ExpenseForm mode="edit" expense={mockExpense} />)
 
       const amountInput = screen.getByPlaceholderText('0,00') as HTMLInputElement
       expect(amountInput.value).toBe('12.50')
     })
 
     it('pre-fills the comment input', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render(<ExpenseForm mode="edit" expense={mockExpense as any} />)
+      render(<ExpenseForm mode="edit" expense={mockExpense} />)
 
       const commentInput = screen.getByPlaceholderText('Add a note...') as HTMLInputElement
       expect(commentInput.value).toBe('Latte')
     })
 
     it('shows the selected category name', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render(<ExpenseForm mode="edit" expense={mockExpense as any} />)
+      render(<ExpenseForm mode="edit" expense={mockExpense} />)
 
       expect(screen.getByText('Food')).toBeDefined()
     })
@@ -497,6 +402,33 @@ describe('ExpenseForm component', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' })
+    })
+
+    it('submits pre-filled edit form and calls mutateAsync', async () => {
+      render(<ExpenseForm mode="edit" expense={mockExpense} />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalled()
+      })
+    })
+
+    it('opens delete confirmation dialog and confirms deletion', async () => {
+      render(<ExpenseForm mode="edit" expense={mockExpense} />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('Delete this expense?')).toBeDefined()
+      })
+
+      const confirmButton = screen.getByRole('button', { name: 'Delete' })
+      fireEvent.click(confirmButton)
+
+      await waitFor(() => {
+        expect(mockMutate).toHaveBeenCalled()
+      })
     })
   })
 })
