@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
+import { createExpense } from '../tests/shared/expenses'
 
 /**
  * Select a merchant in an open combobox. Handles both new merchants
@@ -16,25 +17,6 @@ async function selectMerchant(page: Page, merchantName: string) {
   await page.getByRole('option', { name: merchantName }).first().click()
 }
 
-async function createExpense(page: Page, merchantName: string) {
-  await page.goto('/expenses/new')
-  await page.getByRole('button', { name: /create expense/i }).waitFor()
-
-  await selectMerchant(page, merchantName)
-
-  // Wait for the merchant popover to fully unmount (exit animation)
-  // before opening the category popover.
-  await expect(page.getByPlaceholder('Search or create...')).toHaveCount(0)
-
-  await page.locator('#category-combobox').click()
-  await page.getByRole('option', { name: /Coworking/ }).click()
-
-  await page.locator('#amount').fill('10,00')
-
-  await page.getByRole('button', { name: /create expense/i }).click()
-  await page.waitForURL('**/dashboard', { timeout: 15000 })
-}
-
 async function openMerchantCombobox(page: Page) {
   await page.goto('/expenses/new')
   await page.getByRole('button', { name: /create expense/i }).waitFor()
@@ -49,16 +31,16 @@ test.describe('Merchant Autocomplete', () => {
   })
 
   test('merchant from a created expense appears in the autocomplete list', async ({ page }) => {
-    await createExpense(page, 'Alpha Market')
+    await createExpense(page, 'Alpha Market', '10,00')
 
     await openMerchantCombobox(page)
     await expect(page.getByRole('option', { name: 'Alpha Market' })).toBeVisible()
   })
 
   test('merchants appear in alphabetical order without duplicates', async ({ page }) => {
-    await createExpense(page, 'Zeta Restaurant')
-    await createExpense(page, 'Alpha Market')
-    await createExpense(page, 'Alpha Market')
+    await createExpense(page, 'Zeta Restaurant', '10,00')
+    await createExpense(page, 'Alpha Market', '10,00')
+    await createExpense(page, 'Alpha Market', '10,00')
 
     await openMerchantCombobox(page)
 
@@ -76,7 +58,7 @@ test.describe('Merchant Autocomplete', () => {
   })
 
   test('autocomplete matches merchants case-insensitively', async ({ page }) => {
-    await createExpense(page, 'Alpha Market')
+    await createExpense(page, 'Alpha Market', '10,00')
 
     await openMerchantCombobox(page)
 
@@ -91,7 +73,7 @@ test.describe('Merchant Autocomplete', () => {
   })
 
   test('updating an expense merchant upserts the new name into autocomplete', async ({ page }) => {
-    await createExpense(page, 'Alpha Market')
+    await createExpense(page, 'Alpha Market', '10,00')
 
     await page.getByRole('link', { name: /edit/i }).click()
     await page.getByRole('heading', { name: /edit expense/i }).waitFor()
