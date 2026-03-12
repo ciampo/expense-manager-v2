@@ -247,6 +247,49 @@ const isLoading =
 - Interactive elements must have visible focus indicators. The `Button` component handles this automatically; avoid overriding its focus styles.
 - Use semantic HTML (`<h1>`, `<nav>`, `<main>`) before reaching for ARIA attributes.
 
+---
+
+## E2E Testing
+
+### Locator strategy
+
+Prefer Playwright's [role-based locators](https://playwright.dev/docs/locators#locate-by-role) over CSS/ID selectors. Role-based locators test the interface that assistive technology (and users) actually see, and are resilient to implementation changes.
+
+**Locator priority:**
+
+| Priority | Locator                                       | When to use                                              |
+| -------- | --------------------------------------------- | -------------------------------------------------------- |
+| 1        | `getByRole('button', { name: ... })`          | Interactive elements with ARIA roles                     |
+| 2        | `getByLabel(/amount/i)`                       | Form fields with associated labels                       |
+| 3        | `getByRole('alert').filter({ hasText: ... })` | Error messages with `role="alert"`                       |
+| 4        | `page.locator('...')`                         | Only when no semantic role exists (see exceptions below) |
+
+**Documented exceptions** where CSS locators are appropriate:
+
+- **Hidden elements:** `getByRole` only matches elements in the accessibility tree by default. For assertions on `display:none` elements (e.g., desktop nav hidden on mobile), use a CSS locator.
+- **Non-semantic elements:** `<meta>`, `<link>`, and other elements without ARIA roles require CSS locators (e.g., `html-meta.spec.ts`).
+- **Structural scoping:** `page.locator('header')` for scoping before a role query is acceptable when a role alone would be ambiguous.
+
+### Verifying alert ↔ field wiring
+
+When testing form validation errors, verify the full accessibility contract:
+
+1. The alert element is **visible** and contains the expected text
+2. The alert element has the expected **`id`** (e.g., `email-error`)
+3. The field has **`aria-describedby`** pointing to that same `id`
+
+This ensures no false positives where an alert and a field's `aria-describedby` pass independently but reference different elements.
+
+```ts
+const emailAlert = page.getByRole('alert').filter({ hasText: 'Email is required.' })
+await expect(emailAlert).toBeVisible()
+await expect(emailAlert).toHaveAttribute('id', 'email-error')
+
+await expect(page.getByLabel('Email')).toHaveAttribute('aria-describedby', 'email-error')
+```
+
+---
+
 ### Labels and conditional inputs
 
 A `<label htmlFor="...">` must always point to an existing input. When a field is conditionally rendered (e.g., a file input hidden after a file is attached), switch to a non-label heading to avoid a dangling `htmlFor`:
