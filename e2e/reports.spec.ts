@@ -72,10 +72,10 @@ test.describe('Reports page', () => {
     })
   })
 
-  test.describe('month navigation with multiple months', () => {
+  test.describe('month selector interaction', () => {
     test.setTimeout(90_000)
 
-    test('can switch between months when data spans multiple months', async ({ page }) => {
+    test('opens the month selector and lists at least one option', async ({ page }) => {
       await signUpTestUser(page)
 
       await createExpense(page, 'Month Nav Shop', '20,00')
