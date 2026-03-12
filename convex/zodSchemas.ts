@@ -36,6 +36,14 @@ function graphemeCount(str: string): number {
 }
 
 // ---------------------------------------------------------------------------
+// Shared constants
+// ---------------------------------------------------------------------------
+
+export const MERCHANT_MAX_LENGTH = 200
+export const COMMENT_MAX_LENGTH = 1000
+export const CATEGORY_NAME_MAX_LENGTH = 100
+
+// ---------------------------------------------------------------------------
 // Expense schemas
 // ---------------------------------------------------------------------------
 
@@ -55,13 +63,19 @@ export const expenseMerchantSchema = z
     z
       .string()
       .min(1, { message: 'Merchant name is required.' })
-      .max(200, { message: 'Merchant name must be 200 characters or less.' }),
+      .max(MERCHANT_MAX_LENGTH, {
+        message: `Merchant name must be ${MERCHANT_MAX_LENGTH} characters or less.`,
+      }),
   )
 
 export const expenseCommentSchema = z
   .string()
   .transform((s) => s.trim())
-  .pipe(z.string().max(1000, { message: 'Comment must be 1000 characters or less.' }))
+  .pipe(
+    z.string().max(COMMENT_MAX_LENGTH, {
+      message: `Comment must be ${COMMENT_MAX_LENGTH} characters or less.`,
+    }),
+  )
   .transform((s) => s || undefined)
   .optional()
 
@@ -85,9 +99,12 @@ export const categoryNameSchema = z
   .max(1000, { message: 'Input too long.' })
   .transform((s) => s.trim())
   .pipe(
-    z.string().min(1, { message: 'Category name is required.' }).max(100, {
-      message: 'Category name must be 100 characters or less.',
-    }),
+    z
+      .string()
+      .min(1, { message: 'Category name is required.' })
+      .max(CATEGORY_NAME_MAX_LENGTH, {
+        message: `Category name must be ${CATEGORY_NAME_MAX_LENGTH} characters or less.`,
+      }),
   )
 
 /**

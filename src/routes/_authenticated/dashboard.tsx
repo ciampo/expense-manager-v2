@@ -169,7 +169,6 @@ function ExpenseTable() {
       toast.success('Expense deleted')
     },
     onSettled: () => {
-      // Invalidate all expense list queries (deleting shifts data across pages)
       queryClient.invalidateQueries({
         queryKey: convexQuery(api.expenses.list, {}).queryKey,
         exact: false,
