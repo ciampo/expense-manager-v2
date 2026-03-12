@@ -62,6 +62,12 @@ test.describe('Sign-in form validation', () => {
     )
   })
 
+  test('forgot-password link navigates to /forgot-password', async ({ page }) => {
+    await page.getByRole('link', { name: /forgot password/i }).click()
+
+    await expect(page).toHaveURL('/forgot-password')
+  })
+
   test('sign-in page with validation errors has no a11y violations', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign In' }).click()
     await expect(page.getByText('Email is required.')).toBeVisible()
