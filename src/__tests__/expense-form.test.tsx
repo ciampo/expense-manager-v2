@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { CATEGORY_NAME_MAX_LENGTH, COMMENT_MAX_LENGTH } from '@/lib/schemas'
+import { CATEGORY_NAME_MAX_LENGTH, COMMENT_MAX_LENGTH, MAX_FILE_SIZE } from '@/lib/schemas'
 import { expenseFormSchema } from '@/components/expense-form/schema'
 import { expectSuccess, getErrorMessages } from './test-utils'
 import type { Id } from '../../convex/_generated/dataModel'
@@ -288,7 +288,8 @@ describe('ExpenseForm component', () => {
     it('shows attachment helper text', () => {
       render(<ExpenseForm mode="create" />)
 
-      expect(screen.getByText('Images or PDF, maximum 10MB')).toBeDefined()
+      const maxMB = Math.round(MAX_FILE_SIZE / (1024 * 1024))
+      expect(screen.getByText(`Images or PDF, maximum ${maxMB}MB`)).toBeDefined()
     })
   })
 
@@ -423,8 +424,8 @@ describe('ExpenseForm component', () => {
         expect(screen.getByText('Delete this expense?')).toBeDefined()
       })
 
-      const confirmButton = screen.getByRole('button', { name: 'Delete' })
-      fireEvent.click(confirmButton)
+      const deleteButtons = screen.getAllByRole('button', { name: 'Delete' })
+      fireEvent.click(deleteButtons[deleteButtons.length - 1])
 
       await waitFor(() => {
         expect(mockMutate).toHaveBeenCalled()
