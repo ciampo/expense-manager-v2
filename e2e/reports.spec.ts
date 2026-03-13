@@ -1,37 +1,7 @@
 import { readFileSync } from 'node:fs'
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
-import { createExpense } from '../tests/shared/expenses'
-
-/** Minimal valid 1×1 pixel red PNG (67 bytes). */
-const TEST_PNG_BASE64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg=='
-
-async function createExpenseWithAttachment(page: Page, merchant: string, amount: string) {
-  await page.goto('/expenses/new')
-  await page.getByRole('button', { name: /create expense/i }).waitFor()
-
-  await page.getByRole('combobox', { name: /merchant/i }).click()
-  await page.getByPlaceholder(/search or create/i).fill(merchant)
-  await page.getByRole('option', { name: `+ Use "${merchant}"`, exact: true }).click()
-  await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
-
-  await page.getByRole('combobox', { name: /category/i }).click()
-  await page.getByRole('option', { name: /coworking/i }).click()
-
-  await page.getByLabel(/amount/i).fill(amount)
-
-  const fileInput = page.locator('#attachment-input')
-  await fileInput.setInputFiles({
-    name: 'test-receipt.png',
-    mimeType: 'image/png',
-    buffer: Buffer.from(TEST_PNG_BASE64, 'base64'),
-  })
-  await expect(page.getByText('File uploaded')).toBeVisible({ timeout: 15_000 })
-
-  await page.getByRole('button', { name: /create expense/i }).click()
-  await page.waitForURL('**/dashboard', { timeout: 15_000 })
-}
+import { createExpense, createExpenseWithAttachment } from '../tests/shared/expenses'
 
 test.describe('Reports page', () => {
   test.setTimeout(60_000)
