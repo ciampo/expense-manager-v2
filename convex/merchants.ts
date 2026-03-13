@@ -159,22 +159,30 @@ export const cleanupOrphanedMerchants = internalMutation({
   handler: async (ctx) => {
     const merchants = await ctx.db.query('merchants').collect()
 
+    const byUser = new Map<string, typeof merchants>()
+    for (const m of merchants) {
+      const list = byUser.get(m.userId) ?? []
+      list.push(m)
+      byUser.set(m.userId, list)
+    }
+
     let deleted = 0
-    for (const merchant of merchants) {
+    for (const [userId, userMerchants] of byUser) {
       if (deleted >= CLEANUP_BATCH_SIZE) break
 
       const userExpenses = await ctx.db
         .query('expenses')
-        .withIndex('by_user_and_date', (q) => q.eq('userId', merchant.userId))
+        .withIndex('by_user_and_date', (q) => q.eq('userId', userId as Id<'users'>))
         .collect()
 
-      const hasReference = userExpenses.some(
-        (e) => e.merchant.toLowerCase() === merchant.normalizedName,
-      )
+      const referencedNames = new Set(userExpenses.map((e) => e.merchant.toLowerCase()))
 
-      if (!hasReference) {
-        await ctx.db.delete('merchants', merchant._id)
-        deleted++
+      for (const merchant of userMerchants) {
+        if (deleted >= CLEANUP_BATCH_SIZE) break
+        if (!referencedNames.has(merchant.normalizedName)) {
+          await ctx.db.delete('merchants', merchant._id)
+          deleted++
+        }
       }
     }
 
