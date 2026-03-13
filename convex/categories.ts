@@ -328,15 +328,15 @@ export const cleanupOrphanedCategories = internalMutation({
       .filter((q) => q.neq(q.field('userId'), undefined))
       .collect()
 
+    if (userCategories.length === 0) return
+
+    const allExpenses = await ctx.db.query('expenses').collect()
+    const referencedCategoryIds = new Set(allExpenses.map((e) => e.categoryId))
+
     let deleted = 0
     for (const category of userCategories) {
       if (deleted >= CLEANUP_BATCH_SIZE) break
-
-      const referencing = await ctx.db
-        .query('expenses')
-        .withIndex('by_category', (q) => q.eq('categoryId', category._id))
-        .first()
-      if (!referencing) {
+      if (!referencedCategoryIds.has(category._id)) {
         await ctx.db.delete('categories', category._id)
         deleted++
       }
