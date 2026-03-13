@@ -229,6 +229,13 @@ export const update = mutation({
 
     await upsertMerchant(ctx, userId, merchant)
 
+    if (existing.categoryId !== categoryId) {
+      await cleanupOrphanedCategory(ctx, existing.categoryId)
+    }
+    if (existing.merchant.toLowerCase() !== merchant.toLowerCase()) {
+      await cleanupOrphanedMerchant(ctx, userId, existing.merchant)
+    }
+
     return args.id
   },
 })
