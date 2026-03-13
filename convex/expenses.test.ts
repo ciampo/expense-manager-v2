@@ -307,3 +307,80 @@ describe('expenses.update — attachment handling', () => {
     expect(fileStillExists).not.toBeNull()
   })
 })
+
+describe('expenses.update — category orphan cleanup', () => {
+  it('deletes orphaned user-custom category when expense changes category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    const catA = await setupCategory(t, userId)
+    const catB = await t.run(async (ctx) => {
+      return await ctx.db.insert('categories', {
+        name: 'Category B',
+        normalizedName: 'category b',
+        userId,
+      })
+    })
+
+    const expenseId = await insertExpense(t, userId, catA)
+
+    await asUser.mutation(api.expenses.update, {
+      id: expenseId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId: catB,
+    })
+
+    const oldCategory = await t.run(async (ctx) => ctx.db.get('categories', catA))
+    expect(oldCategory).toBeNull()
+  })
+
+  it('does not delete predefined category when expense changes category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    const predefinedCatId = await t.run(async (ctx) => {
+      return await ctx.db.insert('categories', {
+        name: 'Predefined',
+        normalizedName: 'predefined',
+        icon: '📦',
+      })
+    })
+    const userCatId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, predefinedCatId)
+
+    await asUser.mutation(api.expenses.update, {
+      id: expenseId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId: userCatId,
+    })
+
+    const predefinedCat = await t.run(async (ctx) => ctx.db.get('categories', predefinedCatId))
+    expect(predefinedCat).not.toBeNull()
+  })
+
+  it('does not delete user-custom category still referenced by other expenses', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    const catA = await setupCategory(t, userId)
+    const catB = await t.run(async (ctx) => {
+      return await ctx.db.insert('categories', {
+        name: 'Category B',
+        normalizedName: 'category b',
+        userId,
+      })
+    })
+
+    await insertExpense(t, userId, catA, { date: '2026-01-01' })
+    const expenseId = await insertExpense(t, userId, catA, { date: '2026-01-02' })
+
+    await asUser.mutation(api.expenses.update, {
+      id: expenseId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId: catB,
+    })
+
+    const oldCategory = await t.run(async (ctx) => ctx.db.get('categories', catA))
+    expect(oldCategory).not.toBeNull()
+  })
+})
