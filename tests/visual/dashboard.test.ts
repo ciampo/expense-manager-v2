@@ -97,7 +97,14 @@ test.describe('Visual Regression - Dashboard', () => {
     })
   })
 
-  test('attachment hover card open', async ({ page }) => {
+  test('attachment hover card open', async ({ page }, testInfo) => {
+    // Hover cards are a desktop-only interaction — skip on mobile/touch projects
+    // where hover() is synthetic and not representative of real user behavior.
+    test.skip(
+      testInfo.project.name === 'mobile-chromium',
+      'hover cards are not used on touch devices',
+    )
+
     test.setTimeout(90_000)
     await createExpenseWithAttachment(page, 'Hover Card Shop', '42,00', { type: 'png' })
 
