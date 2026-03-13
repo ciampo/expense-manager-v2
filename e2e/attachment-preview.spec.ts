@@ -39,7 +39,14 @@ test.describe('Attachment hover card preview', () => {
     const trigger = page.getByRole('button', { name: /has attachment/i })
     await expect(trigger).toBeVisible()
 
-    await trigger.focus()
+    // Navigate to the trigger via Tab for genuine keyboard focus.
+    // Programmatic element.focus() doesn't match :focus-visible, which
+    // base-ui's PreviewCard requires to open on focus.
+    for (let i = 0; i < 30; i++) {
+      await page.keyboard.press('Tab')
+      if (await trigger.evaluate((el) => el === document.activeElement)) break
+    }
+    await expect(trigger).toBeFocused()
 
     await expect(page.getByRole('link', { name: /view full/i })).toBeVisible({ timeout: 10_000 })
   })
