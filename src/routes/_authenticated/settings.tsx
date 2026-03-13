@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog'
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -33,7 +34,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
@@ -222,8 +222,8 @@ function RenameCategoryDialog({
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    onRename(trimmed, icon.trim() || undefined)
     setOpen(false)
+    onRename(trimmed, icon.trim() || undefined)
   }
 
   return (
@@ -374,8 +374,8 @@ function RenameMerchantDialog({
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    onRename(trimmed)
     setOpen(false)
+    onRename(trimmed)
   }
 
   return (
@@ -424,8 +424,15 @@ function DeleteConfirmDialog({
   entityType: 'category' | 'merchant'
   onConfirm: () => void
 }) {
+  const [open, setOpen] = useState(false)
+
+  const handleConfirm = () => {
+    setOpen(false)
+    onConfirm()
+  }
+
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
           <Button
@@ -448,14 +455,12 @@ function DeleteConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogPrimitive.Close
-            render={
-              <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90" />
-            }
-            onClick={onConfirm}
+          <AlertDialogAction
+            onClick={handleConfirm}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             Delete
-          </AlertDialogPrimitive.Close>
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
