@@ -232,9 +232,9 @@ export const update = mutation({
     if (existing.categoryId !== categoryId) {
       await cleanupOrphanedCategory(ctx, existing.categoryId)
     }
-    if (existing.merchant.toLowerCase() !== merchant.toLowerCase()) {
-      await cleanupOrphanedMerchant(ctx, userId, existing.merchant)
-    }
+    // Merchant cleanup is intentionally deferred to the daily cron.
+    // Keeping the old merchant record available preserves autocomplete
+    // suggestions for future expenses.
 
     return args.id
   },
