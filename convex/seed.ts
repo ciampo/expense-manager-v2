@@ -1,7 +1,7 @@
 import type { MutationCtx } from './_generated/server'
 import { internalMutation, internalQuery } from './_generated/server'
 import { authTables } from '@convex-dev/auth/server'
-import { upsertMerchant } from './expenses'
+import { upsertMerchant } from './merchants'
 
 // Predefined categories for work expenses
 const PREDEFINED_CATEGORIES = [

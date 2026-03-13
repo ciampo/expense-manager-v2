@@ -4,28 +4,55 @@ import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 import { resolveCategory } from './categories'
+import { upsertMerchant } from './merchants'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
 import { validateExpenseFields } from './validation'
 
 /**
- * Insert a merchant name into the merchants table if it doesn't already exist
- * for the given user (case-insensitive). Keeps the original casing for display
- * while using a lowercased normalizedName for dedup.
+ * Delete a user-custom category if no expenses reference it.
+ * Predefined categories (no userId) are never deleted.
  */
-export async function upsertMerchant(
+async function cleanupOrphanedCategory(
+  ctx: { db: MutationCtx['db'] },
+  categoryId: Id<'categories'>,
+) {
+  const referencing = await ctx.db
+    .query('expenses')
+    .withIndex('by_category', (q) => q.eq('categoryId', categoryId))
+    .first()
+  if (referencing) return
+
+  const category = await ctx.db.get('categories', categoryId)
+  if (category?.userId) {
+    await ctx.db.delete('categories', category._id)
+  }
+}
+
+/**
+ * Delete a merchant record if no remaining expenses use the same
+ * merchant name (case-insensitive).
+ */
+async function cleanupOrphanedMerchant(
   ctx: { db: MutationCtx['db'] },
   userId: Id<'users'>,
   merchantName: string,
 ) {
   const normalizedName = merchantName.toLowerCase()
-  const existing = await ctx.db
+  const merchant = await ctx.db
     .query('merchants')
     .withIndex('by_user_and_normalized_name', (q) =>
       q.eq('userId', userId).eq('normalizedName', normalizedName),
     )
     .first()
-  if (!existing) {
-    await ctx.db.insert('merchants', { name: merchantName, normalizedName, userId })
+  if (!merchant) return
+
+  const userExpenses = await ctx.db
+    .query('expenses')
+    .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+    .collect()
+
+  if (!userExpenses.some((e) => e.merchant.toLowerCase() === normalizedName)) {
+    await ctx.db.delete('merchants', merchant._id)
   }
 }
 
@@ -207,7 +234,7 @@ export const update = mutation({
 })
 
 /**
- * Delete an expense
+ * Delete an expense and clean up orphaned attachment, category, and merchant.
  */
 export const remove = mutation({
   args: { id: v.id('expenses') },
@@ -234,6 +261,10 @@ export const remove = mutation({
     }
 
     await ctx.db.delete('expenses', args.id)
+
+    await cleanupOrphanedCategory(ctx, expense.categoryId)
+    await cleanupOrphanedMerchant(ctx, userId, expense.merchant)
+
     return args.id
   },
 })
