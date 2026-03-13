@@ -100,7 +100,7 @@ test.describe('Reports page', () => {
       await page.goto('/reports')
       await page.getByText('Select month').waitFor()
 
-      const selectTrigger = page.locator('[aria-labelledby="reports-month-label"]')
+      const selectTrigger = page.getByRole('combobox', { name: 'Select month' })
       await expect(selectTrigger).toBeVisible()
 
       await selectTrigger.click()
@@ -126,7 +126,7 @@ test.describe('Reports page', () => {
 
       await expect(totalCard.getByText('€20.00')).toBeVisible()
 
-      const selectTrigger = page.locator('[aria-labelledby="reports-month-label"]')
+      const selectTrigger = page.getByRole('combobox', { name: 'Select month' })
       await selectTrigger.click()
 
       const optionCount = await page.getByRole('option').count()
