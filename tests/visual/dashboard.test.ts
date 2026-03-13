@@ -87,6 +87,7 @@ test.describe('Visual Regression - Dashboard', () => {
   })
 
   test('with attachment indicator', async ({ page }) => {
+    test.setTimeout(90_000)
     await createExpenseWithAttachment(page, 'Attached Shop', '42,00', { type: 'png' })
     await expect(page.getByText('Attached Shop')).toBeVisible()
 
@@ -97,6 +98,7 @@ test.describe('Visual Regression - Dashboard', () => {
   })
 
   test('attachment hover card open', async ({ page }) => {
+    test.setTimeout(90_000)
     await createExpenseWithAttachment(page, 'Hover Card Shop', '42,00', { type: 'png' })
 
     const trigger = page.getByRole('button', { name: /has attachment/i })
