@@ -15,7 +15,8 @@ export async function upsertMerchant(
   userId: Id<'users'>,
   merchantName: string,
 ) {
-  const normalizedName = merchantName.toLowerCase()
+  const name = validateMerchantName(merchantName)
+  const normalizedName = name.toLowerCase()
   const existing = await ctx.db
     .query('merchants')
     .withIndex('by_user_and_normalized_name', (q) =>
@@ -23,7 +24,7 @@ export async function upsertMerchant(
     )
     .first()
   if (!existing) {
-    await ctx.db.insert('merchants', { name: merchantName, normalizedName, userId })
+    await ctx.db.insert('merchants', { name, normalizedName, userId })
   }
 }
 
