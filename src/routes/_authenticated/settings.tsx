@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/dialog'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -34,10 +33,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { Suspense, useState } from 'react'
+import { type FormEvent, Suspense, useState } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { RouteErrorComponent } from '@/components/route-error'
 
@@ -218,7 +218,7 @@ function RenameCategoryDialog({
     setOpen(next)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
@@ -370,7 +370,7 @@ function RenameMerchantDialog({
     setOpen(next)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
@@ -448,12 +448,14 @@ function DeleteConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+          <AlertDialogPrimitive.Close
+            render={
+              <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90" />
+            }
             onClick={onConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             Delete
-          </AlertDialogAction>
+          </AlertDialogPrimitive.Close>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
