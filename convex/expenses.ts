@@ -4,28 +4,57 @@ import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 import { resolveCategory } from './categories'
+import { upsertMerchant } from './merchants'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
-import { validateExpenseFields } from './validation'
+import { normalizeMerchantName, validateExpenseFields } from './validation'
 
 /**
- * Insert a merchant name into the merchants table if it doesn't already exist
- * for the given user (case-insensitive). Keeps the original casing for display
- * while using a lowercased normalizedName for dedup.
+ * Delete a user-custom category if no expenses reference it.
+ * Predefined categories (no userId) are never deleted.
+ * Only deletes categories owned by the given user.
  */
-export async function upsertMerchant(
+async function cleanupOrphanedCategory(
+  ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'>,
+  categoryId: Id<'categories'>,
+) {
+  const referencing = await ctx.db
+    .query('expenses')
+    .withIndex('by_category', (q) => q.eq('categoryId', categoryId))
+    .first()
+  if (referencing) return
+
+  const category = await ctx.db.get('categories', categoryId)
+  if (category?.userId && category.userId === userId) {
+    await ctx.db.delete('categories', category._id)
+  }
+}
+
+/**
+ * Delete a merchant record if no remaining expenses use the same
+ * merchant name (case-insensitive).
+ */
+async function cleanupOrphanedMerchant(
   ctx: { db: MutationCtx['db'] },
   userId: Id<'users'>,
   merchantName: string,
 ) {
-  const normalizedName = merchantName.toLowerCase()
-  const existing = await ctx.db
+  const normalized = normalizeMerchantName(merchantName)
+  const merchant = await ctx.db
     .query('merchants')
     .withIndex('by_user_and_normalized_name', (q) =>
-      q.eq('userId', userId).eq('normalizedName', normalizedName),
+      q.eq('userId', userId).eq('normalizedName', normalized),
     )
     .first()
-  if (!existing) {
-    await ctx.db.insert('merchants', { name: merchantName, normalizedName, userId })
+  if (!merchant) return
+
+  const userExpenses = await ctx.db
+    .query('expenses')
+    .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+    .collect()
+
+  if (!userExpenses.some((e) => normalizeMerchantName(e.merchant) === normalized)) {
+    await ctx.db.delete('merchants', merchant._id)
   }
 }
 
@@ -202,12 +231,19 @@ export const update = mutation({
 
     await upsertMerchant(ctx, userId, merchant)
 
+    if (existing.categoryId !== categoryId) {
+      await cleanupOrphanedCategory(ctx, userId, existing.categoryId)
+    }
+    // Merchant cleanup is intentionally deferred to the daily cron.
+    // Keeping the old merchant record available preserves autocomplete
+    // suggestions for future expenses.
+
     return args.id
   },
 })
 
 /**
- * Delete an expense
+ * Delete an expense and clean up orphaned attachment, category, and merchant.
  */
 export const remove = mutation({
   args: { id: v.id('expenses') },
@@ -234,6 +270,10 @@ export const remove = mutation({
     }
 
     await ctx.db.delete('expenses', args.id)
+
+    await cleanupOrphanedCategory(ctx, userId, expense.categoryId)
+    await cleanupOrphanedMerchant(ctx, userId, expense.merchant)
+
     return args.id
   },
 })

@@ -12,8 +12,28 @@ const crons = cronJobs()
  */
 crons.daily(
   'cleanup orphaned uploads',
-  { hourUTC: 3, minuteUTC: 0 }, // 3:00 AM UTC
+  { hourUTC: 3, minuteUTC: 0 },
   internal.storage.cleanupOrphanedUploads,
+)
+
+/**
+ * Remove user-custom categories not referenced by any expense.
+ * Complements the per-deletion cleanup in expenses.remove — catches
+ * orphans from bulk imports, edge cases, or older data.
+ */
+crons.daily(
+  'cleanup orphaned categories',
+  { hourUTC: 3, minuteUTC: 10 },
+  internal.categories.cleanupOrphanedCategories,
+)
+
+/**
+ * Remove merchant records not referenced by any expense.
+ */
+crons.daily(
+  'cleanup orphaned merchants',
+  { hourUTC: 3, minuteUTC: 20 },
+  internal.merchants.cleanupOrphanedMerchants,
 )
 
 export default crons

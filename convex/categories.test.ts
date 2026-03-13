@@ -1,7 +1,7 @@
 // @vitest-environment edge-runtime
 import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
-import { api } from './_generated/api'
+import { api, internal } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { upsertCategory } from './categories'
@@ -167,5 +167,189 @@ describe('legacy rows without normalizedName', () => {
     await expect(asUser.mutation(api.categories.create, { name: 'Food' })).rejects.toThrow(
       'Category already exists',
     )
+  })
+})
+
+// ── Helper for tests that need expenses ─────────────────────────────────
+
+async function insertExpense(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<'users'>,
+  categoryId: Id<'categories'>,
+  overrides: Partial<{ merchant: string; date: string }> = {},
+) {
+  return await t.run(async (ctx) => {
+    return await ctx.db.insert('expenses', {
+      userId,
+      date: overrides.date ?? '2026-03-01',
+      merchant: overrides.merchant ?? 'Test Merchant',
+      amount: 2500,
+      categoryId,
+      createdAt: Date.now(),
+    })
+  })
+}
+
+describe('categories.rename', () => {
+  it('renames a user-custom category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'Food', userId })
+
+    await asUser.mutation(api.categories.rename, { id: catId, newName: 'Groceries' })
+
+    const updated = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(updated?.name).toBe('Groceries')
+    expect(updated?.normalizedName).toBe('groceries')
+  })
+
+  it('rejects renaming a predefined category', async () => {
+    const t = convexTest(schema, modules)
+    const { asUser } = await setupAuthenticatedUser(t)
+    const predefinedId = await insertCategory(t, { name: 'Coworking' })
+
+    await expect(
+      asUser.mutation(api.categories.rename, { id: predefinedId, newName: 'New Name' }),
+    ).rejects.toThrow('Cannot modify this category')
+  })
+
+  it('rejects duplicate name (case-insensitive)', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'Food', userId })
+    await insertCategory(t, { name: 'Transport', userId })
+
+    await expect(
+      asUser.mutation(api.categories.rename, { id: catId, newName: 'transport' }),
+    ).rejects.toThrow('Category already exists')
+  })
+})
+
+describe('categories.remove', () => {
+  it('deletes orphaned user-custom category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'Unused', userId })
+
+    await asUser.mutation(api.categories.remove, { id: catId })
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(cat).toBeNull()
+  })
+
+  it('rejects deletion of predefined category', async () => {
+    const t = convexTest(schema, modules)
+    const { asUser } = await setupAuthenticatedUser(t)
+    const predefinedId = await insertCategory(t, { name: 'Coworking' })
+
+    await expect(asUser.mutation(api.categories.remove, { id: predefinedId })).rejects.toThrow(
+      'Cannot delete this category',
+    )
+  })
+
+  it('rejects deletion when expenses reference the category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'InUse', userId })
+    await insertExpense(t, userId, catId)
+
+    await expect(asUser.mutation(api.categories.remove, { id: catId })).rejects.toThrow(
+      'Cannot delete category that is used by expenses',
+    )
+  })
+})
+
+describe('categories.listWithCounts', () => {
+  it('returns categories with correct expense counts', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catA = await insertCategory(t, { name: 'Food', userId })
+    await insertCategory(t, { name: 'Transport', userId })
+
+    await insertExpense(t, userId, catA)
+    await insertExpense(t, userId, catA, { date: '2026-03-02' })
+
+    const result = await asUser.query(api.categories.listWithCounts, {})
+    const food = result.find((c) => c.name === 'Food')
+    const transport = result.find((c) => c.name === 'Transport')
+
+    expect(food?.expenseCount).toBe(2)
+    expect(transport?.expenseCount).toBe(0)
+  })
+
+  it('includes predefined categories with isPredefined flag', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    await insertCategory(t, { name: 'Predefined' })
+    await insertCategory(t, { name: 'Custom', userId })
+
+    const result = await asUser.query(api.categories.listWithCounts, {})
+    const predefined = result.find((c) => c.name === 'Predefined')
+    const custom = result.find((c) => c.name === 'Custom')
+
+    expect(predefined?.isPredefined).toBe(true)
+    expect(custom?.isPredefined).toBe(false)
+  })
+})
+
+describe('cleanupOrphanedCategories', () => {
+  it('deletes orphaned user-custom categories', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const orphanedId = await insertCategory(t, { name: 'Orphaned', userId })
+
+    await t.mutation(internal.categories.cleanupOrphanedCategories, {})
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', orphanedId))
+    expect(cat).toBeNull()
+  })
+
+  it('preserves predefined categories even if unreferenced', async () => {
+    const t = convexTest(schema, modules)
+    const predefinedId = await insertCategory(t, { name: 'Predefined' })
+
+    await t.mutation(internal.categories.cleanupOrphanedCategories, {})
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', predefinedId))
+    expect(cat).not.toBeNull()
+  })
+
+  it('preserves referenced user-custom categories', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'InUse', userId })
+    await insertExpense(t, userId, catId)
+
+    await t.mutation(internal.categories.cleanupOrphanedCategories, {})
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(cat).not.toBeNull()
+  })
+})
+
+describe('expense deletion cleans up orphaned categories', () => {
+  it('deletes orphaned user-custom category when last expense is removed', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'Orphanable', userId })
+    const expenseId = await insertExpense(t, userId, catId)
+
+    await asUser.mutation(api.expenses.remove, { id: expenseId })
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(cat).toBeNull()
+  })
+
+  it('preserves predefined category even after last expense is removed', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const predefinedId = await insertCategory(t, { name: 'Predefined' })
+    const expenseId = await insertExpense(t, userId, predefinedId)
+
+    await asUser.mutation(api.expenses.remove, { id: expenseId })
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', predefinedId))
+    expect(cat).not.toBeNull()
   })
 })

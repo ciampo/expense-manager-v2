@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import type { MutationCtx, QueryCtx } from './_generated/server'
-import { mutation, query } from './_generated/server'
+import { internalMutation, mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 import { validateCategoryFields } from './validation'
@@ -190,5 +190,162 @@ export const create = mutation({
     })
 
     return categoryId
+  },
+})
+
+/**
+ * List all categories with expense counts (for the settings page).
+ * Returns predefined categories first, then user-custom categories.
+ */
+export const listWithCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx)
+
+    const predefined = await ctx.db
+      .query('categories')
+      .withIndex('by_user_and_name', (q) => q.eq('userId', undefined))
+      .collect()
+
+    let userCategories: typeof predefined = []
+    if (userId) {
+      userCategories = await ctx.db
+        .query('categories')
+        .withIndex('by_user_and_name', (q) => q.eq('userId', userId))
+        .collect()
+    }
+
+    const allCategories = [
+      ...predefined.map((c) => ({ ...c, isPredefined: true })),
+      ...userCategories.map((c) => ({ ...c, isPredefined: false })),
+    ]
+
+    const counts = new Map<string, number>()
+    if (userId) {
+      const allExpenses = await ctx.db
+        .query('expenses')
+        .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+        .collect()
+      for (const expense of allExpenses) {
+        counts.set(expense.categoryId, (counts.get(expense.categoryId) ?? 0) + 1)
+      }
+    }
+
+    return allCategories
+      .map((c) => ({
+        ...c,
+        expenseCount: counts.get(c._id) ?? 0,
+      }))
+      .sort((a, b) => {
+        if (a.isPredefined !== b.isPredefined) return a.isPredefined ? -1 : 1
+        return a.name.localeCompare(b.name)
+      })
+  },
+})
+
+/**
+ * Rename a user-custom category. Predefined categories cannot be renamed.
+ */
+export const rename = mutation({
+  args: {
+    id: v.id('categories'),
+    newName: v.string(),
+    newIcon: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) throw new Error('Not authenticated')
+
+    const category = await ctx.db.get('categories', args.id)
+    if (!category) throw new Error('Category not found')
+    if (!category.userId || category.userId !== userId) {
+      throw new Error('Cannot modify this category')
+    }
+
+    const { name, icon } = validateCategoryFields({
+      name: args.newName,
+      icon: args.newIcon,
+    })
+    const normalizedName = name.toLowerCase()
+
+    if (normalizedName !== category.normalizedName) {
+      if (await findCategory(ctx, userId, name, normalizedName)) {
+        throw new Error('Category already exists')
+      }
+      if (await findCategory(ctx, undefined, name, normalizedName)) {
+        throw new Error('Category already exists')
+      }
+    }
+
+    await ctx.db.patch('categories', args.id, { name, normalizedName, icon })
+    return args.id
+  },
+})
+
+/**
+ * Delete a user-custom category that has no expenses referencing it.
+ * Predefined categories cannot be deleted.
+ */
+export const remove = mutation({
+  args: { id: v.id('categories') },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) throw new Error('Not authenticated')
+
+    const category = await ctx.db.get('categories', args.id)
+    if (!category) throw new Error('Category not found')
+    if (!category.userId || category.userId !== userId) {
+      throw new Error('Cannot delete this category')
+    }
+
+    const referencing = await ctx.db
+      .query('expenses')
+      .withIndex('by_category', (q) => q.eq('categoryId', args.id))
+      .first()
+    if (referencing) {
+      throw new Error('Cannot delete category that is used by expenses')
+    }
+
+    await ctx.db.delete('categories', args.id)
+    return args.id
+  },
+})
+
+// ── Cleanup cron ────────────────────────────────────────────────────────
+
+const CLEANUP_BATCH_SIZE = 100
+
+/**
+ * Delete user-custom categories that are not referenced by any expense.
+ * Predefined categories are never removed. Scans all user-custom
+ * categories and deletes up to {@link CLEANUP_BATCH_SIZE} orphans per run.
+ */
+export const cleanupOrphanedCategories = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const userCategories = await ctx.db
+      .query('categories')
+      .filter((q) => q.neq(q.field('userId'), undefined))
+      .collect()
+
+    if (userCategories.length === 0) return
+
+    const allExpenses = await ctx.db.query('expenses').collect()
+    const referencedCategoryIds = new Set(allExpenses.map((e) => e.categoryId))
+
+    let deleted = 0
+    for (const category of userCategories) {
+      if (deleted >= CLEANUP_BATCH_SIZE) break
+      if (!referencedCategoryIds.has(category._id)) {
+        await ctx.db.delete('categories', category._id)
+        deleted++
+      }
+    }
+
+    if (deleted > 0) {
+      console.log(
+        `Cleanup: deleted ${deleted} orphaned ${deleted === 1 ? 'category' : 'categories'}`,
+      )
+    }
   },
 })

@@ -7,7 +7,7 @@
  */
 
 import type { z } from 'zod'
-import { expenseSchema, categorySchema } from './zodSchemas'
+import { expenseSchema, categorySchema, merchantNameSchema } from './zodSchemas'
 
 export { isValidCalendarDate as isValidDate } from './zodSchemas'
 
@@ -41,4 +41,21 @@ export function validateCategoryFields(args: {
   icon?: string
 }): z.infer<typeof categorySchema> {
   return parseOrThrow(categorySchema, args)
+}
+
+/**
+ * Validate and clean a merchant name. Returns the trimmed value.
+ * Throws a plain Error with a descriptive message on invalid input.
+ */
+export function validateMerchantName(name: string): string {
+  return parseOrThrow(merchantNameSchema, name)
+}
+
+/**
+ * Normalize a merchant name for matching/dedup: trim + lowercase.
+ * Use this everywhere merchant names are compared to ensure consistent
+ * matching semantics with `merchants.normalizedName`.
+ */
+export function normalizeMerchantName(name: string): string {
+  return name.trim().toLowerCase()
 }

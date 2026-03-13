@@ -96,6 +96,12 @@ function AuthenticatedLayout() {
             >
               Reports
             </Link>
+            <Link
+              to="/settings"
+              className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
+            >
+              Settings
+            </Link>
 
             {/* User menu */}
             <DropdownMenu>
@@ -143,6 +149,13 @@ function AuthenticatedLayout() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Reports
+                </Link>
+                <Link
+                  to="/settings"
+                  className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Settings
                 </Link>
                 <hr className="border-t" />
                 <button

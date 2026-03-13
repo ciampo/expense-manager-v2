@@ -14,6 +14,7 @@ import type * as categories from "../categories.js";
 import type * as crons from "../crons.js";
 import type * as expenses from "../expenses.js";
 import type * as http from "../http.js";
+import type * as merchants from "../merchants.js";
 import type * as reports from "../reports.js";
 import type * as seed from "../seed.js";
 import type * as storage from "../storage.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   expenses: typeof expenses;
   http: typeof http;
+  merchants: typeof merchants;
   reports: typeof reports;
   seed: typeof seed;
   storage: typeof storage;

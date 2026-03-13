@@ -1,7 +1,8 @@
 import type { MutationCtx } from './_generated/server'
 import { internalMutation, internalQuery } from './_generated/server'
 import { authTables } from '@convex-dev/auth/server'
-import { upsertMerchant } from './expenses'
+import { upsertMerchant } from './merchants'
+import { normalizeMerchantName } from './validation'
 
 // Predefined categories for work expenses
 const PREDEFINED_CATEGORIES = [
@@ -78,7 +79,7 @@ async function runBackfillMerchants(ctx: MutationCtx) {
 
   const seen = new Set<string>()
   for (const expense of expenses) {
-    const key = `${expense.userId}:${expense.merchant.toLowerCase()}`
+    const key = `${expense.userId}:${normalizeMerchantName(expense.merchant)}`
     if (seen.has(key)) continue
     seen.add(key)
     await upsertMerchant(ctx, expense.userId, expense.merchant)
