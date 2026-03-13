@@ -1,16 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
-
-/** Minimal valid 1×1 pixel red PNG (67 bytes). */
-const TEST_PNG_BASE64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg=='
-
-/** Minimal valid PDF (%PDF-1.0 with one blank page). */
-const TEST_PDF = `%PDF-1.0
-1 0 obj<</Pages 2 0 R>>endobj
-2 0 obj<</Kids[3 0 R]/Count 1>>endobj
-3 0 obj<</MediaBox[0 0 612 792]>>endobj
-trailer<</Root 1 0 R>>`
+import { TEST_PNG_BASE64, TEST_PDF } from '../tests/shared/fixtures'
 
 async function navigateToNewExpense(page: Page) {
   await page.getByRole('link', { name: /new expense/i }).click()
