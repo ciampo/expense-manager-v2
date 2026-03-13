@@ -37,7 +37,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { Suspense, useRef, useState } from 'react'
+import { Suspense, useState } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { RouteErrorComponent } from '@/components/route-error'
 
@@ -209,7 +209,6 @@ function RenameCategoryDialog({
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(currentName)
   const [icon, setIcon] = useState(currentIcon ?? '')
-  const nameInputRef = useRef<HTMLInputElement>(null)
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
@@ -243,7 +242,6 @@ function RenameCategoryDialog({
           <div className="flex flex-col gap-2">
             <Label htmlFor={`cat-name-${categoryId}`}>Name</Label>
             <Input
-              ref={nameInputRef}
               id={`cat-name-${categoryId}`}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -366,7 +364,6 @@ function RenameMerchantDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(currentName)
-  const nameInputRef = useRef<HTMLInputElement>(null)
 
   const handleOpenChange = (next: boolean) => {
     if (next) setName(currentName)
@@ -399,7 +396,6 @@ function RenameMerchantDialog({
           <div className="flex flex-col gap-2">
             <Label htmlFor={`m-name-${merchantId}`}>Name</Label>
             <Input
-              ref={nameInputRef}
               id={`m-name-${merchantId}`}
               value={name}
               onChange={(e) => setName(e.target.value)}
