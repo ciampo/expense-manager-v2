@@ -48,12 +48,14 @@ test.describe('Attachment hover card preview', () => {
     await createExpenseWithAttachment(page, 'Link Target Shop', '10,00', { type: 'png' })
 
     const trigger = page.getByRole('button', { name: /has attachment/i })
+    await expect(trigger).toBeVisible()
     await trigger.hover()
 
     const link = page.getByRole('link', { name: /view full/i })
     await expect(link).toBeVisible({ timeout: 10_000 })
 
     await expect(link).toHaveAttribute('target', '_blank')
+    await expect(link).toHaveAttribute('rel', /noopener/)
     await expect(link).toHaveAttribute('href', /^https?:\/\//)
   })
 })
