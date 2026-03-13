@@ -3,6 +3,7 @@ import type { MutationCtx } from './_generated/server'
 import { internalMutation, mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
+import { validateMerchantName } from './validation'
 
 /**
  * Insert a merchant name into the merchants table if it doesn't already exist
@@ -78,9 +79,7 @@ export const rename = mutation({
       throw new Error('Merchant not found')
     }
 
-    const newName = args.newName.trim()
-    if (!newName) throw new Error('Merchant name is required')
-
+    const newName = validateMerchantName(args.newName)
     const newNormalizedName = newName.toLowerCase()
 
     if (newNormalizedName !== merchant.normalizedName) {
@@ -151,15 +150,18 @@ const CLEANUP_BATCH_SIZE = 100
 
 /**
  * Delete merchant records that are not referenced by any expense.
- * Processes up to {@link CLEANUP_BATCH_SIZE} merchants per run.
+ * Scans all merchants and deletes up to {@link CLEANUP_BATCH_SIZE}
+ * orphans per run to stay within Convex execution limits.
  */
 export const cleanupOrphanedMerchants = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const merchants = await ctx.db.query('merchants').take(CLEANUP_BATCH_SIZE)
+    const merchants = await ctx.db.query('merchants').collect()
 
     let deleted = 0
     for (const merchant of merchants) {
+      if (deleted >= CLEANUP_BATCH_SIZE) break
+
       const userExpenses = await ctx.db
         .query('expenses')
         .withIndex('by_user_and_date', (q) => q.eq('userId', merchant.userId))

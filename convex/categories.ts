@@ -221,12 +221,14 @@ export const listWithCounts = query({
     ]
 
     const counts = new Map<string, number>()
-    for (const cat of allCategories) {
-      const expenses = await ctx.db
+    if (userId) {
+      const allExpenses = await ctx.db
         .query('expenses')
-        .withIndex('by_category', (q) => q.eq('categoryId', cat._id))
+        .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
         .collect()
-      counts.set(cat._id, expenses.length)
+      for (const expense of allExpenses) {
+        counts.set(expense.categoryId, (counts.get(expense.categoryId) ?? 0) + 1)
+      }
     }
 
     return allCategories
@@ -315,8 +317,8 @@ const CLEANUP_BATCH_SIZE = 100
 
 /**
  * Delete user-custom categories that are not referenced by any expense.
- * Predefined categories are never removed. Processes up to
- * {@link CLEANUP_BATCH_SIZE} categories per run.
+ * Predefined categories are never removed. Scans all user-custom
+ * categories and deletes up to {@link CLEANUP_BATCH_SIZE} orphans per run.
  */
 export const cleanupOrphanedCategories = internalMutation({
   args: {},
@@ -324,10 +326,12 @@ export const cleanupOrphanedCategories = internalMutation({
     const userCategories = await ctx.db
       .query('categories')
       .filter((q) => q.neq(q.field('userId'), undefined))
-      .take(CLEANUP_BATCH_SIZE)
+      .collect()
 
     let deleted = 0
     for (const category of userCategories) {
+      if (deleted >= CLEANUP_BATCH_SIZE) break
+
       const referencing = await ctx.db
         .query('expenses')
         .withIndex('by_category', (q) => q.eq('categoryId', category._id))
