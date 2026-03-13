@@ -249,9 +249,17 @@ const isLoading =
 
 ---
 
-## E2E Testing
+## Testing
 
-### Locator strategy
+### Unit tests
+
+- Test pure functions and validation schemas directly.
+- Mock external dependencies (Convex queries, navigation) at the boundary.
+- Use `vitest.config.ts` with `globals: true` so `describe`/`it`/`expect` are available without imports.
+
+### E2E tests
+
+#### Locator strategy
 
 Prefer Playwright's [role-based locators](https://playwright.dev/docs/locators#locate-by-role) over CSS/ID selectors. Role-based locators test the interface that assistive technology (and users) actually see, and are resilient to implementation changes.
 
@@ -270,7 +278,7 @@ Prefer Playwright's [role-based locators](https://playwright.dev/docs/locators#l
 - **Non-semantic elements:** `<meta>`, `<link>`, and other elements without ARIA roles require CSS locators (e.g., `html-meta.spec.ts`).
 - **Structural scoping:** `page.locator('header')` for scoping before a role query is acceptable when a role alone would be ambiguous.
 
-### Verifying alert ↔ field wiring
+#### Verifying alert ↔ field wiring
 
 When testing form validation errors, verify the full accessibility contract:
 
@@ -288,9 +296,7 @@ await expect(emailAlert).toHaveAttribute('id', 'email-error')
 await expect(page.getByLabel('Email')).toHaveAttribute('aria-describedby', 'email-error')
 ```
 
----
-
-### Labels and conditional inputs
+#### Labels and conditional inputs
 
 A `<label htmlFor="...">` must always point to an existing input. When a field is conditionally rendered (e.g., a file input hidden after a file is attached), switch to a non-label heading to avoid a dangling `htmlFor`:
 
@@ -303,3 +309,48 @@ A `<label htmlFor="...">` must always point to an existing input. When a field i
   )
 }
 ```
+
+#### General guidelines
+
+- Wait for `data-hydrated="true"` on `body` before interacting (see `tests/shared/page-readiness.ts`).
+- Each test file should clean up its own data. Use `globalTeardown` as a safety net.
+
+### Visual regression tests
+
+- Run visual tests inside Docker (`pnpm test:visual:docker`) for consistent screenshots across platforms.
+- Screenshots are committed to the repo. Update them with `pnpm test:visual:docker:update`.
+
+---
+
+## Convex Patterns
+
+### Authorization
+
+Every mutation and query that accesses user data must call `auth.getUserId(ctx)` and verify the result. For mutations, throw if null. For queries, return null or an empty result.
+
+### Validation
+
+Use the shared Zod schemas in `convex/zodSchemas.ts` as the single source of truth. Both client-side forms and server-side mutations should validate against these schemas.
+
+### Indexes
+
+Prefer `withIndex()` to bound queries whenever an appropriate index exists. Avoid standalone `filter()` as the only selector when an index can be used — full table scans don't scale and consume excessive read bandwidth. Using `filter()` to further narrow an already-indexed result set is fine, as is using it when no suitable index exists (e.g., system tables, non-indexable predicates).
+
+---
+
+## Error Handling
+
+### Forms
+
+- Use inline `FieldError` components for validation errors — avoid duplicate toast + inline feedback.
+- Success notifications should use toasts since the user typically navigates away.
+
+### Mutations
+
+- Wrap mutation calls in try/catch. Show user-friendly errors via `toast.error()`.
+- Use `onSettled` callbacks to invalidate queries after optimistic updates, ensuring cache consistency.
+
+### Routes
+
+- Add `errorComponent` to child routes so errors render within the layout (nav stays visible).
+- Render `<RouteNotFoundComponent />` inline for missing resources (e.g., invalid ID format, null query result). TanStack Router's `notFound()` does not bubble correctly inside layout routes with `ssr: false` — see the JSDoc in `route-not-found.tsx` for details.

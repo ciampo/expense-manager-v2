@@ -88,27 +88,31 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ### Scripts
 
-| Command                          | Description                               |
-| -------------------------------- | ----------------------------------------- |
-| `pnpm setup`                     | Guided interactive local dev setup        |
-| `pnpm setup:e2e`                 | Guided interactive E2E test project setup |
-| `pnpm dev`                       | Start development server                  |
-| `pnpm dev:e2e`                   | Start dev server with E2E test config     |
-| `pnpm build`                     | Build for production (includes typecheck) |
-| `pnpm preview`                   | Preview production build locally          |
-| `pnpm deploy`                    | Build and deploy to Cloudflare Workers    |
-| `pnpm migrate`                   | Run pending Convex migrations             |
-| `pnpm test`                      | Run all Vitest tests                      |
-| `pnpm test:unit`                 | Run unit tests only                       |
-| `pnpm test:e2e`                  | Run Playwright E2E tests                  |
-| `pnpm test:e2e:seed`             | Seed test data to E2E Convex project      |
-| `pnpm test:e2e:cleanup`          | Clean up E2E test data                    |
-| `pnpm test:visual:docker`        | Run visual regression tests in Docker     |
-| `pnpm test:visual:docker:update` | Update visual regression baselines        |
-| `pnpm lint`                      | Run ESLint                                |
-| `pnpm lint:fix`                  | Run ESLint with auto-fix                  |
-| `pnpm format`                    | Format code with Prettier                 |
-| `pnpm format:check`              | Check code formatting                     |
+| Command                          | Description                                   |
+| -------------------------------- | --------------------------------------------- |
+| `pnpm setup`                     | Guided interactive local dev setup            |
+| `pnpm setup:e2e`                 | Guided interactive E2E test project setup     |
+| `pnpm dev`                       | Start development server                      |
+| `pnpm dev:e2e`                   | Start dev server with E2E test config         |
+| `pnpm build`                     | Build for production (includes typecheck)     |
+| `pnpm preview`                   | Preview production build locally              |
+| `pnpm deploy`                    | Build and deploy to Cloudflare Workers        |
+| `pnpm migrate`                   | Run pending Convex migrations                 |
+| `pnpm test`                      | Run all Vitest tests                          |
+| `pnpm test:unit`                 | Run unit tests only                           |
+| `pnpm test:e2e`                  | Run Playwright E2E tests                      |
+| `pnpm test:e2e:seed`             | Seed test data to E2E Convex project          |
+| `pnpm test:e2e:cleanup`          | Clean up E2E test data                        |
+| `pnpm test:visual`               | Run visual regression tests locally           |
+| `pnpm test:visual:update`        | Update visual regression baselines locally    |
+| `pnpm test:visual:docker`        | Run visual regression tests in Docker         |
+| `pnpm test:visual:docker:update` | Update visual regression baselines in Docker  |
+| `pnpm lint`                      | Run ESLint                                    |
+| `pnpm lint:fix`                  | Run ESLint with auto-fix                      |
+| `pnpm format`                    | Format code with Prettier                     |
+| `pnpm format:check`              | Check code formatting                         |
+| `pnpm typecheck`                 | Run TypeScript type checking (`tsc --noEmit`) |
+| `pnpm cf-typegen`                | Generate Cloudflare Worker types              |
 
 ### Project Structure
 
@@ -125,16 +129,18 @@ expense-manager-v2/
 ├── convex/                  # Convex backend
 │   ├── schema.ts            # Database schema
 │   ├── auth.ts              # Auth configuration
+│   ├── auth.config.ts       # Auth provider configuration
 │   ├── expenses.ts          # Expense CRUD + server-side validation
 │   ├── categories.ts        # Category functions
 │   ├── reports.ts           # Report functions
 │   ├── storage.ts           # File storage + upload ownership tracking
+│   ├── uploadLimits.ts      # Shared file upload constants (MAX_FILE_SIZE, MIME types)
 │   ├── validation.ts        # Pure validation helpers (date, amount, etc.)
 │   ├── zodSchemas.ts        # Zod schemas for form validation
-│   ├── seed.ts              # Seed and cleanup functions
+│   ├── seed.ts              # Seed, cleanup, and migration functions
 │   ├── crons.ts             # Scheduled jobs (orphan upload cleanup)
 │   └── http.ts              # HTTP routes (auth callbacks)
-├── scripts/                 # Setup scripts (pnpm setup, pnpm setup:e2e)
+├── scripts/                 # Setup and utility scripts
 ├── docs/                    # Detailed setup and reference docs
 ├── e2e/                     # Playwright E2E tests
 ├── tests/
@@ -185,7 +191,7 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
 
 Test data (including auth users) is cleaned up automatically after each run via Playwright's `globalTeardown`.
 
-For E2E test authoring conventions (locator strategy, selector patterns), see [`docs/BEST_PRACTICES.md`](docs/BEST_PRACTICES.md#e2e-testing).
+For E2E test authoring conventions (locator strategy, selector patterns), see [`docs/BEST_PRACTICES.md`](docs/BEST_PRACTICES.md#e2e-tests).
 
 ### Visual Regression Tests
 
@@ -219,14 +225,14 @@ The project uses three **fully isolated** Convex environments. Each has its own 
 
 No CI workflow ever writes to an environment it shouldn't:
 
-| Workflow                 | Trigger                    | Convex environment touched             | What it does                                                              |
-| ------------------------ | -------------------------- | -------------------------------------- | ------------------------------------------------------------------------- |
-| `test-e2e.yml`           | PR, push to `main`         | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after              |
-| `test-visual.yml`        | PR, push to `main`         | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs visual regression tests, cleans up      |
-| `update-screenshots.yml` | Manual (workflow_dispatch) | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up |
-| `preview.yml`            | PR open/sync               | **Dev** project (read-only via URL)    | Builds frontend preview pointing to the dev backend — no deploy           |
-| `deploy.yml`             | Push to `main` **only**    | **Production** project (deploy)        | Deploys Convex backend, then builds and deploys frontend to CF Workers    |
-| Others                   | PR, push to `main`         | None                                   | Lint, typecheck, unit tests — no Convex interaction                       |
+| Workflow                 | Trigger                    | Convex environment touched             | What it does                                                                       |
+| ------------------------ | -------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------- |
+| `test-e2e.yml`           | PR, push to `main`         | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after                       |
+| `test-visual.yml`        | PR, push to `main`         | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs visual regression tests, cleans up               |
+| `update-screenshots.yml` | Manual (workflow_dispatch) | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up          |
+| `preview.yml`            | PR open/sync/reopen/close  | **Dev** project (read-only via URL)    | Deploys frontend preview to CF Workers pointing to dev backend; cleans up on close |
+| `deploy.yml`             | Push to `main` **only**    | **Production** project (deploy)        | Deploys Convex backend, then builds and deploys frontend to CF Workers             |
+| Others                   | PR, push to `main`         | None                                   | Lint, typecheck, unit tests — no Convex interaction                                |
 
 **Key guarantee:** Only merges to `main` trigger production deployment. PRs are tested entirely against the isolated test project.
 
@@ -341,7 +347,6 @@ All expense mutations (`create`, `update`) validate fields server-side:
 
 - **No SSR data prefetching**: All data is fetched client-side via Convex real-time subscriptions. TanStack Router `loader` functions are not used.
 - **No dark mode toggle**: The app uses a light theme only.
-- **No pagination**: All expenses are loaded at once. For large datasets, this may impact performance.
 - **Client-only file type validation**: Attachment MIME type checks happen only on the client. Convex does not support server-side MIME type validation on upload. File ownership is verified server-side (see [Backend Security](#backend-security--validation)).
 - **Local timezone dates**: Dates are stored as `YYYY-MM-DD` strings using the user's local timezone. No server-side timezone normalization is performed.
 
