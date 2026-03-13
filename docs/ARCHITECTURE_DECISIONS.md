@@ -90,3 +90,22 @@ states, retry logic) for no practical benefit.
 chunks of ~100, scheduled via `ctx.scheduler.runAfter`, with the merchant
 record updated first and a "renaming in progress" flag to prevent
 concurrent edits.
+
+---
+
+## 6. Merchant cleanup deferred on expense update
+
+When an expense's merchant changes, the old merchant record is **not**
+immediately cleaned up. Cleanup only runs immediately on expense
+**deletion**; for updates, the daily cron handles orphaned merchants.
+
+**Why:** Immediate cleanup on update would remove the old merchant from the
+autocomplete list, but the user likely still wants it available for future
+expenses. This matches the expectation that previously-used merchants
+remain in autocomplete suggestions. Category cleanup on update is kept
+because categories are structural entities explicitly selected from a list,
+not free-text input.
+
+**Trade-off:** A merchant record may linger for up to 24 hours after it
+becomes orphaned via an update. This is acceptable — the daily cron
+provides the safety net.
