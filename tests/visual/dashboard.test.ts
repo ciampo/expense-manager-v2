@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { signUpTestUser } from '../shared/auth'
-import { createExpense } from '../shared/expenses'
+import { createExpense, createExpenseWithAttachment } from '../shared/expenses'
 
 test.describe('Visual Regression - Dashboard', () => {
   test.setTimeout(60_000)
@@ -83,6 +83,35 @@ test.describe('Visual Regression - Dashboard', () => {
     await expect(page).toHaveScreenshot('dashboard-delete-dialog.png', {
       fullPage: true,
       mask: [page.locator('footer'), page.locator('table tbody td:first-child')],
+    })
+  })
+
+  test('with attachment indicator', async ({ page }) => {
+    await createExpenseWithAttachment(page, 'Attached Shop', '42,00', { type: 'png' })
+    await expect(page.getByText('Attached Shop')).toBeVisible()
+
+    await expect(page).toHaveScreenshot('dashboard-with-attachment.png', {
+      fullPage: true,
+      mask: [page.locator('footer'), page.locator('table tbody td:first-child')],
+    })
+  })
+
+  test('attachment hover card open', async ({ page }) => {
+    await createExpenseWithAttachment(page, 'Hover Card Shop', '42,00', { type: 'png' })
+
+    const trigger = page.getByRole('button', { name: /has attachment/i })
+    await trigger.hover()
+
+    const hoverCardLink = page.getByRole('link', { name: /view full/i })
+    await expect(hoverCardLink).toBeVisible({ timeout: 10_000 })
+
+    await expect(page).toHaveScreenshot('dashboard-hover-card-open.png', {
+      fullPage: true,
+      mask: [
+        page.locator('footer'),
+        page.locator('table tbody td:first-child'),
+        page.getByAltText('Attachment preview'),
+      ],
     })
   })
 })
