@@ -56,7 +56,7 @@ export const expenseAmountSchema = z
   .int({ message: 'Amount must be a whole number (cents).' })
   .positive({ message: 'Amount must be positive.' })
 
-export const expenseMerchantSchema = z
+export const merchantNameSchema = z
   .string()
   .transform((s) => s.trim())
   .pipe(
@@ -67,6 +67,8 @@ export const expenseMerchantSchema = z
         message: `Merchant name must be ${MERCHANT_MAX_LENGTH} characters or less.`,
       }),
   )
+
+export const expenseMerchantSchema = merchantNameSchema
 
 export const expenseCommentSchema = z
   .string()
