@@ -343,7 +343,9 @@ export const cleanupOrphanedCategories = internalMutation({
     }
 
     if (deleted > 0) {
-      console.log(`Cleanup: deleted ${deleted} orphaned category/categories`)
+      console.log(
+        `Cleanup: deleted ${deleted} orphaned ${deleted === 1 ? 'category' : 'categories'}`,
+      )
     }
   },
 })
