@@ -7,6 +7,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -81,12 +82,10 @@ function ReportsContent() {
   return (
     <>
       {/* Month selector */}
-      <div className="mb-8">
-        <label id="reports-month-label" className="mb-2 block text-sm font-medium">
-          Select month
-        </label>
-        <Select value={effectiveMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
-          <SelectTrigger className="w-64" aria-labelledby="reports-month-label">
+      <Select value={effectiveMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
+        <div className="mb-8">
+          <SelectLabel className="mb-2 block">Select month</SelectLabel>
+          <SelectTrigger className="w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -96,8 +95,8 @@ function ReportsContent() {
               </SelectItem>
             ))}
           </SelectContent>
-        </Select>
-      </div>
+        </div>
+      </Select>
 
       <Suspense fallback={<ReportSkeleton />}>
         <MonthlyReport year={year} month={month} />

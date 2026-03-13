@@ -27,6 +27,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -285,29 +286,31 @@ function ExpenseTable() {
 
       {(expenses.length >= PAGINATION_THRESHOLD || canGoPrevious) && (
         <nav aria-label="Table pagination" className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">Rows per page</span>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(value) => {
-                startTransition(() => {
-                  setPageSize(Number(value))
-                  setCursors([null])
-                })
-              }}
-            >
-              <SelectTrigger size="sm" aria-label="Rows per page">
+          <Select
+            value={String(pageSize)}
+            onValueChange={(value) => {
+              startTransition(() => {
+                setPageSize(Number(value))
+                setCursors([null])
+              })
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <SelectLabel className="text-muted-foreground text-sm font-normal">
+                Rows per page
+              </SelectLabel>
+              <SelectTrigger size="sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <SelectItem key={size} value={String(size)}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            </div>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {(canGoNext || canGoPrevious) && (
             <div className="flex items-center gap-2">
