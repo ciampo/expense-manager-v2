@@ -58,4 +58,19 @@ test.describe('Attachment hover card preview', () => {
     await expect(link).toHaveAttribute('rel', /noopener/)
     await expect(link).toHaveAttribute('href', /^https?:\/\//)
   })
+
+  test('hover card closes when cursor moves away', async ({ page }) => {
+    await createExpenseWithAttachment(page, 'Dismiss Shop', '10,00', { type: 'png' })
+
+    const trigger = page.getByRole('button', { name: /has attachment/i })
+    await expect(trigger).toBeVisible()
+    await trigger.hover()
+
+    const link = page.getByRole('link', { name: /view full/i })
+    await expect(link).toBeVisible({ timeout: 10_000 })
+
+    await page.mouse.move(0, 0)
+
+    await expect(link).not.toBeVisible({ timeout: 5_000 })
+  })
 })
