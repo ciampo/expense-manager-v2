@@ -11,9 +11,11 @@ import { validateExpenseFields } from './validation'
 /**
  * Delete a user-custom category if no expenses reference it.
  * Predefined categories (no userId) are never deleted.
+ * Only deletes categories owned by the given user.
  */
 async function cleanupOrphanedCategory(
   ctx: { db: MutationCtx['db'] },
+  userId: Id<'users'>,
   categoryId: Id<'categories'>,
 ) {
   const referencing = await ctx.db
@@ -23,7 +25,7 @@ async function cleanupOrphanedCategory(
   if (referencing) return
 
   const category = await ctx.db.get('categories', categoryId)
-  if (category?.userId) {
+  if (category?.userId && category.userId === userId) {
     await ctx.db.delete('categories', category._id)
   }
 }
@@ -230,7 +232,7 @@ export const update = mutation({
     await upsertMerchant(ctx, userId, merchant)
 
     if (existing.categoryId !== categoryId) {
-      await cleanupOrphanedCategory(ctx, existing.categoryId)
+      await cleanupOrphanedCategory(ctx, userId, existing.categoryId)
     }
     // Merchant cleanup is intentionally deferred to the daily cron.
     // Keeping the old merchant record available preserves autocomplete
@@ -269,7 +271,7 @@ export const remove = mutation({
 
     await ctx.db.delete('expenses', args.id)
 
-    await cleanupOrphanedCategory(ctx, expense.categoryId)
+    await cleanupOrphanedCategory(ctx, userId, expense.categoryId)
     await cleanupOrphanedMerchant(ctx, userId, expense.merchant)
 
     return args.id
