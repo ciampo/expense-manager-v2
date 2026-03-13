@@ -6,7 +6,7 @@ import { auth } from './auth'
 import { resolveCategory } from './categories'
 import { upsertMerchant } from './merchants'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
-import { validateExpenseFields } from './validation'
+import { normalizeMerchantName, validateExpenseFields } from './validation'
 
 /**
  * Delete a user-custom category if no expenses reference it.
@@ -39,11 +39,11 @@ async function cleanupOrphanedMerchant(
   userId: Id<'users'>,
   merchantName: string,
 ) {
-  const normalizedName = merchantName.toLowerCase()
+  const normalized = normalizeMerchantName(merchantName)
   const merchant = await ctx.db
     .query('merchants')
     .withIndex('by_user_and_normalized_name', (q) =>
-      q.eq('userId', userId).eq('normalizedName', normalizedName),
+      q.eq('userId', userId).eq('normalizedName', normalized),
     )
     .first()
   if (!merchant) return
@@ -53,7 +53,7 @@ async function cleanupOrphanedMerchant(
     .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
     .collect()
 
-  if (!userExpenses.some((e) => e.merchant.toLowerCase() === normalizedName)) {
+  if (!userExpenses.some((e) => normalizeMerchantName(e.merchant) === normalized)) {
     await ctx.db.delete('merchants', merchant._id)
   }
 }
