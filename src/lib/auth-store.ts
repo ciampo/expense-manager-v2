@@ -93,9 +93,8 @@ export function createAuthStore(): AuthStore {
       setIsLoading(isLoading)
     },
     destroy() {
-      if (_resolveAuth) {
-        _resolveAuth({ isAuthenticated: false })
-        _resolveAuth = null
+      if (_isLoading) {
+        setIsLoading(false)
       }
       _waitPromise = null
     },
