@@ -39,6 +39,11 @@ export interface AuthStore {
    * Set by getRouter() after the router instance is created.
    */
   invalidateRouter: (() => void) | null
+  /**
+   * Settle any pending internal promises so they don't leak in tests.
+   * Safe to call multiple times.
+   */
+  destroy: () => void
 }
 
 export function createAuthStore(): AuthStore {
@@ -86,6 +91,12 @@ export function createAuthStore(): AuthStore {
     update({ isAuthenticated, isLoading }) {
       _isAuthenticated = isAuthenticated
       setIsLoading(isLoading)
+    },
+    destroy() {
+      if (_isLoading) {
+        setIsLoading(false)
+      }
+      _waitPromise = null
     },
     waitForAuth() {
       if (!_isLoading) {
