@@ -17,6 +17,7 @@
     "test": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.config.ts src/",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "test:coverage:changed": "vitest run --config vitest.config.ts --coverage --coverage.changed",
     "test:e2e": "playwright test",
     "test:e2e:seed": "convex run seed:e2e --prod",
     "test:e2e:cleanup": "convex run seed:cleanup --prod",

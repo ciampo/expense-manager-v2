@@ -32,7 +32,6 @@ export default defineConfig({
         'convex/_generated/**',
         'convex/**/*.test.ts',
       ],
-      changed: true,
     },
   },
 })
