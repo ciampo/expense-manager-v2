@@ -337,6 +337,48 @@ describe('invalidateRouter', () => {
 })
 
 // ---------------------------------------------------------------------------
+// destroy — test teardown helper
+// ---------------------------------------------------------------------------
+
+describe('destroy', () => {
+  it('resolves a pending waitForAuth promise with the current isAuthenticated value (default false)', async () => {
+    const store = trackedStore()
+
+    const promise = store.waitForAuth()
+    store.destroy()
+
+    const result = await promise
+    expect(result).toEqual({ isAuthenticated: false })
+  })
+
+  it('preserves an updated isAuthenticated value when resolving', async () => {
+    const store = trackedStore()
+
+    store.update({ isAuthenticated: true, isLoading: true })
+    const promise = store.waitForAuth()
+    store.destroy()
+
+    const result = await promise
+    expect(result).toEqual({ isAuthenticated: true })
+  })
+
+  it('transitions the store to a settled (not loading) state', () => {
+    const store = trackedStore()
+    expect(store.isLoading).toBe(true)
+
+    store.destroy()
+
+    expect(store.isLoading).toBe(false)
+  })
+
+  it('is safe to call multiple times', () => {
+    const store = trackedStore()
+    store.destroy()
+    store.destroy()
+  })
+})
+
+// ---------------------------------------------------------------------------
 // waitForAuth — timeout behavior
 // ---------------------------------------------------------------------------
 
