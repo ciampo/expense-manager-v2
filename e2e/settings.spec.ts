@@ -26,7 +26,8 @@ test.describe('Settings page', () => {
     await page.getByRole('link', { name: /settings/i }).click()
     await page.waitForURL('**/settings')
 
-    const categoryRow = page.getByRole('row').filter({ hasText: 'Rename Test Cat' })
+    const categoriesTable = page.getByRole('table', { name: /categories/i })
+    const categoryRow = categoriesTable.getByRole('row').filter({ hasText: 'Rename Test Cat' })
     await categoryRow.getByRole('button', { name: /rename/i }).click()
 
     const dialog = page.getByRole('dialog')
@@ -38,8 +39,8 @@ test.describe('Settings page', () => {
 
     await expect(dialog).not.toBeVisible()
     await expect(page.getByText('Category renamed')).toBeVisible()
-    await expect(page.getByText('Renamed Category')).toBeVisible()
-    await expect(page.getByText('Rename Test Cat')).not.toBeVisible()
+    await expect(categoriesTable.getByText('Renamed Category')).toBeVisible()
+    await expect(categoriesTable.getByText('Rename Test Cat')).not.toBeVisible()
   })
 
   test('rename a merchant and verify expense propagation', async ({ page }) => {
@@ -48,7 +49,8 @@ test.describe('Settings page', () => {
     await page.getByRole('link', { name: /settings/i }).click()
     await page.waitForURL('**/settings')
 
-    const merchantRow = page.getByRole('row').filter({ hasText: 'Old Merchant Name' })
+    const merchantsTable = page.getByRole('table', { name: /merchants/i })
+    const merchantRow = merchantsTable.getByRole('row').filter({ hasText: 'Old Merchant Name' })
     await merchantRow.getByRole('button', { name: /rename/i }).click()
 
     const dialog = page.getByRole('dialog')
@@ -60,8 +62,8 @@ test.describe('Settings page', () => {
 
     await expect(dialog).not.toBeVisible()
     await expect(page.getByText('Merchant renamed')).toBeVisible()
-    await expect(page.getByText('New Merchant Name')).toBeVisible()
-    await expect(page.getByText('Old Merchant Name')).not.toBeVisible()
+    await expect(merchantsTable.getByText('New Merchant Name')).toBeVisible()
+    await expect(merchantsTable.getByText('Old Merchant Name')).not.toBeVisible()
 
     await page.getByRole('link', { name: /dashboard/i }).click()
     await page.waitForURL('**/dashboard')
@@ -74,14 +76,19 @@ test.describe('Settings page', () => {
     })
 
     // Delete the expense so the category becomes orphaned
-    await page.getByRole('button', { name: 'Delete' }).first().click()
+    const expenseRow = page
+      .getByRole('table', { name: /expenses/i })
+      .getByRole('row')
+      .filter({ hasText: 'Orphan Test Merchant' })
+    await expenseRow.getByRole('button', { name: 'Delete' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
-    await expect(page.getByText('Orphan Test Merchant')).not.toBeVisible()
+    await expect(expenseRow).not.toBeVisible()
 
     await page.getByRole('link', { name: /settings/i }).click()
     await page.waitForURL('**/settings')
 
-    const categoryRow = page.getByRole('row').filter({ hasText: 'Orphan Category' })
+    const categoriesTable = page.getByRole('table', { name: /categories/i })
+    const categoryRow = categoriesTable.getByRole('row').filter({ hasText: 'Orphan Category' })
     await categoryRow.getByRole('button', { name: /delete/i }).click()
 
     const alertDialog = page.getByRole('alertdialog')
@@ -89,21 +96,26 @@ test.describe('Settings page', () => {
 
     await expect(alertDialog).not.toBeVisible()
     await expect(page.getByText('Category deleted')).toBeVisible()
-    await expect(page.getByText('Orphan Category')).not.toBeVisible()
+    await expect(categoriesTable.getByText('Orphan Category')).not.toBeVisible()
   })
 
   test('delete an orphaned merchant', async ({ page }) => {
     await createExpense(page, 'Orphan Merchant', '5,00')
 
     // Delete the expense so the merchant becomes orphaned
-    await page.getByRole('button', { name: 'Delete' }).first().click()
+    const expenseRow = page
+      .getByRole('table', { name: /expenses/i })
+      .getByRole('row')
+      .filter({ hasText: 'Orphan Merchant' })
+    await expenseRow.getByRole('button', { name: 'Delete' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
-    await expect(page.getByText('Orphan Merchant')).not.toBeVisible()
+    await expect(expenseRow).not.toBeVisible()
 
     await page.getByRole('link', { name: /settings/i }).click()
     await page.waitForURL('**/settings')
 
-    const merchantRow = page.getByRole('row').filter({ hasText: 'Orphan Merchant' })
+    const merchantsTable = page.getByRole('table', { name: /merchants/i })
+    const merchantRow = merchantsTable.getByRole('row').filter({ hasText: 'Orphan Merchant' })
     await merchantRow.getByRole('button', { name: /delete/i }).click()
 
     const alertDialog = page.getByRole('alertdialog')
@@ -111,7 +123,7 @@ test.describe('Settings page', () => {
 
     await expect(alertDialog).not.toBeVisible()
     await expect(page.getByText('Merchant deleted')).toBeVisible()
-    await expect(page.getByText('Orphan Merchant')).not.toBeVisible()
+    await expect(merchantsTable.getByText('Orphan Merchant')).not.toBeVisible()
   })
 
   test('cannot delete a category that is referenced by expenses', async ({ page }) => {
@@ -122,7 +134,8 @@ test.describe('Settings page', () => {
     await page.getByRole('link', { name: /settings/i }).click()
     await page.waitForURL('**/settings')
 
-    const categoryRow = page.getByRole('row').filter({ hasText: 'Referenced Category' })
+    const categoriesTable = page.getByRole('table', { name: /categories/i })
+    const categoryRow = categoriesTable.getByRole('row').filter({ hasText: 'Referenced Category' })
     await expect(categoryRow.getByRole('button', { name: /delete/i })).toBeDisabled()
   })
 
@@ -132,7 +145,8 @@ test.describe('Settings page', () => {
     await page.getByRole('link', { name: /settings/i }).click()
     await page.waitForURL('**/settings')
 
-    const merchantRow = page.getByRole('row').filter({ hasText: 'Referenced Merchant' })
+    const merchantsTable = page.getByRole('table', { name: /merchants/i })
+    const merchantRow = merchantsTable.getByRole('row').filter({ hasText: 'Referenced Merchant' })
     await expect(merchantRow.getByRole('button', { name: /delete/i })).toBeDisabled()
   })
 })
