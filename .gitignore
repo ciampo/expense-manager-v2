@@ -16,6 +16,7 @@ count.txt
 todos.json
 
 # Test artifacts
+coverage/
 playwright-report/
 playwright-report-visual/
 test-results/
