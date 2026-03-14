@@ -37,7 +37,7 @@ function AuthenticatedSkeleton() {
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="size-8 rounded-full" />
         </div>
       </header>
       <main id="main-content" tabIndex={-1} className="flex-1">
@@ -107,9 +107,9 @@ function AuthenticatedLayout() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label="User menu"
-                className="hover:bg-muted focus-visible:ring-ring relative flex h-8 w-8 items-center justify-center rounded-full focus-visible:ring-2 focus-visible:outline-none"
+                className="hover:bg-muted focus-visible:ring-ring relative flex size-8 items-center justify-center rounded-full focus-visible:ring-2 focus-visible:outline-none"
               >
-                <Avatar className="h-8 w-8">
+                <Avatar className="size-8">
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
