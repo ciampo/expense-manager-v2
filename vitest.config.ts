@@ -30,6 +30,7 @@ export default defineConfig({
         'src/routeTree.gen.ts',
         'src/env.d.ts',
         'convex/_generated/**',
+        'convex/**/*.test.ts',
       ],
       changed: true,
     },
