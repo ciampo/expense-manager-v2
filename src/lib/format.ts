@@ -128,6 +128,7 @@ export function toISODateString(d: Date): string {
 export const getTodayISO = (): string => toISODateString(new Date())
 
 const monthYearFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' })
+const italianMonthFormatter = new Intl.DateTimeFormat('it-IT', { month: 'long' })
 
 /**
  * Get month and year in English (e.g., "January 2026").
@@ -141,4 +142,18 @@ export const getMonthName = (month: number, year: number): string => {
   }
   const date = new Date(year, month - 1, 1)
   return monthYearFormatter.format(date)
+}
+
+/**
+ * Get the Italian month name with first letter capitalized (e.g., "Gennaio").
+ * Returns '—' if month is not an integer between 1 and 12.
+ * @param month - Month number (1-12)
+ */
+export const getItalianMonthName = (month: number): string => {
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return '—'
+  }
+  const date = new Date(2000, month - 1, 1)
+  const name = italianMonthFormatter.format(date)
+  return name.charAt(0).toUpperCase() + name.slice(1)
 }

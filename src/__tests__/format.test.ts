@@ -3,6 +3,7 @@ import {
   formatCurrency,
   formatDate,
   formatDateLong,
+  getItalianMonthName,
   getMonthName,
   parseCurrencyToCents,
   centsToInputValue,
@@ -281,5 +282,38 @@ describe('getMonthName', () => {
   it('returns em dash for non-integer months', () => {
     expect(getMonthName(1.5, 2026)).toBe('—')
     expect(getMonthName(NaN, 2026)).toBe('—')
+  })
+})
+
+describe('getItalianMonthName', () => {
+  it('returns capitalized Italian month names for all 12 months', () => {
+    const expected = [
+      'Gennaio',
+      'Febbraio',
+      'Marzo',
+      'Aprile',
+      'Maggio',
+      'Giugno',
+      'Luglio',
+      'Agosto',
+      'Settembre',
+      'Ottobre',
+      'Novembre',
+      'Dicembre',
+    ]
+    for (let m = 1; m <= 12; m++) {
+      expect(getItalianMonthName(m)).toBe(expected[m - 1])
+    }
+  })
+
+  it('returns em dash for out-of-range months', () => {
+    expect(getItalianMonthName(0)).toBe('—')
+    expect(getItalianMonthName(13)).toBe('—')
+    expect(getItalianMonthName(-1)).toBe('—')
+  })
+
+  it('returns em dash for non-integer months', () => {
+    expect(getItalianMonthName(1.5)).toBe('—')
+    expect(getItalianMonthName(NaN)).toBe('—')
   })
 })
