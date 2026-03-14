@@ -6,13 +6,17 @@ function escapeRegExp(value: string): string {
 }
 
 /**
- * Select a merchant in the combobox. Handles both new merchants (the
- * `+ Use "X"` create option) and previously used ones (plain `X`).
+ * Select an option in a combobox that supports both existing entries and
+ * the `+ Use "X"` create option. Waits for the popover to close.
  */
-async function selectMerchant(page: Page, merchant: string): Promise<void> {
-  await page.getByRole('combobox', { name: /merchant/i }).click()
-  await page.getByPlaceholder(/search or create/i).fill(merchant)
-  const escaped = escapeRegExp(merchant)
+async function selectComboboxOption(
+  page: Page,
+  comboboxName: RegExp,
+  value: string,
+): Promise<void> {
+  await page.getByRole('combobox', { name: comboboxName }).click()
+  await page.getByPlaceholder(/search or create/i).fill(value)
+  const escaped = escapeRegExp(value)
   await page
     .getByRole('option', { name: new RegExp(`^(\\+ Use "${escaped}"|${escaped})$`) })
     .first()
@@ -23,17 +27,27 @@ async function selectMerchant(page: Page, merchant: string): Promise<void> {
 /**
  * Create an expense via the UI and wait for the redirect back to the dashboard.
  *
- * Picks "Coworking" as the category. Accepts `amount` in the locale-formatted
- * string the input expects (e.g. `'42,00'` for €42.00).
+ * Defaults to "Coworking" for the category. Pass `category` to create/select
+ * a custom one instead. Accepts `amount` in the locale-formatted string the
+ * input expects (e.g. `'42,00'` for €42.00).
  */
-export async function createExpense(page: Page, merchant: string, amount: string): Promise<void> {
+export async function createExpense(
+  page: Page,
+  merchant: string,
+  amount: string,
+  options?: { category?: string },
+): Promise<void> {
   await page.goto('/expenses/new')
   await page.getByRole('button', { name: /create expense/i }).waitFor()
 
-  await selectMerchant(page, merchant)
+  await selectComboboxOption(page, /merchant/i, merchant)
 
-  await page.getByRole('combobox', { name: /category/i }).click()
-  await page.getByRole('option', { name: /coworking/i }).click()
+  if (options?.category) {
+    await selectComboboxOption(page, /category/i, options.category)
+  } else {
+    await page.getByRole('combobox', { name: /category/i }).click()
+    await page.getByRole('option', { name: /coworking/i }).click()
+  }
 
   await page.getByLabel(/amount/i).fill(amount)
 
@@ -54,7 +68,7 @@ export async function createExpenseWithAttachment(
   await page.goto('/expenses/new')
   await page.getByRole('button', { name: /create expense/i }).waitFor()
 
-  await selectMerchant(page, merchant)
+  await selectComboboxOption(page, /merchant/i, merchant)
 
   await page.getByRole('combobox', { name: /category/i }).click()
   await page.getByRole('option', { name: /coworking/i }).click()
