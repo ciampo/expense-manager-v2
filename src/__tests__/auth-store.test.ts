@@ -1,5 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createAuthStore, AUTH_TIMEOUT_MS } from '../lib/auth-store'
+import { createAuthStore, AUTH_TIMEOUT_MS, type AuthStore } from '../lib/auth-store'
+
+// ---------------------------------------------------------------------------
+// Helpers — track stores so we can destroy them in afterEach to avoid
+// unresolved-promise leaks detected by Vitest's --detect-async-leaks flag.
+// ---------------------------------------------------------------------------
+
+const _stores: AuthStore[] = []
+
+function trackedStore(): AuthStore {
+  const store = createAuthStore()
+  _stores.push(store)
+  return store
+}
+
+afterEach(() => {
+  _stores.forEach((s) => s.destroy())
+  _stores.length = 0
+})
 
 // ---------------------------------------------------------------------------
 // Basic behavior
@@ -7,13 +25,13 @@ import { createAuthStore, AUTH_TIMEOUT_MS } from '../lib/auth-store'
 
 describe('createAuthStore', () => {
   it('starts in a loading state', () => {
-    const store = createAuthStore()
+    const store = trackedStore()
     expect(store.isLoading).toBe(true)
     expect(store.isAuthenticated).toBe(false)
   })
 
   it('exposes an invalidateRouter slot initialized to null', () => {
-    const store = createAuthStore()
+    const store = trackedStore()
     expect(store.invalidateRouter).toBeNull()
   })
 })
@@ -24,7 +42,7 @@ describe('createAuthStore', () => {
 
 describe('waitForAuth — initial resolution', () => {
   it('resolves when isLoading transitions from true to false (authenticated)', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     store.update({ isAuthenticated: true, isLoading: false })
 
@@ -33,7 +51,7 @@ describe('waitForAuth — initial resolution', () => {
   })
 
   it('resolves when isLoading transitions from true to false (unauthenticated)', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     store.update({ isAuthenticated: false, isLoading: false })
 
@@ -42,7 +60,7 @@ describe('waitForAuth — initial resolution', () => {
   })
 
   it('waits until isLoading becomes false before resolving', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
     let resolved = false
 
     const promise = store.waitForAuth().then((r) => {
@@ -63,7 +81,7 @@ describe('waitForAuth — initial resolution', () => {
   })
 
   it('returns a fresh resolved promise when called after loading is done', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     store.update({ isAuthenticated: true, isLoading: false })
 
@@ -84,7 +102,7 @@ describe('waitForAuth — initial resolution', () => {
 
 describe('waitForAuth — loading restart (multi-shot)', () => {
   it('creates a new promise when loading restarts, resolving with updated state', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     // Phase 1: initial auth check → authenticated
     store.update({ isAuthenticated: true, isLoading: false })
@@ -103,7 +121,7 @@ describe('waitForAuth — loading restart (multi-shot)', () => {
   })
 
   it('makes waitForAuth() wait during a restarted loading phase', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     // Complete initial auth
     store.update({ isAuthenticated: true, isLoading: false })
@@ -131,7 +149,7 @@ describe('waitForAuth — loading restart (multi-shot)', () => {
   })
 
   it('handles multiple loading restarts correctly', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     // Cycle 1: authenticated
     store.update({ isAuthenticated: true, isLoading: false })
@@ -155,7 +173,7 @@ describe('waitForAuth — loading restart (multi-shot)', () => {
 
 describe('waitForAuth — regression: stale promise after loading restart', () => {
   it('does NOT return the stale initial value when loading restarts', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     // Initial auth: user is authenticated
     store.update({ isAuthenticated: true, isLoading: false })
@@ -177,7 +195,7 @@ describe('waitForAuth — regression: stale promise after loading restart', () =
   })
 
   it('a caller waiting during restarted loading gets the new value, not stale', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     // Complete initial auth
     store.update({ isAuthenticated: true, isLoading: false })
@@ -205,7 +223,7 @@ describe('waitForAuth — regression: stale promise after loading restart', () =
 
 describe('update — getter values', () => {
   it('getters reflect the values passed to update()', () => {
-    const store = createAuthStore()
+    const store = trackedStore()
     expect(store.isAuthenticated).toBe(false)
     expect(store.isLoading).toBe(true)
 
@@ -219,7 +237,7 @@ describe('update — getter values', () => {
   })
 
   it('idempotent update() does not change state', () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     store.update({ isAuthenticated: true, isLoading: false })
     store.update({ isAuthenticated: true, isLoading: false })
@@ -235,7 +253,7 @@ describe('update — getter values', () => {
 
 describe('update — isAuthenticated changes mid-loading', () => {
   it('resolves with the final isAuthenticated value when it changes during loading', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     // Auth starts loading, initially looks authenticated
     store.update({ isAuthenticated: true, isLoading: true })
@@ -257,7 +275,7 @@ describe('update — isAuthenticated changes mid-loading', () => {
 
 describe('waitForAuth — concurrent callers', () => {
   it('multiple callers during the same loading phase all resolve with the same value', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     const p1 = store.waitForAuth()
     const p2 = store.waitForAuth()
@@ -272,7 +290,7 @@ describe('waitForAuth — concurrent callers', () => {
   })
 
   it('callers during different loading phases get their respective results', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     // Phase 1: caller waits during initial load
     const phase1 = store.waitForAuth()
@@ -293,7 +311,7 @@ describe('waitForAuth — concurrent callers', () => {
 
 describe('invalidateRouter', () => {
   it('can be assigned and invoked after store creation', () => {
-    const store = createAuthStore()
+    const store = trackedStore()
     const spy = vi.fn()
 
     store.invalidateRouter = spy
@@ -303,7 +321,7 @@ describe('invalidateRouter', () => {
   })
 
   it('can be reassigned', () => {
-    const store = createAuthStore()
+    const store = trackedStore()
     const first = vi.fn()
     const second = vi.fn()
 
@@ -336,7 +354,7 @@ describe('waitForAuth — timeout', () => {
   })
 
   it('resolves with isAuthenticated: false after timeout if auth never settles', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     const promise = store.waitForAuth()
 
@@ -347,7 +365,7 @@ describe('waitForAuth — timeout', () => {
   })
 
   it('transitions store to settled unauthenticated state after timeout', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     const promise = store.waitForAuth()
 
@@ -363,7 +381,7 @@ describe('waitForAuth — timeout', () => {
   })
 
   it('resolves with the real value if auth settles before the timeout', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     const promise = store.waitForAuth()
 
@@ -374,7 +392,7 @@ describe('waitForAuth — timeout', () => {
   })
 
   it('logs a warning when the timeout fires', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     const promise = store.waitForAuth()
 
@@ -386,7 +404,7 @@ describe('waitForAuth — timeout', () => {
   })
 
   it('does not log a warning when auth settles before the timeout', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     const promise = store.waitForAuth()
     store.update({ isAuthenticated: true, isLoading: false })
@@ -398,7 +416,7 @@ describe('waitForAuth — timeout', () => {
   })
 
   it('concurrent callers during timeout all get the timeout result', async () => {
-    const store = createAuthStore()
+    const store = trackedStore()
 
     const p1 = store.waitForAuth()
     const p2 = store.waitForAuth()
