@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CSV_BOM, CSV_EOL, csvRow } from '@/lib/csv'
-import { centsToInputValue, formatCurrency, getMonthName } from '@/lib/format'
+import { centsToInputValue, formatCurrency, getItalianMonthName, getMonthName } from '@/lib/format'
 import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
 import { toast } from 'sonner'
 import { Suspense, useState } from 'react'
@@ -162,52 +162,51 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
     setIsDownloadingCsv(true)
     try {
-      // Group expenses by date and category
+      const italianMonth = getItalianMonthName(month)
+
+      // Group expenses by day-of-month and category, summing amounts
       const grouped: Record<string, Record<string, number>> = {}
 
       for (const expense of data.expenses) {
-        if (!grouped[expense.date]) {
-          grouped[expense.date] = {}
+        const day = String(parseInt(expense.date.split('-')[2], 10))
+        if (!grouped[day]) {
+          grouped[day] = {}
         }
-        if (!grouped[expense.date][expense.categoryName]) {
-          grouped[expense.date][expense.categoryName] = 0
+        if (!grouped[day][expense.categoryName]) {
+          grouped[day][expense.categoryName] = 0
         }
-        grouped[expense.date][expense.categoryName] += expense.amount
+        grouped[day][expense.categoryName] += expense.amount
       }
 
-      // Get all unique categories
-      const allCategories = [...new Set(data.expenses.map((e) => e.categoryName))].sort()
+      let csv = csvRow([italianMonth]) + CSV_EOL
+      csv +=
+        csvRow([
+          'giorno',
+          'descrizione',
+          'aliquota',
+          'imponibile',
+          'imposta',
+          'imponibile',
+          'imposta',
+          'totale spese documentate',
+        ]) + CSV_EOL
 
-      let csv = csvRow(['Date', ...allCategories, 'Total']) + CSV_EOL
+      const days = Object.keys(grouped)
+        .map(Number)
+        .sort((a, b) => a - b)
 
-      const dates = Object.keys(grouped).sort()
-      for (const date of dates) {
-        const row = [date]
-        let dayTotal = 0
-
-        for (const category of allCategories) {
-          const amount = grouped[date][category] || 0
-          row.push(centsToInputValue(amount))
-          dayTotal += amount
+      for (const day of days) {
+        const categories = Object.keys(grouped[String(day)]).sort()
+        for (const category of categories) {
+          const amount = grouped[String(day)][category]
+          csv +=
+            csvRow([String(day), category, '', '', '', '', '', centsToInputValue(amount)]) + CSV_EOL
         }
-
-        row.push(centsToInputValue(dayTotal))
-        csv += csvRow(row) + CSV_EOL
       }
 
-      const totalsRow = ['TOTAL']
-      for (const category of allCategories) {
-        const categoryTotal = data.categories[category]?.total || 0
-        totalsRow.push(centsToInputValue(categoryTotal))
-      }
-      totalsRow.push(centsToInputValue(data.total))
-      csv += csvRow(totalsRow) + CSV_EOL
-
-      // Download
       const blob = new Blob([CSV_BOM + csv], { type: 'text/csv;charset=utf-8;' })
-      const monthName = getMonthName(month, year).replace(' ', '-')
       const saveAs = await loadFileSaver()
-      saveAs(blob, `expenses-${monthName}.csv`)
+      saveAs(blob, `expenses-${italianMonth}.csv`)
 
       toast.success('CSV downloaded')
     } catch {
