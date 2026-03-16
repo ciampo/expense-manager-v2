@@ -1,12 +1,18 @@
 // @vitest-environment edge-runtime
 import { convexTest } from 'convex-test'
-import { describe, expect, it } from 'vitest'
-import { api } from './_generated/api'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { api, internal } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE } from './uploadLimits'
 import { validateFileMetadata } from './storage'
-import { setupAuthenticatedUser, setupStorageFile } from './test-helpers'
+import {
+  setupAuthenticatedUser,
+  setupCategory,
+  setupStorageFile,
+  setupUploadRecord,
+  insertExpense,
+} from './test-helpers'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -85,17 +91,10 @@ describe('validateFileMetadata', () => {
 
 // ── confirmUpload integration tests ──────────────────────────────────────
 //
-// convex-test has two limitations that affect these tests:
-//
-// 1. contentType is not populated on system storage records, so
-//    confirmUpload's content-type guard always rejects. The happy path
-//    (valid file → upload record created) is tested above via the pure
-//    validateFileMetadata helper with synthetic metadata.
-//
-// 2. ctx.storage.delete() is a no-op in the in-memory store — getUrl()
-//    still returns a URL after deletion. We cannot assert that invalid
-//    files are removed from storage. This behavior is verified manually
-//    against the real Convex backend.
+// convex-test does not populate `contentType` on system storage records,
+// so confirmUpload's content-type guard always rejects. The happy path
+// (valid file → upload record created) is tested via the pure
+// validateFileMetadata helper with synthetic metadata.
 
 describe('storage.confirmUpload', () => {
   it('rejects unauthenticated calls', async () => {
@@ -361,5 +360,121 @@ describe('storage.deleteFile', () => {
 
     const upload = await getUploadRecord(t, storageId)
     expect(upload).toBeNull()
+  })
+})
+
+// ── cleanupOrphanedUploads (internal cron mutation) ─────────────────────
+//
+// Uses fake timers to advance Date.now() past the 24 h TTL so the cleanup
+// function sees records as "stale". For Pass 2, files are stored before
+// the clock advances so their _creationTime falls before the cutoff.
+
+const TWENTY_FIVE_HOURS_MS = 25 * 60 * 60 * 1000
+
+describe('storage.cleanupOrphanedUploads', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('deletes orphaned upload record and storage file (Pass 1)', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+
+    // Record created "now" — will be stale once we advance the clock
+    await setupUploadRecord(t, storageId, userId)
+
+    vi.advanceTimersByTime(TWENTY_FIVE_HOURS_MS)
+    await t.mutation(internal.storage.cleanupOrphanedUploads, {})
+
+    const upload = await getUploadRecord(t, storageId)
+    expect(upload).toBeNull()
+
+    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(url).toBeNull()
+  })
+
+  it('removes stale upload record but keeps file when expense references it (Pass 1)', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await setupUploadRecord(t, storageId, userId)
+    await insertExpense(t, userId, categoryId, { attachmentId: storageId })
+
+    vi.advanceTimersByTime(TWENTY_FIVE_HOURS_MS)
+    await t.mutation(internal.storage.cleanupOrphanedUploads, {})
+
+    // Upload record removed (stale), but file still exists
+    const upload = await getUploadRecord(t, storageId)
+    expect(upload).toBeNull()
+
+    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(url).not.toBeNull()
+  })
+
+  it('deletes untracked orphaned storage files (Pass 2)', async () => {
+    const t = convexTest(schema, modules)
+    // Store file — no upload record, no expense reference
+    const storageId = await setupStorageFile(t)
+
+    vi.advanceTimersByTime(TWENTY_FIVE_HOURS_MS)
+    await t.mutation(internal.storage.cleanupOrphanedUploads, {})
+
+    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(url).toBeNull()
+  })
+
+  it('skips untracked files that are referenced by an expense (Pass 2)', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+    const categoryId = await setupCategory(t, userId)
+
+    // No upload record, but an expense references the file
+    await insertExpense(t, userId, categoryId, { attachmentId: storageId })
+
+    vi.advanceTimersByTime(TWENTY_FIVE_HOURS_MS)
+    await t.mutation(internal.storage.cleanupOrphanedUploads, {})
+
+    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(url).not.toBeNull()
+  })
+
+  it('skips untracked files that have an upload record (Pass 2)', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+
+    // Fresh upload record (created after clock advance = within TTL)
+    vi.advanceTimersByTime(TWENTY_FIVE_HOURS_MS)
+    await setupUploadRecord(t, storageId, userId)
+
+    await t.mutation(internal.storage.cleanupOrphanedUploads, {})
+
+    // File still exists — Pass 2 skips files that have upload records
+    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(url).not.toBeNull()
+  })
+
+  it('leaves fresh uploads untouched', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+
+    await setupUploadRecord(t, storageId, userId)
+
+    // Don't advance clock — records are within TTL
+    await t.mutation(internal.storage.cleanupOrphanedUploads, {})
+
+    const upload = await getUploadRecord(t, storageId)
+    expect(upload).not.toBeNull()
+
+    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(url).not.toBeNull()
   })
 })

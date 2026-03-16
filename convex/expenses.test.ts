@@ -539,6 +539,63 @@ describe('expenses.removeAttachment', () => {
   })
 })
 
+// ── update — auth & ownership ─────────────────────────────────────────
+
+describe('expenses.update', () => {
+  it('rejects unauthenticated calls', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await expect(
+      t.mutation(api.expenses.update, {
+        id: expenseId,
+        ...VALID_EXPENSE_FIELDS,
+        newCategoryName: 'Test',
+      }),
+    ).rejects.toThrow('Not authenticated')
+  })
+
+  it("rejects updates to another user's expense", async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id } = await setupAuthenticatedUser(t)
+    const { asUser: asUser2 } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const expenseId = await insertExpense(t, user1Id, categoryId)
+
+    await expect(
+      asUser2.mutation(api.expenses.update, {
+        id: expenseId,
+        ...VALID_EXPENSE_FIELDS,
+        newCategoryName: 'Test',
+      }),
+    ).rejects.toThrow('Expense not found')
+  })
+
+  it('updates an owned expense successfully', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await asUser.mutation(api.expenses.update, {
+      id: expenseId,
+      date: '2026-06-15',
+      merchant: 'Updated Merchant',
+      amount: 9999,
+      categoryId,
+    })
+
+    const updated = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(updated).toMatchObject({
+      date: '2026-06-15',
+      merchant: 'Updated Merchant',
+      amount: 9999,
+    })
+  })
+})
+
 // ── update — attachment handling ────────────────────────────────────────
 
 describe('expenses.update — attachment handling', () => {
