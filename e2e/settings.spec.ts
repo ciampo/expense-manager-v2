@@ -9,13 +9,15 @@ test.describe('Settings page', () => {
     await signUpTestUser(page)
   })
 
-  test('navigates to settings and displays categories and merchants tables', async ({ page }) => {
+  test('navigates to settings and displays categories and merchants sections', async ({ page }) => {
     await page.getByRole('link', { name: /settings/i }).click()
     await page.waitForURL('**/settings')
 
     await expect(page.getByRole('heading', { name: /settings/i })).toBeVisible()
+    // Predefined categories are always present
     await expect(page.getByRole('table', { name: /categories/i })).toBeVisible()
-    await expect(page.getByRole('table', { name: /merchants/i })).toBeVisible()
+    // Fresh user has no merchants
+    await expect(page.getByText('No merchants found.')).toBeVisible()
   })
 
   test('rename a category', async ({ page }) => {
@@ -70,16 +72,18 @@ test.describe('Settings page', () => {
     await expect(page.getByText('New Merchant Name')).toBeVisible()
   })
 
-  test('delete an orphaned category', async ({ page }) => {
-    await createExpense(page, 'Orphan Test Merchant', '5,00', {
-      category: 'Orphan Category',
+  test('deleting last expense removes orphaned category and merchant from settings', async ({
+    page,
+  }) => {
+    await createExpense(page, 'Ephemeral Merchant', '5,00', {
+      category: 'Ephemeral Category',
     })
 
-    // Delete the expense so the category becomes orphaned
+    // Delete the only expense — backend auto-cleans orphaned categories and merchants
     const expenseRow = page
       .getByRole('table', { name: /expenses/i })
       .getByRole('row')
-      .filter({ hasText: 'Orphan Test Merchant' })
+      .filter({ hasText: 'Ephemeral Merchant' })
     await expenseRow.getByRole('button', { name: 'Delete' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
     await expect(expenseRow).not.toBeVisible()
@@ -88,42 +92,8 @@ test.describe('Settings page', () => {
     await page.waitForURL('**/settings')
 
     const categoriesTable = page.getByRole('table', { name: /categories/i })
-    const categoryRow = categoriesTable.getByRole('row').filter({ hasText: 'Orphan Category' })
-    await categoryRow.getByRole('button', { name: /delete/i }).click()
-
-    const alertDialog = page.getByRole('alertdialog')
-    await alertDialog.getByRole('button', { name: /delete/i }).click()
-
-    await expect(alertDialog).not.toBeVisible()
-    await expect(page.getByText('Category deleted')).toBeVisible()
-    await expect(categoriesTable.getByText('Orphan Category')).not.toBeVisible()
-  })
-
-  test('delete an orphaned merchant', async ({ page }) => {
-    await createExpense(page, 'Orphan Merchant', '5,00')
-
-    // Delete the expense so the merchant becomes orphaned
-    const expenseRow = page
-      .getByRole('table', { name: /expenses/i })
-      .getByRole('row')
-      .filter({ hasText: 'Orphan Merchant' })
-    await expenseRow.getByRole('button', { name: 'Delete' }).click()
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
-    await expect(expenseRow).not.toBeVisible()
-
-    await page.getByRole('link', { name: /settings/i }).click()
-    await page.waitForURL('**/settings')
-
-    const merchantsTable = page.getByRole('table', { name: /merchants/i })
-    const merchantRow = merchantsTable.getByRole('row').filter({ hasText: 'Orphan Merchant' })
-    await merchantRow.getByRole('button', { name: /delete/i }).click()
-
-    const alertDialog = page.getByRole('alertdialog')
-    await alertDialog.getByRole('button', { name: /delete/i }).click()
-
-    await expect(alertDialog).not.toBeVisible()
-    await expect(page.getByText('Merchant deleted')).toBeVisible()
-    await expect(merchantsTable.getByText('Orphan Merchant')).not.toBeVisible()
+    await expect(categoriesTable.getByText('Ephemeral Category')).not.toBeVisible()
+    await expect(page.getByText('No merchants found.')).toBeVisible()
   })
 
   test('cannot delete a category that is referenced by expenses', async ({ page }) => {
