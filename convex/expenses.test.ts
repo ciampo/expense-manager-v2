@@ -197,6 +197,408 @@ describe('expenses.list', () => {
   })
 })
 
+// ── get ─────────────────────────────────────────────────────────────────
+
+describe('expenses.get', () => {
+  it('returns null for unauthenticated users', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    const result = await t.query(api.expenses.get, { id: expenseId })
+    expect(result).toBeNull()
+  })
+
+  it('returns the expense when owned by the current user', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId, { merchant: 'My Shop' })
+
+    const result = await asUser.query(api.expenses.get, { id: expenseId })
+    expect(result).not.toBeNull()
+    expect(result?.merchant).toBe('My Shop')
+  })
+
+  it('returns null when the expense belongs to another user', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id } = await setupAuthenticatedUser(t)
+    const { asUser: asUser2 } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const expenseId = await insertExpense(t, user1Id, categoryId)
+
+    const result = await asUser2.query(api.expenses.get, { id: expenseId })
+    expect(result).toBeNull()
+  })
+})
+
+// ── getMerchants ────────────────────────────────────────────────────────
+
+describe('expenses.getMerchants', () => {
+  it('returns empty array for unauthenticated users', async () => {
+    const t = convexTest(schema, modules)
+    const result = await t.query(api.expenses.getMerchants, {})
+    expect(result).toEqual([])
+  })
+
+  it('returns merchant names for the current user', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('merchants', {
+        name: 'Coffee Shop',
+        normalizedName: 'coffee shop',
+        userId,
+      })
+      await ctx.db.insert('merchants', {
+        name: 'Gas Station',
+        normalizedName: 'gas station',
+        userId,
+      })
+    })
+
+    const result = await asUser.query(api.expenses.getMerchants, {})
+    expect(result).toHaveLength(2)
+    expect(result).toContain('Coffee Shop')
+    expect(result).toContain('Gas Station')
+  })
+
+  it('does not return merchants from other users', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('merchants', {
+        name: 'User1 Shop',
+        normalizedName: 'user1 shop',
+        userId: user1Id,
+      })
+      await ctx.db.insert('merchants', {
+        name: 'User2 Shop',
+        normalizedName: 'user2 shop',
+        userId: user2Id,
+      })
+    })
+
+    const result = await asUser1.query(api.expenses.getMerchants, {})
+    expect(result).toEqual(['User1 Shop'])
+  })
+})
+
+// ── create ──────────────────────────────────────────────────────────────
+
+describe('expenses.create', () => {
+  it('rejects unauthenticated calls', async () => {
+    const t = convexTest(schema, modules)
+    await expect(
+      t.mutation(api.expenses.create, { ...VALID_EXPENSE_FIELDS, newCategoryName: 'Test' }),
+    ).rejects.toThrow('Not authenticated')
+  })
+
+  it('creates an expense with all required fields', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const expenseId = await asUser.mutation(api.expenses.create, {
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+    })
+
+    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense).not.toBeNull()
+    expect(expense?.date).toBe('2026-03-01')
+    expect(expense?.merchant).toBe('Test Merchant')
+    expect(expense?.amount).toBe(2500)
+    expect(expense?.categoryId).toBe(categoryId)
+    expect(expense?.userId).toBe(userId)
+  })
+
+  it('creates an expense with a comment', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const expenseId = await asUser.mutation(api.expenses.create, {
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+      comment: 'Business lunch',
+    })
+
+    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense?.comment).toBe('Business lunch')
+  })
+
+  it('creates an expense with an attachment', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+
+    const expenseId = await asUser.mutation(api.expenses.create, {
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+      attachmentId: storageId,
+    })
+
+    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense?.attachmentId).toBe(storageId)
+  })
+
+  it('rejects attachment not owned by the current user', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, user2Id)
+
+    await expect(
+      asUser1.mutation(api.expenses.create, {
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+        attachmentId: storageId,
+      }),
+    ).rejects.toThrow('Attachment not found or not owned by current user')
+  })
+
+  it('upserts a merchant record on creation', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await asUser.mutation(api.expenses.create, {
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+      merchant: 'New Merchant',
+    })
+
+    const merchants = await t.run(async (ctx) =>
+      ctx.db
+        .query('merchants')
+        .filter((q) => q.eq(q.field('userId'), userId))
+        .collect(),
+    )
+    expect(merchants).toHaveLength(1)
+    expect(merchants[0].name).toBe('New Merchant')
+  })
+
+  it('creates a new category when newCategoryName is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    const expenseId = await asUser.mutation(api.expenses.create, {
+      ...VALID_EXPENSE_FIELDS,
+      newCategoryName: 'Custom Category',
+    })
+
+    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense).not.toBeNull()
+
+    const category = await t.run(async (ctx) => ctx.db.get('categories', expense!.categoryId))
+    expect(category?.name).toBe('Custom Category')
+    expect(category?.userId).toBe(userId)
+  })
+})
+
+// ── remove ──────────────────────────────────────────────────────────────
+
+describe('expenses.remove', () => {
+  it('rejects unauthenticated calls', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await expect(t.mutation(api.expenses.remove, { id: expenseId })).rejects.toThrow(
+      'Not authenticated',
+    )
+  })
+
+  it('rejects when the expense belongs to another user', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id } = await setupAuthenticatedUser(t)
+    const { asUser: asUser2 } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const expenseId = await insertExpense(t, user1Id, categoryId)
+
+    await expect(asUser2.mutation(api.expenses.remove, { id: expenseId })).rejects.toThrow(
+      'Expense not found',
+    )
+  })
+
+  it('deletes the expense', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await asUser.mutation(api.expenses.remove, { id: expenseId })
+
+    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense).toBeNull()
+  })
+
+  it('cleans up attachment on deletion', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+
+    const expenseId = await t.run(async (ctx) => {
+      return await ctx.db.insert('expenses', {
+        userId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+        attachmentId: storageId,
+        createdAt: Date.now(),
+      })
+    })
+
+    await asUser.mutation(api.expenses.remove, { id: expenseId })
+
+    const uploadRecord = await t.run(async (ctx) =>
+      ctx.db
+        .query('uploads')
+        .filter((q) => q.eq(q.field('storageId'), storageId))
+        .first(),
+    )
+    expect(uploadRecord).toBeNull()
+  })
+
+  it('cleans up orphaned user-custom category on deletion', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await asUser.mutation(api.expenses.remove, { id: expenseId })
+
+    const category = await t.run(async (ctx) => ctx.db.get('categories', categoryId))
+    expect(category).toBeNull()
+  })
+
+  it('does not delete category still referenced by other expenses', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-01-01' })
+    const expenseToDelete = await insertExpense(t, userId, categoryId, { date: '2026-01-02' })
+
+    await asUser.mutation(api.expenses.remove, { id: expenseToDelete })
+
+    const category = await t.run(async (ctx) => ctx.db.get('categories', categoryId))
+    expect(category).not.toBeNull()
+  })
+
+  it('cleans up orphaned merchant on deletion', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    // Create a merchant record
+    await t.run(async (ctx) => {
+      await ctx.db.insert('merchants', {
+        name: 'Unique Merchant',
+        normalizedName: 'unique merchant',
+        userId,
+      })
+    })
+
+    const expenseId = await insertExpense(t, userId, categoryId, { merchant: 'Unique Merchant' })
+
+    await asUser.mutation(api.expenses.remove, { id: expenseId })
+
+    const merchants = await t.run(async (ctx) =>
+      ctx.db
+        .query('merchants')
+        .filter((q) => q.eq(q.field('userId'), userId))
+        .collect(),
+    )
+    expect(merchants).toHaveLength(0)
+  })
+})
+
+// ── removeAttachment ────────────────────────────────────────────────────
+
+describe('expenses.removeAttachment', () => {
+  it('rejects unauthenticated calls', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await expect(t.mutation(api.expenses.removeAttachment, { id: expenseId })).rejects.toThrow(
+      'Not authenticated',
+    )
+  })
+
+  it('rejects when the expense belongs to another user', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id } = await setupAuthenticatedUser(t)
+    const { asUser: asUser2 } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const expenseId = await insertExpense(t, user1Id, categoryId)
+
+    await expect(
+      asUser2.mutation(api.expenses.removeAttachment, { id: expenseId }),
+    ).rejects.toThrow('Expense not found')
+  })
+
+  it('removes attachment from the expense and cleans up upload record', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+
+    const expenseId = await t.run(async (ctx) => {
+      return await ctx.db.insert('expenses', {
+        userId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+        attachmentId: storageId,
+        createdAt: Date.now(),
+      })
+    })
+
+    await asUser.mutation(api.expenses.removeAttachment, { id: expenseId })
+
+    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense?.attachmentId).toBeUndefined()
+
+    const uploadRecord = await t.run(async (ctx) =>
+      ctx.db
+        .query('uploads')
+        .filter((q) => q.eq(q.field('storageId'), storageId))
+        .first(),
+    )
+    expect(uploadRecord).toBeNull()
+  })
+
+  it('is a no-op when the expense has no attachment', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    // Should not throw
+    await asUser.mutation(api.expenses.removeAttachment, { id: expenseId })
+
+    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense).not.toBeNull()
+    expect(expense?.attachmentId).toBeUndefined()
+  })
+})
+
+// ── update — attachment handling ────────────────────────────────────────
+
 describe('expenses.update — attachment handling', () => {
   it('preserves existing attachment when attachmentId is omitted', async () => {
     const t = convexTest(schema, modules)
