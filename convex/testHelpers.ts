@@ -1,7 +1,10 @@
-import type { convexTest } from 'convex-test'
 import type { Id } from './_generated/dataModel'
 
-export type TestCtx = ReturnType<typeof convexTest>
+// Re-use the return type of convexTest without a runtime import.
+// `import type` + `typeof` in a type position is valid TS ≥ 3.8 and
+// erased at compile time — no runtime dependency on convex-test.
+type ConvexTest = typeof import('convex-test').convexTest
+export type TestCtx = ReturnType<ConvexTest>
 
 /**
  * Create an authenticated test context.
