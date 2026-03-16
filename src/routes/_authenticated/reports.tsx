@@ -83,9 +83,9 @@ function ReportsContent() {
     <>
       {/* Month selector */}
       <Field className="mb-8 w-64">
-        <FieldLabel>Select month</FieldLabel>
+        <FieldLabel htmlFor="month-select">Select month</FieldLabel>
         <Select value={effectiveMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
-          <SelectTrigger>
+          <SelectTrigger id="month-select">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

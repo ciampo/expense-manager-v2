@@ -287,7 +287,9 @@ function ExpenseTable() {
       {(expenses.length >= PAGINATION_THRESHOLD || canGoPrevious) && (
         <nav aria-label="Table pagination" className="flex items-center justify-between">
           <Field orientation="horizontal">
-            <FieldLabel className="text-muted-foreground font-normal">Rows per page</FieldLabel>
+            <FieldLabel htmlFor="page-size" className="text-muted-foreground font-normal">
+              Rows per page
+            </FieldLabel>
             <Select
               value={String(pageSize)}
               onValueChange={(value) => {
@@ -297,7 +299,7 @@ function ExpenseTable() {
                 })
               }}
             >
-              <SelectTrigger size="sm">
+              <SelectTrigger id="page-size" size="sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
