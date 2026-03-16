@@ -9,28 +9,27 @@ function escapeRegExp(value: string): string {
  * Select an option in a combobox that supports both existing entries and
  * the `+ Use "X"` create option. Waits for the popover to close.
  *
- * Existing options may contain extra content (icons, badges) so we match
- * them by text containment. The `+ Use "X"` create option is matched by
- * exact accessible name and explicitly preferred when present to avoid
- * accidentally selecting a substring match of an existing option.
+ * Delegates all filtering/matching to the combobox UI itself — the
+ * Command component filters by what's typed and shouldShowCreateOption
+ * decides whether to show the create action. The helper just types,
+ * waits for options, and clicks the right one.
  */
 async function selectComboboxOption(
   page: Page,
   comboboxName: RegExp,
   value: string,
 ): Promise<void> {
-  await page.getByRole('combobox', { name: comboboxName }).click()
   const trimmed = value.trim()
   if (!trimmed) throw new Error('selectComboboxOption: value must be a non-empty string')
+  await page.getByRole('combobox', { name: comboboxName }).click()
   await page.getByPlaceholder(/search or create/i).fill(trimmed)
   const escaped = escapeRegExp(trimmed)
   const createOption = page.getByRole('option', { name: new RegExp(`^\\+ Use "${escaped}"$`) })
-  const existingOption = page.getByRole('option').filter({ hasText: new RegExp(escaped, 'i') })
-  await createOption.or(existingOption).first().waitFor()
+  await page.getByRole('option').first().waitFor()
   if (await createOption.count()) {
     await createOption.click()
   } else {
-    await existingOption.first().click()
+    await page.getByRole('option').first().click()
   }
   await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 }
