@@ -34,7 +34,7 @@ export const Route = createFileRoute('/_authenticated')({
 function AuthenticatedSkeleton() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b">
+      <header className="bg-background sticky top-0 z-50 border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="size-8 rounded-full" />
