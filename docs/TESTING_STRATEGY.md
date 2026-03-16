@@ -118,20 +118,48 @@ OTP token generation and Resend API calls are tightly coupled to
 external services. The auth flow is covered by E2E tests. Mocking the
 fetch call provides minimal confidence.
 
-### `convex/storage.cleanupOrphanedUploads`
+---
 
-The two-pass cron cleanup algorithm is meaningful but difficult to test
-in isolation:
+## Known convex-test limitations
 
-- It's an `internalMutation` with a 24-hour TTL cutoff that requires
-  precise control over record timestamps.
-- Pass 2 queries the `_storage` system table, which has limited
-  introspection support in `convex-test`.
-- The underlying cleanup functions it depends on (`deleteUploadRecord`,
-  `isFileReferencedByExpense`) are already exercised by the storage and
-  expense mutation tests.
-- The attachment lifecycle is end-to-end tested by E2E specs
-  (`attachment.spec.ts`, `attachment-preview.spec.ts`).
+`convex-test` provides a faithful in-memory replica of the Convex
+runtime, but one limitation affects how we structure storage tests:
+
+- **`contentType` is not populated** on `_storage` system records.
+  `ctx.storage.store(new Blob([…], { type: 'image/jpeg' }))` stores the
+  file but the record only contains `sha256` and `size`. Code that reads
+  `contentType` (e.g. `confirmUpload` validation) always sees `undefined`.
+  We work around this by testing the content-type guard via the pure
+  `validateFileMetadata` helper with synthetic metadata, and testing
+  the rejection path in the integration test.
+
+Other capabilities that were previously assumed to be limited but are
+confirmed to work correctly:
+
+- `ctx.storage.delete()` — removes the file; `getUrl()` returns `null`
+- `ctx.db.system.query('_storage')` — system table queries work
+- `internalMutation` — invocable via `t.mutation(internal.xxx, {})`
+- `vi.useFakeTimers()` + `vi.advanceTimersByTime()` — works for
+  testing time-dependent logic like the 24 h TTL in
+  `cleanupOrphanedUploads`
+
+---
+
+## Shared test helpers
+
+Common test setup functions live in `convex/test-helpers.ts` to avoid
+duplication and subtle drift across test files:
+
+| Helper                   | Purpose                                                     |
+| ------------------------ | ----------------------------------------------------------- |
+| `setupAuthenticatedUser` | Insert a user + return a `withIdentity` accessor            |
+| `setupCategory`          | Insert a user-owned category with optional name             |
+| `insertExpense`          | Insert an expense with sensible defaults (overrides)        |
+| `setupStorageFile`       | Store a blob in Convex storage                              |
+| `setupUploadRecord`      | Insert an upload ownership record (overridable `createdAt`) |
+
+Domain-specific helpers (e.g. `insertMerchant`, `insertLegacyCategory`)
+stay in their respective test files.
 
 ---
 
