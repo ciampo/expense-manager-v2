@@ -317,11 +317,20 @@ describe('reports.monthlyData', () => {
     expect(result.total).toBe(1000)
   })
 
-  it('throws on invalid month', async () => {
+  it('throws on month above range', async () => {
     const t = convexTest(schema, modules)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await expect(asUser.query(api.reports.monthlyData, { year: 2026, month: 13 })).rejects.toThrow(
+      'Invalid month',
+    )
+  })
+
+  it('throws on month below range', async () => {
+    const t = convexTest(schema, modules)
+    const { asUser } = await setupAuthenticatedUser(t)
+
+    await expect(asUser.query(api.reports.monthlyData, { year: 2026, month: 0 })).rejects.toThrow(
       'Invalid month',
     )
   })
@@ -476,12 +485,21 @@ describe('reports.monthlyAttachments', () => {
     expect(result[0].merchant).toBe('Mar Shop')
   })
 
-  it('throws on invalid month', async () => {
+  it('throws on month below range', async () => {
     const t = convexTest(schema, modules)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await expect(
       asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 0 }),
+    ).rejects.toThrow('Invalid month')
+  })
+
+  it('throws on month above range', async () => {
+    const t = convexTest(schema, modules)
+    const { asUser } = await setupAuthenticatedUser(t)
+
+    await expect(
+      asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 13 }),
     ).rejects.toThrow('Invalid month')
   })
 })
