@@ -9,7 +9,7 @@ import {
   insertExpense,
   setupStorageFile,
   setupUploadRecord,
-} from './test-helpers'
+} from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
 

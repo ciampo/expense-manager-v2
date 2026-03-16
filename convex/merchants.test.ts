@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
-import { setupAuthenticatedUser, setupCategory, insertExpense } from './test-helpers'
+import { setupAuthenticatedUser, setupCategory, insertExpense } from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
 

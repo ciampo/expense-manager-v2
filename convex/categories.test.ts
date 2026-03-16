@@ -5,7 +5,7 @@ import { api, internal } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { upsertCategory } from './categories'
-import { setupAuthenticatedUser } from './test-helpers'
+import { setupAuthenticatedUser } from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
 

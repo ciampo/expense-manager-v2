@@ -147,7 +147,7 @@ confirmed to work correctly:
 
 ## Shared test helpers
 
-Common test setup functions live in `convex/test-helpers.ts` to avoid
+Common test setup functions live in `convex/testHelpers.ts` to avoid
 duplication and subtle drift across test files:
 
 | Helper                   | Purpose                                                     |
