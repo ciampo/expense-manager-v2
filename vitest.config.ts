@@ -19,5 +19,19 @@ export default defineConfig({
     env: {
       TZ: 'America/New_York',
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,tsx}', 'convex/**/*.ts'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/__tests__/**',
+        'src/routeTree.gen.ts',
+        'src/env.d.ts',
+        'convex/_generated/**',
+        'convex/**/*.test.ts',
+      ],
+    },
   },
 })
