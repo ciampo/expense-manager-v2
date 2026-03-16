@@ -92,6 +92,7 @@ test.describe('Settings page', () => {
     await page.waitForURL('**/settings')
 
     const categoriesTable = page.getByRole('table', { name: /categories/i })
+    await expect(categoriesTable).toBeVisible()
     await expect(categoriesTable.getByText('Ephemeral Category')).not.toBeVisible()
     await expect(page.getByText('No merchants found.')).toBeVisible()
   })
