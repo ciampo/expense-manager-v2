@@ -86,7 +86,7 @@ test.describe('Settings page', () => {
       .filter({ hasText: 'Ephemeral Merchant' })
     await expenseRow.getByRole('button', { name: 'Delete' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
-    await expect(expenseRow).not.toBeVisible()
+    await expect(page.getByText('Expense deleted')).toBeVisible()
 
     await page.getByRole('link', { name: /settings/i }).click()
     await page.waitForURL('**/settings')
