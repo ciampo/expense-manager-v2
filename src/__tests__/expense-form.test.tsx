@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { CATEGORY_NAME_MAX_LENGTH, COMMENT_MAX_LENGTH, MAX_FILE_SIZE } from '@/lib/schemas'
 import { expenseFormSchema } from '@/components/expense-form/schema'
@@ -239,7 +239,19 @@ const mockExpense = {
 // ---------------------------------------------------------------------------
 
 describe('ExpenseForm component', () => {
+  // TanStack Form's devtools EventClient starts a setInterval when the form
+  // is instantiated (via FormApi → emit → startConnectLoop). Track and clear
+  // these intervals so they don't leak between tests.
+  const _origSetInterval = globalThis.setInterval
+  const _leakedIntervals: ReturnType<typeof setInterval>[] = []
+
   beforeEach(() => {
+    globalThis.setInterval = ((...args: Parameters<typeof setInterval>) => {
+      const id = _origSetInterval(...args)
+      _leakedIntervals.push(id)
+      return id
+    }) as typeof setInterval
+
     vi.clearAllMocks()
 
     vi.mocked(useSuspenseQuery).mockImplementation((queryOptions: unknown) => {
@@ -252,6 +264,12 @@ describe('ExpenseForm component', () => {
       }
       return { data: null } as ReturnType<typeof useSuspenseQuery>
     })
+  })
+
+  afterEach(() => {
+    _leakedIntervals.forEach((id) => clearInterval(id))
+    _leakedIntervals.length = 0
+    globalThis.setInterval = _origSetInterval
   })
 
   describe('field labels', () => {

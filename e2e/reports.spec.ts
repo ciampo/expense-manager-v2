@@ -53,10 +53,10 @@ test.describe('Reports page', () => {
       const filePath = await download.path()
       expect(filePath).toBeTruthy()
       const csv = readFileSync(filePath!, 'utf-8')
-      expect(csv).toContain('Date')
+      expect(csv).toContain('giorno')
       expect(csv).toContain('Coworking')
       expect(csv).toContain('42.00')
-      expect(csv).toContain('TOTAL')
+      expect(csv).toContain('totale spese documentate')
     })
 
     test('category breakdown shows the expense category', async ({ page }) => {
