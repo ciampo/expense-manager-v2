@@ -8,6 +8,10 @@ function escapeRegExp(value: string): string {
 /**
  * Select an option in a combobox that supports both existing entries and
  * the `+ Use "X"` create option. Waits for the popover to close.
+ *
+ * Existing options may contain extra content (icons, badges) so we match
+ * by text containment. The `+ Use "X"` create option is matched exactly
+ * and preferred when present (appears first in DOM order).
  */
 async function selectComboboxOption(
   page: Page,
@@ -17,10 +21,9 @@ async function selectComboboxOption(
   await page.getByRole('combobox', { name: comboboxName }).click()
   await page.getByPlaceholder(/search or create/i).fill(value)
   const escaped = escapeRegExp(value)
-  await page
-    .getByRole('option', { name: new RegExp(`^(\\+ Use "${escaped}"|${escaped})$`) })
-    .first()
-    .click()
+  const createOption = page.getByRole('option', { name: new RegExp(`^\\+ Use "${escaped}"$`) })
+  const existingOption = page.getByRole('option').filter({ hasText: value })
+  await createOption.or(existingOption).first().click()
   await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 }
 
