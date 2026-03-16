@@ -34,6 +34,7 @@
     "typecheck": "tsc --noEmit",
     "setup": "bash scripts/setup.sh",
     "setup:e2e": "bash scripts/setup-e2e.sh",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:unit",
     "prepare": "husky"
   },
   "dependencies": {
