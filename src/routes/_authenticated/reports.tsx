@@ -3,11 +3,11 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
+import { Field, FieldLabel } from '@/components/ui/field'
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -82,10 +82,10 @@ function ReportsContent() {
   return (
     <>
       {/* Month selector */}
-      <Select value={effectiveMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
-        <div className="mb-8">
-          <SelectLabel className="mb-2 block">Select month</SelectLabel>
-          <SelectTrigger className="w-64">
+      <Field className="mb-8 w-64">
+        <FieldLabel>Select month</FieldLabel>
+        <Select value={effectiveMonth} onValueChange={(value) => value && setSelectedMonth(value)}>
+          <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -95,8 +95,8 @@ function ReportsContent() {
               </SelectItem>
             ))}
           </SelectContent>
-        </div>
-      </Select>
+        </Select>
+      </Field>
 
       <Suspense fallback={<ReportSkeleton />}>
         <MonthlyReport year={year} month={month} />
