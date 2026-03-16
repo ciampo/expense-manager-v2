@@ -1,4 +1,4 @@
-import { convexTest } from 'convex-test'
+import type { convexTest } from 'convex-test'
 import type { Id } from './_generated/dataModel'
 
 export type TestCtx = ReturnType<typeof convexTest>

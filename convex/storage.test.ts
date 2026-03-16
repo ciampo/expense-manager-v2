@@ -449,7 +449,7 @@ describe('storage.cleanupOrphanedUploads', () => {
     expect(url).not.toBeNull()
   })
 
-  it('skips untracked files that have an upload record (Pass 2)', async () => {
+  it('skips files that still have an upload record (Pass 2)', async () => {
     const t = convexTest(schema, modules)
     const { userId } = await setupAuthenticatedUser(t)
     const storageId = await setupStorageFile(t)
