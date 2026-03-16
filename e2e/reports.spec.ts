@@ -99,8 +99,7 @@ test.describe('Reports page', () => {
       const selectTrigger = page.getByRole('combobox', { name: 'Select month' })
       await selectTrigger.click()
 
-      const optionCount = await page.getByRole('option').count()
-      expect(optionCount).toBeGreaterThanOrEqual(1)
+      await expect(page.getByRole('option').first()).toBeVisible()
 
       await page.keyboard.press('Escape')
     })
