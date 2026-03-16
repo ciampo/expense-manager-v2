@@ -37,7 +37,7 @@ test.describe('Reports page', () => {
       await createExpense(page, 'Report Test Shop', '42,00')
     })
 
-    test('month selector shows exactly one option for the current month', async ({ page }) => {
+    test('month selector shows exactly one month option', async ({ page }) => {
       await page.goto('/reports')
       await page.getByText('Select month').waitFor()
 
