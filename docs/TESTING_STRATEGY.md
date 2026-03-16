@@ -86,7 +86,7 @@ and is unit-tested.
 | `convex/crons.ts`        | Cron schedule registration; the cleanup functions it calls are tested individually      |
 | `convex/http.ts`         | Two-line HTTP router setup                                                              |
 | `convex/auth.config.ts`  | Static auth provider configuration                                                      |
-| `convex/auth.ts`         | Single-line `convexAuth()` call                                                         |
+| `convex/auth.ts`         | Declarative auth provider wiring (`convexAuth` + Password + Resend reset)               |
 | `convex/uploadLimits.ts` | Two exported constants                                                                  |
 
 ### Route components (`src/routes/`)
@@ -120,11 +120,18 @@ fetch call provides minimal confidence.
 
 ### `convex/storage.cleanupOrphanedUploads`
 
-The two-pass cron cleanup algorithm is meaningful but
-**`convex-test` has a known limitation**: `ctx.storage.delete()` is a
-no-op in the in-memory store, so assertions on file deletion are
-unreliable. This behavior is verified manually against the real Convex
-backend and protected by the E2E attachment lifecycle tests.
+The two-pass cron cleanup algorithm is meaningful but difficult to test
+in isolation:
+
+- It's an `internalMutation` with a 24-hour TTL cutoff that requires
+  precise control over record timestamps.
+- Pass 2 queries the `_storage` system table, which has limited
+  introspection support in `convex-test`.
+- The underlying cleanup functions it depends on (`deleteUploadRecord`,
+  `isFileReferencedByExpense`) are already exercised by the storage and
+  expense mutation tests.
+- The attachment lifecycle is end-to-end tested by E2E specs
+  (`attachment.spec.ts`, `attachment-preview.spec.ts`).
 
 ---
 
