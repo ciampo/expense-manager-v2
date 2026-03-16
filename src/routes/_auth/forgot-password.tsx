@@ -97,7 +97,9 @@ function EmailStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Forgot password?</CardTitle>
+        <CardTitle>
+          <h1>Forgot password?</h1>
+        </CardTitle>
         <CardDescription>
           Enter your email and we&apos;ll send you a verification code
         </CardDescription>
@@ -195,7 +197,9 @@ function CodeStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Reset password</CardTitle>
+        <CardTitle>
+          <h1>Reset password</h1>
+        </CardTitle>
         <CardDescription>Enter the code sent to {email} and your new password</CardDescription>
       </CardHeader>
       <form

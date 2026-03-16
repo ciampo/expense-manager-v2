@@ -23,11 +23,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Field, FieldLabel } from '@/components/ui/field'
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -286,31 +286,31 @@ function ExpenseTable() {
 
       {(expenses.length >= PAGINATION_THRESHOLD || canGoPrevious) && (
         <nav aria-label="Table pagination" className="flex items-center justify-between">
-          <Select
-            value={String(pageSize)}
-            onValueChange={(value) => {
-              startTransition(() => {
-                setPageSize(Number(value))
-                setCursors([null])
-              })
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <SelectLabel className="text-muted-foreground text-sm font-normal">
-                Rows per page
-              </SelectLabel>
-              <SelectTrigger size="sm">
+          <Field orientation="horizontal">
+            <FieldLabel htmlFor="page-size" className="text-muted-foreground font-normal">
+              Rows per page
+            </FieldLabel>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => {
+                startTransition(() => {
+                  setPageSize(Number(value))
+                  setCursors([null])
+                })
+              }}
+            >
+              <SelectTrigger id="page-size" size="sm">
                 <SelectValue />
               </SelectTrigger>
-            </div>
-            <SelectContent>
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
           {(canGoNext || canGoPrevious) && (
             <div className="flex items-center gap-2">

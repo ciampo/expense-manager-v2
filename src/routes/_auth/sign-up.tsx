@@ -73,7 +73,9 @@ function SignUpPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign Up</CardTitle>
+        <CardTitle>
+          <h1>Sign Up</h1>
+        </CardTitle>
         <CardDescription>Create a new account to start managing your expenses</CardDescription>
       </CardHeader>
       <form
