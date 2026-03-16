@@ -50,6 +50,13 @@ test.describe('Page titles — authenticated routes', () => {
     await expect(page).toHaveTitle('Reports — Expense Manager')
   })
 
+  test('settings page has descriptive title', async ({ page }) => {
+    await page.getByRole('link', { name: /settings/i }).click()
+    await page.waitForURL('**/settings')
+
+    await expect(page).toHaveTitle('Settings — Expense Manager')
+  })
+
   test('new expense page has descriptive title', async ({ page }) => {
     await page.getByRole('link', { name: /new expense/i }).click()
     await page.waitForURL('**/expenses/new')
