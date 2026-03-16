@@ -20,10 +20,11 @@ async function selectComboboxOption(
   value: string,
 ): Promise<void> {
   await page.getByRole('combobox', { name: comboboxName }).click()
-  await page.getByPlaceholder(/search or create/i).fill(value)
-  const escaped = escapeRegExp(value)
+  const trimmed = value.trim()
+  await page.getByPlaceholder(/search or create/i).fill(trimmed)
+  const escaped = escapeRegExp(trimmed)
   const createOption = page.getByRole('option', { name: new RegExp(`^\\+ Use "${escaped}"$`) })
-  const existingOption = page.getByRole('option').filter({ hasText: value })
+  const existingOption = page.getByRole('option').filter({ hasText: new RegExp(escaped, 'i') })
   await createOption.or(existingOption).first().waitFor()
   if (await createOption.count()) {
     await createOption.click()
