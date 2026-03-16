@@ -127,11 +127,13 @@ runtime, but one limitation affects how we structure storage tests:
 
 - **`contentType` is not populated** on `_storage` system records.
   `ctx.storage.store(new Blob([…], { type: 'image/jpeg' }))` stores the
-  file but the record only contains `sha256` and `size`. Code that reads
-  `contentType` (e.g. `confirmUpload` validation) always sees `undefined`.
-  We work around this by testing the content-type guard via the pure
-  `validateFileMetadata` helper with synthetic metadata, and testing
-  the rejection path in the integration test.
+  file but the record only contains `sha256` and `size`. This only
+  affects the metadata-validation branch in `confirmUpload` (unclaimed
+  new files), which always sees `undefined` for `contentType`. Other
+  `confirmUpload` branches — idempotent already-claimed uploads and
+  legacy expense-attachment backfills — bypass re-validation and are
+  tested normally. The content-type guard itself is tested via the pure
+  `validateFileMetadata` helper with synthetic metadata.
 
 Other capabilities that were previously assumed to be limited but are
 confirmed to work correctly:

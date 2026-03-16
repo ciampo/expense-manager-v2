@@ -92,9 +92,13 @@ describe('validateFileMetadata', () => {
 // ── confirmUpload integration tests ──────────────────────────────────────
 //
 // convex-test does not populate `contentType` on system storage records,
-// so confirmUpload's content-type guard always rejects. The happy path
-// (valid file → upload record created) is tested via the pure
-// validateFileMetadata helper with synthetic metadata.
+// so confirmUpload's metadata-validation branch (unclaimed new files)
+// always rejects with "Unsupported file type". The content-type happy
+// path is tested via the pure validateFileMetadata helper above.
+//
+// Other confirmUpload branches — idempotent already-claimed uploads and
+// legacy expense-attachment backfills — bypass re-validation and are
+// tested normally below.
 
 describe('storage.confirmUpload', () => {
   it('rejects unauthenticated calls', async () => {
