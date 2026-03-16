@@ -29,7 +29,7 @@ async function selectComboboxOption(
   if (await createOption.count()) {
     await createOption.click()
   } else {
-    await page.getByRole('option').first().click()
+    await page.getByRole('option', { name: trimmed }).first().click()
   }
   await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
 }
