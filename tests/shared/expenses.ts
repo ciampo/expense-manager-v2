@@ -67,26 +67,33 @@ export async function createExpense(
 
 /**
  * Create an expense with a file attachment via the UI and wait for the
- * redirect back to the dashboard. Uses "Coworking" as the category.
+ * redirect back to the dashboard. Defaults to "Coworking" category;
+ * pass `options.category` to create/select a different one.
  */
 export async function createExpenseWithAttachment(
   page: Page,
   merchant: string,
   amount: string,
-  options: { type: 'png' | 'pdf' } = { type: 'png' },
+  options: { type?: 'png' | 'pdf'; category?: string } = {},
 ): Promise<void> {
+  const { type = 'png', category } = options
+
   await page.goto('/expenses/new')
   await page.getByRole('button', { name: /create expense/i }).waitFor()
 
   await selectComboboxOption(page, /merchant/i, merchant)
 
-  await page.getByRole('combobox', { name: /category/i }).click()
-  await page.getByRole('option', { name: /coworking/i }).click()
+  if (category) {
+    await selectComboboxOption(page, /category/i, category)
+  } else {
+    await page.getByRole('combobox', { name: /category/i }).click()
+    await page.getByRole('option', { name: /coworking/i }).click()
+  }
 
   await page.getByLabel(/amount/i).fill(amount)
 
   const fileInput = page.locator('#attachment-input')
-  if (options.type === 'png') {
+  if (type === 'png') {
     await fileInput.setInputFiles({
       name: 'test-receipt.png',
       mimeType: 'image/png',
