@@ -5,16 +5,9 @@ import { api, internal } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { upsertCategory } from './categories'
+import { setupAuthenticatedUser } from './test-helpers'
 
 const modules = import.meta.glob('./**/*.ts')
-
-async function setupAuthenticatedUser(t: ReturnType<typeof convexTest>) {
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert('users', {})
-  })
-  const asUser = t.withIdentity({ subject: `${userId}|fake-session` })
-  return { userId, asUser }
-}
 
 async function insertCategory(
   t: ReturnType<typeof convexTest>,

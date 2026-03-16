@@ -3,45 +3,9 @@ import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import type { Id } from './_generated/dataModel'
+import { setupAuthenticatedUser, setupCategory, insertExpense } from './test-helpers'
 
 const modules = import.meta.glob('./**/*.ts')
-
-async function setupAuthenticatedUser(t: ReturnType<typeof convexTest>) {
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert('users', {})
-  })
-  const asUser = t.withIdentity({ subject: `${userId}|fake-session` })
-  return { userId, asUser }
-}
-
-async function setupCategory(t: ReturnType<typeof convexTest>, userId: Id<'users'>) {
-  return await t.run(async (ctx) => {
-    return await ctx.db.insert('categories', {
-      name: 'Test Category',
-      normalizedName: 'test category',
-      userId,
-    })
-  })
-}
-
-async function insertExpense(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<'users'>,
-  categoryId: Id<'categories'>,
-  date: string,
-) {
-  return await t.run(async (ctx) => {
-    return await ctx.db.insert('expenses', {
-      userId,
-      date,
-      merchant: 'Test',
-      amount: 1000,
-      categoryId,
-      createdAt: Date.now(),
-    })
-  })
-}
 
 describe('reports.availableMonths', () => {
   it('returns empty array for unauthenticated users', async () => {
@@ -63,9 +27,9 @@ describe('reports.availableMonths', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-03-01')
-    await insertExpense(t, userId, categoryId, '2026-03-15')
-    await insertExpense(t, userId, categoryId, '2026-03-28')
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01' })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-15' })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-28' })
 
     const result = await asUser.query(api.reports.availableMonths, {})
     expect(result).toEqual([{ year: 2026, month: 3 }])
@@ -76,9 +40,9 @@ describe('reports.availableMonths', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2025-06-10')
-    await insertExpense(t, userId, categoryId, '2026-01-05')
-    await insertExpense(t, userId, categoryId, '2025-11-20')
+    await insertExpense(t, userId, categoryId, { date: '2025-06-10' })
+    await insertExpense(t, userId, categoryId, { date: '2026-01-05' })
+    await insertExpense(t, userId, categoryId, { date: '2025-11-20' })
 
     const result = await asUser.query(api.reports.availableMonths, {})
     expect(result).toEqual([
@@ -93,10 +57,10 @@ describe('reports.availableMonths', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-02-01')
-    await insertExpense(t, userId, categoryId, '2026-02-14')
-    await insertExpense(t, userId, categoryId, '2026-02-28')
-    await insertExpense(t, userId, categoryId, '2026-03-10')
+    await insertExpense(t, userId, categoryId, { date: '2026-02-01' })
+    await insertExpense(t, userId, categoryId, { date: '2026-02-14' })
+    await insertExpense(t, userId, categoryId, { date: '2026-02-28' })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-10' })
 
     const result = await asUser.query(api.reports.availableMonths, {})
     expect(result).toEqual([
@@ -110,9 +74,9 @@ describe('reports.availableMonths', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2024-12-25')
-    await insertExpense(t, userId, categoryId, '2025-06-15')
-    await insertExpense(t, userId, categoryId, '2026-01-01')
+    await insertExpense(t, userId, categoryId, { date: '2024-12-25' })
+    await insertExpense(t, userId, categoryId, { date: '2025-06-15' })
+    await insertExpense(t, userId, categoryId, { date: '2026-01-01' })
 
     const result = await asUser.query(api.reports.availableMonths, {})
     expect(result).toEqual([
@@ -129,8 +93,8 @@ describe('reports.availableMonths', () => {
     const cat1 = await setupCategory(t, user1Id)
     const cat2 = await setupCategory(t, user2Id)
 
-    await insertExpense(t, user1Id, cat1, '2026-03-01')
-    await insertExpense(t, user2Id, cat2, '2026-05-01')
+    await insertExpense(t, user1Id, cat1, { date: '2026-03-01' })
+    await insertExpense(t, user2Id, cat2, { date: '2026-05-01' })
 
     const result = await asUser1.query(api.reports.availableMonths, {})
     expect(result).toEqual([{ year: 2026, month: 3 }])
@@ -151,7 +115,7 @@ describe('reports.monthlyData', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-01-15')
+    await insertExpense(t, userId, categoryId, { date: '2026-01-15' })
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result).toEqual({ expenses: [], categories: {}, total: 0 })
@@ -162,10 +126,10 @@ describe('reports.monthlyData', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-02-28')
-    await insertExpense(t, userId, categoryId, '2026-03-01')
-    await insertExpense(t, userId, categoryId, '2026-03-15')
-    await insertExpense(t, userId, categoryId, '2026-04-01')
+    await insertExpense(t, userId, categoryId, { date: '2026-02-28' })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01' })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-15' })
+    await insertExpense(t, userId, categoryId, { date: '2026-04-01' })
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.expenses).toHaveLength(2)
@@ -177,38 +141,32 @@ describe('reports.monthlyData', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-03-01') // 1000
-    await insertExpense(t, userId, categoryId, '2026-03-15') // 1000
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01' }) // 2500
+    await insertExpense(t, userId, categoryId, { date: '2026-03-15' }) // 2500
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
-    expect(result.total).toBe(2000)
+    expect(result.total).toBe(5000)
   })
 
   it('aggregates expenses by category name', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const catFood = await setupCategory(t, userId)
-    const catTransport = await t.run(async (ctx) => {
-      return await ctx.db.insert('categories', {
-        name: 'Transport',
-        normalizedName: 'transport',
-        userId,
-      })
-    })
+    const catTransport = await setupCategory(t, userId, 'Transport')
 
-    await insertExpense(t, userId, catFood, '2026-03-01')
-    await insertExpense(t, userId, catFood, '2026-03-10')
-    await insertExpense(t, userId, catTransport, '2026-03-15')
+    await insertExpense(t, userId, catFood, { date: '2026-03-01' })
+    await insertExpense(t, userId, catFood, { date: '2026-03-10' })
+    await insertExpense(t, userId, catTransport, { date: '2026-03-15' })
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.categories['Test Category']).toEqual({
       name: 'Test Category',
-      total: 2000,
+      total: 5000,
       count: 2,
     })
     expect(result.categories['Transport']).toEqual({
       name: 'Transport',
-      total: 1000,
+      total: 2500,
       count: 1,
     })
   })
@@ -218,7 +176,7 @@ describe('reports.monthlyData', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-03-01')
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01' })
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.expenses[0].categoryName).toBe('Test Category')
@@ -229,7 +187,7 @@ describe('reports.monthlyData', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-03-01')
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01' })
 
     // Delete the category to simulate a dangling reference
     await t.run(async (ctx) => {
@@ -240,7 +198,7 @@ describe('reports.monthlyData', () => {
     expect(result.expenses[0].categoryName).toBe('Unknown')
     expect(result.categories['Unknown']).toEqual({
       name: 'Unknown',
-      total: 1000,
+      total: 2500,
       count: 1,
     })
   })
@@ -309,12 +267,12 @@ describe('reports.monthlyData', () => {
     const cat1 = await setupCategory(t, user1Id)
     const cat2 = await setupCategory(t, user2Id)
 
-    await insertExpense(t, user1Id, cat1, '2026-03-01')
-    await insertExpense(t, user2Id, cat2, '2026-03-15')
+    await insertExpense(t, user1Id, cat1, { date: '2026-03-01' })
+    await insertExpense(t, user2Id, cat2, { date: '2026-03-15' })
 
     const result = await asUser1.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.expenses).toHaveLength(1)
-    expect(result.total).toBe(1000)
+    expect(result.total).toBe(2500)
   })
 
   it('throws on month above range', async () => {
@@ -340,9 +298,9 @@ describe('reports.monthlyData', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-03-20')
-    await insertExpense(t, userId, categoryId, '2026-03-05')
-    await insertExpense(t, userId, categoryId, '2026-03-12')
+    await insertExpense(t, userId, categoryId, { date: '2026-03-20' })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-05' })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-12' })
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.expenses.map((e) => e.date)).toEqual(['2026-03-05', '2026-03-12', '2026-03-20'])
@@ -363,7 +321,7 @@ describe('reports.monthlyAttachments', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    await insertExpense(t, userId, categoryId, '2026-03-01')
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01' })
 
     const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
     expect(result).toEqual([])
@@ -405,7 +363,7 @@ describe('reports.monthlyAttachments', () => {
 
     const storageId = await t.run(async (ctx) => ctx.storage.store(new Blob(['receipt'])))
 
-    await insertExpense(t, userId, categoryId, '2026-03-01') // no attachment
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01' }) // no attachment
 
     await t.run(async (ctx) => {
       await ctx.db.insert('expenses', {
@@ -445,7 +403,7 @@ describe('reports.monthlyAttachments', () => {
       })
     })
 
-    await insertExpense(t, user1Id, cat1, '2026-03-10') // no attachment
+    await insertExpense(t, user1Id, cat1, { date: '2026-03-10' }) // no attachment
 
     const result = await asUser1.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
     expect(result).toEqual([])

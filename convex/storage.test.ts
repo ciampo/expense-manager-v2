@@ -6,22 +6,9 @@ import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE } from './uploadLimits'
 import { validateFileMetadata } from './storage'
+import { setupAuthenticatedUser, setupStorageFile } from './test-helpers'
 
 const modules = import.meta.glob('./**/*.ts')
-
-async function setupAuthenticatedUser(t: ReturnType<typeof convexTest>) {
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert('users', {})
-  })
-  const asUser = t.withIdentity({ subject: `${userId}|fake-session` })
-  return { userId, asUser }
-}
-
-async function storeFile(t: ReturnType<typeof convexTest>, content: BlobPart = 'test-content') {
-  return await t.run(async (ctx) => {
-    return await ctx.storage.store(new Blob([content]))
-  })
-}
 
 // Uses .filter() instead of .withIndex() because ReturnType<typeof convexTest>
 // loses schema-specific index types, causing tsc errors with custom indexes.
@@ -113,7 +100,7 @@ describe('validateFileMetadata', () => {
 describe('storage.confirmUpload', () => {
   it('rejects unauthenticated calls', async () => {
     const t = convexTest(schema, modules)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     await expect(t.mutation(api.storage.confirmUpload, { storageId })).rejects.toThrow(
       'Not authenticated',
@@ -124,7 +111,7 @@ describe('storage.confirmUpload', () => {
     const t = convexTest(schema, modules)
     const { asUser } = await setupAuthenticatedUser(t)
     const oversized = new Uint8Array(MAX_FILE_SIZE + 1)
-    const storageId = await storeFile(t, oversized)
+    const storageId = await setupStorageFile(t, oversized)
 
     await expect(asUser.mutation(api.storage.confirmUpload, { storageId })).rejects.toThrow(
       'File exceeds maximum size',
@@ -134,7 +121,7 @@ describe('storage.confirmUpload', () => {
   it('rejects files with no content type', async () => {
     const t = convexTest(schema, modules)
     const { asUser } = await setupAuthenticatedUser(t)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     await expect(asUser.mutation(api.storage.confirmUpload, { storageId })).rejects.toThrow(
       'Unsupported file type',
@@ -145,7 +132,7 @@ describe('storage.confirmUpload', () => {
     const t = convexTest(schema, modules)
     const { asUser: asUser2 } = await setupAuthenticatedUser(t)
     const { userId: user1Id } = await setupAuthenticatedUser(t)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('uploads', {
@@ -164,7 +151,7 @@ describe('storage.confirmUpload', () => {
     const t = convexTest(schema, modules)
     const { asUser: asUser2 } = await setupAuthenticatedUser(t)
     const { userId: user1Id } = await setupAuthenticatedUser(t)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     const categoryId = await t.run(async (ctx) => {
       return await ctx.db.insert('categories', {
@@ -194,7 +181,7 @@ describe('storage.confirmUpload', () => {
   it('is idempotent when the same user already has an upload record', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('uploads', {
@@ -220,7 +207,7 @@ describe('storage.confirmUpload', () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
     // File has no contentType (would normally fail validation)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     const categoryId = await t.run(async (ctx) => {
       return await ctx.db.insert('categories', {
@@ -257,7 +244,7 @@ describe('storage.confirmUpload', () => {
     const { userId: user1Id } = await setupAuthenticatedUser(t)
     // File has no contentType (would fail validation), but ownership check
     // should reject first with a different error message.
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('uploads', {
@@ -290,7 +277,7 @@ describe('storage.generateUploadUrl', () => {
 describe('storage.getUrl', () => {
   it('returns null for unauthenticated users', async () => {
     const t = convexTest(schema, modules)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
     const url = await t.query(api.storage.getUrl, { storageId })
     expect(url).toBeNull()
   })
@@ -298,7 +285,7 @@ describe('storage.getUrl', () => {
   it('returns a URL when the user owns the upload record', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('uploads', { storageId, userId, createdAt: Date.now() })
@@ -312,7 +299,7 @@ describe('storage.getUrl', () => {
     const t = convexTest(schema, modules)
     const { asUser: asUser2 } = await setupAuthenticatedUser(t)
     const { userId: user1Id } = await setupAuthenticatedUser(t)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('uploads', { storageId, userId: user1Id, createdAt: Date.now() })
@@ -326,7 +313,7 @@ describe('storage.getUrl', () => {
 describe('storage.deleteFile', () => {
   it('rejects unauthenticated calls', async () => {
     const t = convexTest(schema, modules)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
     await expect(t.mutation(api.storage.deleteFile, { storageId })).rejects.toThrow(
       'Not authenticated',
     )
@@ -335,7 +322,7 @@ describe('storage.deleteFile', () => {
   it('rejects when the user has no expense referencing the file', async () => {
     const t = convexTest(schema, modules)
     const { asUser } = await setupAuthenticatedUser(t)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
     await expect(asUser.mutation(api.storage.deleteFile, { storageId })).rejects.toThrow(
       'File not found or not owned by current user',
     )
@@ -344,7 +331,7 @@ describe('storage.deleteFile', () => {
   it('deletes the file and clears the expense attachment', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const storageId = await storeFile(t)
+    const storageId = await setupStorageFile(t)
 
     const categoryId = await t.run(async (ctx) => {
       return await ctx.db.insert('categories', {

@@ -4,26 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
+import { setupAuthenticatedUser, setupCategory, insertExpense } from './test-helpers'
 
 const modules = import.meta.glob('./**/*.ts')
-
-async function setupAuthenticatedUser(t: ReturnType<typeof convexTest>) {
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert('users', {})
-  })
-  const asUser = t.withIdentity({ subject: `${userId}|fake-session` })
-  return { userId, asUser }
-}
-
-async function insertCategory(t: ReturnType<typeof convexTest>, userId: Id<'users'>) {
-  return await t.run(async (ctx) => {
-    return await ctx.db.insert('categories', {
-      name: 'Test Category',
-      normalizedName: 'test category',
-      userId,
-    })
-  })
-}
 
 async function insertMerchant(t: ReturnType<typeof convexTest>, userId: Id<'users'>, name: string) {
   return await t.run(async (ctx) => {
@@ -31,24 +14,6 @@ async function insertMerchant(t: ReturnType<typeof convexTest>, userId: Id<'user
       name,
       normalizedName: name.toLowerCase(),
       userId,
-    })
-  })
-}
-
-async function insertExpense(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<'users'>,
-  categoryId: Id<'categories'>,
-  overrides: Partial<{ merchant: string; date: string; amount: number }> = {},
-) {
-  return await t.run(async (ctx) => {
-    return await ctx.db.insert('expenses', {
-      userId,
-      date: overrides.date ?? '2026-03-01',
-      merchant: overrides.merchant ?? 'Test Merchant',
-      amount: overrides.amount ?? 2500,
-      categoryId,
-      createdAt: Date.now(),
     })
   })
 }
@@ -63,7 +28,7 @@ describe('merchants.listWithCounts', () => {
   it('returns merchants with expense counts', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, userId)
+    const catId = await setupCategory(t, userId)
 
     await insertMerchant(t, userId, 'Starbucks')
     await insertMerchant(t, userId, 'Amazon')
@@ -82,7 +47,7 @@ describe('merchants.listWithCounts', () => {
   it('counts case-insensitively', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, userId)
+    const catId = await setupCategory(t, userId)
 
     await insertMerchant(t, userId, 'Starbucks')
     await insertExpense(t, userId, catId, { merchant: 'starbucks' })
@@ -96,7 +61,7 @@ describe('merchants.rename', () => {
   it('renames merchant and updates linked expenses', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, userId)
+    const catId = await setupCategory(t, userId)
 
     const merchantId = await insertMerchant(t, userId, 'Old Name')
     const expenseId = await insertExpense(t, userId, catId, { merchant: 'Old Name' })
@@ -166,7 +131,7 @@ describe('merchants.remove', () => {
   it('rejects deletion when expenses reference the merchant', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, userId)
+    const catId = await setupCategory(t, userId)
 
     const merchantId = await insertMerchant(t, userId, 'InUse')
     await insertExpense(t, userId, catId, { merchant: 'InUse' })
@@ -205,7 +170,7 @@ describe('cleanupOrphanedMerchants', () => {
   it('preserves referenced merchants', async () => {
     const t = convexTest(schema, modules)
     const { userId } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, userId)
+    const catId = await setupCategory(t, userId)
 
     const merchantId = await insertMerchant(t, userId, 'InUse')
     await insertExpense(t, userId, catId, { merchant: 'InUse' })
@@ -221,7 +186,7 @@ describe('expense deletion cleans up orphaned merchants', () => {
   it('deletes orphaned merchant when last expense is removed', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, userId)
+    const catId = await setupCategory(t, userId)
 
     await insertMerchant(t, userId, 'Test Merchant')
     const expenseId = await insertExpense(t, userId, catId, { merchant: 'Test Merchant' })
@@ -235,7 +200,7 @@ describe('expense deletion cleans up orphaned merchants', () => {
   it('preserves merchant when other expenses still reference it', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, userId)
+    const catId = await setupCategory(t, userId)
 
     await insertMerchant(t, userId, 'Test Merchant')
     const expense1 = await insertExpense(t, userId, catId, { merchant: 'Test Merchant' })

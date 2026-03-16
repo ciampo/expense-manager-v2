@@ -3,73 +3,15 @@ import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import type { Id } from './_generated/dataModel'
+import {
+  setupAuthenticatedUser,
+  setupCategory,
+  insertExpense,
+  setupStorageFile,
+  setupUploadRecord,
+} from './test-helpers'
 
 const modules = import.meta.glob('./**/*.ts')
-
-/**
- * Create an authenticated test context. Inserts a user into the database
- * and returns a `withIdentity` accessor whose `auth.getUserId` resolves
- * to that user.
- *
- * `@convex-dev/auth` reads the user ID from the first segment of
- * `identity.subject` (split by "|").
- */
-async function setupAuthenticatedUser(t: ReturnType<typeof convexTest>) {
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert('users', {})
-  })
-  const asUser = t.withIdentity({ subject: `${userId}|fake-session` })
-  return { userId, asUser }
-}
-
-async function setupCategory(t: ReturnType<typeof convexTest>, userId: Id<'users'>) {
-  return await t.run(async (ctx) => {
-    return await ctx.db.insert('categories', {
-      name: 'Test Category',
-      normalizedName: 'test category',
-      userId,
-    })
-  })
-}
-
-async function setupStorageFile(t: ReturnType<typeof convexTest>) {
-  return await t.run(async (ctx) => {
-    return await ctx.storage.store(new Blob(['test']))
-  })
-}
-
-async function setupUploadRecord(
-  t: ReturnType<typeof convexTest>,
-  storageId: Id<'_storage'>,
-  userId: Id<'users'>,
-) {
-  return await t.run(async (ctx) => {
-    return await ctx.db.insert('uploads', {
-      storageId,
-      userId,
-      createdAt: Date.now(),
-    })
-  })
-}
-
-async function insertExpense(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<'users'>,
-  categoryId: Id<'categories'>,
-  overrides: Partial<{ date: string; merchant: string; amount: number }> = {},
-) {
-  return await t.run(async (ctx) => {
-    return await ctx.db.insert('expenses', {
-      userId,
-      date: overrides.date ?? '2026-03-01',
-      merchant: overrides.merchant ?? 'Test Merchant',
-      amount: overrides.amount ?? 2500,
-      categoryId,
-      createdAt: Date.now(),
-    })
-  })
-}
 
 const VALID_EXPENSE_FIELDS = {
   date: '2026-03-01',
