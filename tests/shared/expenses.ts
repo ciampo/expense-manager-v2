@@ -35,20 +35,48 @@ async function selectComboboxOption(
 }
 
 /**
+ * Open the date picker and select a specific day in the currently-displayed
+ * month. If the day is already selected the picker is closed without changes.
+ */
+async function selectCalendarDay(page: Page, day: number): Promise<void> {
+  await page.locator('#date-picker').click()
+  const calendar = page.locator('[data-slot="calendar"]')
+  await calendar.waitFor()
+
+  const dayCell = calendar
+    .locator('td:not([data-outside])')
+    .filter({ hasText: new RegExp(`^${day}$`) })
+
+  if ((await dayCell.getAttribute('data-selected')) === 'true') {
+    await page.keyboard.press('Escape')
+  } else {
+    await dayCell.getByRole('button').click()
+  }
+
+  await expect(calendar).not.toBeVisible()
+}
+
+/**
  * Create an expense via the UI and wait for the redirect back to the dashboard.
  *
  * Defaults to "Coworking" for the category. Pass `category` to create/select
- * a custom one instead. Accepts `amount` in the locale-formatted string the
- * input expects (e.g. `'42,00'` for €42.00).
+ * a custom one instead. Pass `day` (1–28) to pin the day-of-month via the
+ * date picker, preventing flakiness when tests run near midnight. Accepts
+ * `amount` in the locale-formatted string the input expects (e.g. `'42,00'`
+ * for €42.00).
  */
 export async function createExpense(
   page: Page,
   merchant: string,
   amount: string,
-  options?: { category?: string },
+  options?: { category?: string; day?: number },
 ): Promise<void> {
   await page.goto('/expenses/new')
   await page.getByRole('button', { name: /create expense/i }).waitFor()
+
+  if (options?.day) {
+    await selectCalendarDay(page, options.day)
+  }
 
   await selectComboboxOption(page, /merchant/i, merchant)
 
@@ -68,18 +96,23 @@ export async function createExpense(
 /**
  * Create an expense with a file attachment via the UI and wait for the
  * redirect back to the dashboard. Defaults to "Coworking" category;
- * pass `options.category` to create/select a different one.
+ * pass `options.category` to create/select a different one. Pass `day`
+ * (1–28) to pin the day-of-month via the date picker.
  */
 export async function createExpenseWithAttachment(
   page: Page,
   merchant: string,
   amount: string,
-  options: { type?: 'png' | 'pdf'; category?: string } = {},
+  options: { type?: 'png' | 'pdf'; category?: string; day?: number } = {},
 ): Promise<void> {
-  const { type = 'png', category } = options
+  const { type = 'png', category, day } = options
 
   await page.goto('/expenses/new')
   await page.getByRole('button', { name: /create expense/i }).waitFor()
+
+  if (day) {
+    await selectCalendarDay(page, day)
+  }
 
   await selectComboboxOption(page, /merchant/i, merchant)
 

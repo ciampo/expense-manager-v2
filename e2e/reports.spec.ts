@@ -132,9 +132,12 @@ test.describe('Reports page', () => {
 
     test.beforeEach(async ({ page }) => {
       await signUpTestUser(page)
-      await createExpense(page, 'Office Space A', '50,00')
-      await createExpense(page, 'Business Lunch', '25,00', { category: 'Pranzo di lavoro' })
-      await createExpense(page, 'Office Space B', '30,00')
+      await createExpense(page, 'Office Space A', '50,00', { day: 15 })
+      await createExpense(page, 'Business Lunch', '25,00', {
+        category: 'Pranzo di lavoro',
+        day: 15,
+      })
+      await createExpense(page, 'Office Space B', '30,00', { day: 15 })
     })
 
     test('summary cards reflect aggregated totals', async ({ page }) => {
