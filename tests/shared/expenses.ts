@@ -21,6 +21,7 @@ async function selectComboboxOption(
 ): Promise<void> {
   await page.getByRole('combobox', { name: comboboxName }).click()
   const trimmed = value.trim()
+  if (!trimmed) throw new Error('selectComboboxOption: value must be a non-empty string')
   await page.getByPlaceholder(/search or create/i).fill(trimmed)
   const escaped = escapeRegExp(trimmed)
   const createOption = page.getByRole('option', { name: new RegExp(`^\\+ Use "${escaped}"$`) })
