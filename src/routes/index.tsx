@@ -51,7 +51,9 @@ function LandingPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  <span aria-hidden="true">📊</span> Dashboard
+                  <h3>
+                    <span aria-hidden="true">📊</span> Dashboard
+                  </h3>
                 </CardTitle>
                 <CardDescription>View all your expenses in a single organized view</CardDescription>
               </CardHeader>
@@ -65,7 +67,9 @@ function LandingPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  <span aria-hidden="true">📎</span> Attachments
+                  <h3>
+                    <span aria-hidden="true">📎</span> Attachments
+                  </h3>
                 </CardTitle>
                 <CardDescription>Upload receipts and invoices for each expense</CardDescription>
               </CardHeader>
@@ -80,7 +84,9 @@ function LandingPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  <span aria-hidden="true">📄</span> Reports
+                  <h3>
+                    <span aria-hidden="true">📄</span> Reports
+                  </h3>
                 </CardTitle>
                 <CardDescription>Generate monthly reports ready for accounting</CardDescription>
               </CardHeader>

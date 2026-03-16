@@ -79,7 +79,9 @@ function SectionSkeleton({ title }: { title: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle>
+          <h2>{title}</h2>
+        </CardTitle>
         <CardDescription>
           <Skeleton className="h-4 w-48" />
         </CardDescription>
@@ -122,7 +124,9 @@ function CategoriesSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Categories</CardTitle>
+        <CardTitle>
+          <h2>Categories</h2>
+        </CardTitle>
         <CardDescription>
           Manage expense categories. Predefined categories cannot be modified.
         </CardDescription>
@@ -299,7 +303,9 @@ function MerchantsSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Merchants</CardTitle>
+        <CardTitle>
+          <h2>Merchants</h2>
+        </CardTitle>
         <CardDescription>
           Manage merchants used in your expenses. Renaming updates all linked expenses.
         </CardDescription>

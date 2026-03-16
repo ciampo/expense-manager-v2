@@ -347,7 +347,9 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       {/* Category breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle>Summary by category</CardTitle>
+          <CardTitle>
+            <h2>Summary by category</h2>
+          </CardTitle>
           <CardDescription>Expenses grouped by category</CardDescription>
         </CardHeader>
         <CardContent>
@@ -374,7 +376,9 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       {/* Export actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Export</CardTitle>
+          <CardTitle>
+            <h2>Export</h2>
+          </CardTitle>
           <CardDescription>Download month data</CardDescription>
         </CardHeader>
         <CardContent className="flex gap-4">

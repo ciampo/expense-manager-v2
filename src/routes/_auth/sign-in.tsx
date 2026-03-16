@@ -66,7 +66,9 @@ function SignInPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
+        <CardTitle>
+          <h1>Sign In</h1>
+        </CardTitle>
         <CardDescription>Enter your credentials to sign in</CardDescription>
       </CardHeader>
       <form
