@@ -27,7 +27,7 @@ export async function setupCategory(t: TestCtx, userId: Id<'users'>, name = 'Tes
   return await t.run(async (ctx) => {
     return await ctx.db.insert('categories', {
       name,
-      normalizedName: name.toLowerCase(),
+      normalizedName: name.trim().toLowerCase(),
       userId,
     })
   })

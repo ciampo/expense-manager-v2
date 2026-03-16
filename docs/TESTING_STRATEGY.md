@@ -15,9 +15,10 @@ different failure modes and has different cost/value trade-offs:
 | **E2E**                | Playwright           | Full user flows               | Auth guards, CRUD workflows, cross-page navigation, a11y |
 | **Visual regression**  | Playwright + Docker  | Screenshot comparison         | UI appearance, responsive layouts, error/empty states    |
 
-Coverage is evaluated **across all three layers combined**, not by unit
-test coverage alone. A file at "0% unit coverage" may be thoroughly
-tested by E2E and visual regression tests.
+Coverage metrics (via `pnpm test:coverage`) reflect Vitest unit and
+integration tests only. Overall test confidence is assessed across all
+three layers combined — a file at "0% unit coverage" may be thoroughly
+tested by E2E and visual regression specs.
 
 ---
 
