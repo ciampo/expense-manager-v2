@@ -167,6 +167,7 @@ test.describe('Attachment upload and download', () => {
     await expect(page.getByRole('link', { name: /view attachment/i })).toBeVisible({
       timeout: 15_000,
     })
+    await expect(page.getByAltText('Attachment preview')).not.toBeVisible()
 
     // Save and verify
     await page.getByRole('button', { name: /save changes/i }).click()
