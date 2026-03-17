@@ -44,6 +44,7 @@ test.describe('Visual Regression - Settings', () => {
     await page.goto('/settings')
     await page.getByRole('heading', { name: /settings/i }).waitFor()
     await page.getByText('Temp Cat').waitFor()
+    await page.getByRole('table', { name: /merchants/i }).waitFor()
 
     await page.getByRole('button', { name: 'Rename Temp Cat' }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
@@ -59,6 +60,7 @@ test.describe('Visual Regression - Settings', () => {
 
     await page.goto('/settings')
     await page.getByRole('heading', { name: /settings/i }).waitFor()
+    await page.getByRole('table', { name: /merchants/i }).waitFor()
 
     const disabledDeleteBtn = page
       .getByRole('table', { name: /categories/i })
@@ -79,6 +81,7 @@ test.describe('Visual Regression - Settings', () => {
     await page.goto('/settings')
     await page.getByRole('heading', { name: /settings/i }).waitFor()
     await page.getByText('Renamable Shop').waitFor()
+    await page.getByRole('table', { name: /categories/i }).waitFor()
 
     await page.getByRole('button', { name: 'Rename Renamable Shop' }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
