@@ -51,7 +51,7 @@ test.describe('Visual Regression - Settings', () => {
     })
   })
 
-  test('delete category confirmation', async ({ page }) => {
+  test('delete button disabled when category has expenses', async ({ page }) => {
     await createExpense(page, 'Del Cat Shop', '10,00', { category: 'Deletable Cat' })
 
     await page.goto('/settings')
