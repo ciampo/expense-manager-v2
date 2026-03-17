@@ -1,17 +1,20 @@
 export const AUTH_TIMEOUT_MS = 10_000
 
 /**
- * Simple auth state bridge that allows non-React code (like beforeLoad)
- * to access the Convex auth state. Updated by the AuthBridge component
- * in router.tsx — via useLayoutEffect on the client (synchronously after
- * render, before paint) and synchronously during render on the server
- * (where effects don't fire).
+ * Simple auth state bridge that allows non-React code (like TanStack Router's
+ * synchronous `beforeLoad` guards) to access the Convex auth state. Updated
+ * by the AuthBridge component in router.tsx — via useLayoutEffect on the
+ * client (synchronously after render, before paint) and synchronously during
+ * render on the server (where effects don't fire).
  *
- * The `invalidateRouter` callback is set by `getRouter()` after the router
- * is created, and called by AuthBridge (via useEffect) when auth state
- * settles — this triggers TanStack Router to re-evaluate its beforeLoad
- * guards, producing automatic redirects (e.g. auth pages → /dashboard
- * after sign-in, authenticated pages → /sign-in after sign-out).
+ * Route guards read `isLoading` / `isAuthenticated` synchronously; they never
+ * await. When auth settles, `AuthBridge` calls `invalidateRouter()` which
+ * triggers TanStack Router to re-run `beforeLoad` with the final state,
+ * producing automatic redirects (e.g. auth pages → /dashboard after sign-in,
+ * authenticated pages → /sign-in after sign-out).
+ *
+ * See docs/ARCHITECTURE_DECISIONS.md §6 for why this pattern replaced the
+ * earlier async `beforeLoad` + `waitForAuth()` approach.
  */
 export interface AuthStore {
   readonly isAuthenticated: boolean
@@ -20,9 +23,7 @@ export interface AuthStore {
    * Update auth state. Called by AuthBridge via useLayoutEffect on the
    * client (synchronously after render, before paint) and synchronously
    * during render on the server (where effects don't fire). The update
-   * is idempotent. Order is significant: isAuthenticated is set first,
-   * then isLoading — the isLoading setter resolves the waitForAuth()
-   * promise which reads isAuthenticated.
+   * is idempotent.
    */
   update: (state: { isAuthenticated: boolean; isLoading: boolean }) => void
   /**
@@ -32,6 +33,10 @@ export interface AuthStore {
    *
    * The internal promise resets whenever loading restarts (false → true),
    * so callers always wait for the most recent auth resolution.
+   *
+   * Note: route guards no longer await this — they read auth state
+   * synchronously. Retained for any non-React code that needs to await
+   * auth resolution (e.g. external integrations).
    */
   waitForAuth: () => Promise<{ isAuthenticated: boolean }>
   /**
