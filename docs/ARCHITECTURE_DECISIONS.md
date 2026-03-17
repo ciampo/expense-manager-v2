@@ -93,7 +93,47 @@ concurrent edits.
 
 ---
 
-## 6. Merchant cleanup deferred on expense update
+## 6. Synchronous auth route guards (TanStack Router `beforeLoad`)
+
+Auth-protected routes (`_authenticated.tsx`, `_auth.tsx`) use **synchronous
+`beforeLoad` guards** that read the in-memory `authStore` rather than
+awaiting an async auth check.
+
+```
+beforeLoad  →  read authStore.isLoading / isAuthenticated  →  redirect or proceed
+component   →  if isLoading, render skeleton; else render content
+AuthBridge  →  when auth settles, calls router.invalidate()
+              → beforeLoad re-runs with settled state → redirects fire
+```
+
+**Why:** An earlier implementation used `async beforeLoad` that awaited
+`authStore.waitForAuth()` — a promise that resolved when Convex auth
+finished loading. This worked until TanStack Router 1.167.0 refactored
+`loadMatches` for the new `staleReloadMode` feature
+([TanStack/router#6921](https://github.com/TanStack/router/pull/6921)).
+`router.invalidate()` (called by `AuthBridge` when auth settles) during
+an in-flight `async beforeLoad` triggered two concurrent `load()` cycles
+sharing internal `_nonReactive` promise state, effectively doubling every
+navigation's cost.
+
+The synchronous pattern follows the
+[recommended TanStack Router auth guide](https://tanstack.com/router/latest/docs/guide/authenticated-routes):
+`beforeLoad` checks auth state without blocking, the component handles the
+loading state with a skeleton, and `router.invalidate()` causes re-evaluation
+only after auth settles — no concurrent loads possible.
+
+**Trade-off:** The component briefly mounts and shows a skeleton before the
+auth state settles. This is indistinguishable to the user from the previous
+`pendingComponent` approach and avoids the race condition entirely.
+
+**`waitForAuth` retained:** The async `waitForAuth()` method on `AuthStore`
+is kept as a utility for any future non-React code that truly needs to await
+auth resolution (e.g. external integrations, CLI scripts), but it is no
+longer used by route guards.
+
+---
+
+## 7. Merchant cleanup deferred on expense update
 
 When an expense's merchant changes, the old merchant record is **not**
 immediately cleaned up. Cleanup only runs immediately on expense
