@@ -145,6 +145,7 @@ test.describe('Attachment upload and download', () => {
     await expect(page.getByAltText('Attachment preview')).toBeVisible({ timeout: 10_000 })
     await page.getByRole('button', { name: /create expense/i }).click()
     await page.waitForURL('**/dashboard', { timeout: 15_000 })
+    await expect(page.getByText('Replace Attach Shop')).toBeVisible()
 
     // Edit the expense
     await page.getByRole('link', { name: /edit/i }).first().click()
@@ -172,6 +173,7 @@ test.describe('Attachment upload and download', () => {
     await page.waitForURL('**/dashboard', { timeout: 15_000 })
 
     // Re-open edit to confirm PDF persisted
+    await expect(page.getByText('Replace Attach Shop')).toBeVisible()
     await page.getByRole('link', { name: /edit/i }).first().click()
     await page.waitForURL(/\/expenses\//)
     await page.getByRole('button', { name: /save changes/i }).waitFor()
