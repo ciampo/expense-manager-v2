@@ -230,8 +230,8 @@ By default, your Worker is accessible at `<worker-name>.<account-subdomain>.work
 #### DNS requirements
 
 - The domain (or its parent zone) **must** be on Cloudflare DNS.
-- If the domain is already in your Cloudflare account, Cloudflare creates the required DNS record automatically.
-- If you're using a subdomain of a zone managed elsewhere, add a **proxied CNAME** record pointing to your `workers.dev` subdomain (e.g., `app.yourdomain.com` → `<worker-name>.<account-subdomain>.workers.dev`) and transfer DNS management for that zone to Cloudflare.
+- **Zone already on Cloudflare:** Cloudflare creates the required DNS record automatically when you add the custom domain.
+- **Zone managed elsewhere:** You must first transfer DNS management for the zone to Cloudflare (update nameservers). Once the zone is on Cloudflare, add the custom domain and Cloudflare will create the proxied record.
 
 #### Verification
 
