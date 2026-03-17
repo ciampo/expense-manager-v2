@@ -317,8 +317,8 @@ npx convex dev
 # Start app (Terminal 2)
 pnpm dev
 
-# Run unit tests
-pnpm test:unit
+# Run all local CI checks (lint, format, typecheck, unit tests)
+pnpm check
 
 # Run E2E tests (requires .env.e2e with valid values)
 pnpm test:e2e
