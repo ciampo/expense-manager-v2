@@ -158,6 +158,7 @@ test.describe('Attachment upload and download', () => {
     await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Remove' }).click()
     await expect(page.getByText('Attachment removed')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByAltText('Attachment preview')).not.toBeVisible()
 
     // Upload PDF
     await uploadPdfAttachment(page)
@@ -177,5 +178,6 @@ test.describe('Attachment upload and download', () => {
     await expect(page.getByRole('link', { name: /view attachment/i })).toBeVisible({
       timeout: 15_000,
     })
+    await expect(page.getByAltText('Attachment preview')).not.toBeVisible()
   })
 })
