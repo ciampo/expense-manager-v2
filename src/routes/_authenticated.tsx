@@ -33,8 +33,8 @@ export const Route = createFileRoute('/_authenticated')({
 })
 
 function AuthenticatedRoute() {
-  const { isLoading } = useConvexAuth()
-  if (isLoading) {
+  const { isLoading, isAuthenticated } = useConvexAuth()
+  if (isLoading || !isAuthenticated) {
     return <AuthenticatedSkeleton />
   }
   return <AuthenticatedLayout />
