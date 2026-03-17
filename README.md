@@ -4,7 +4,7 @@ A modern expense management application for tracking work-related expenses, buil
 
 ## Features
 
-- **Dashboard**: View all expenses in a sortable table with quick delete actions
+- **Dashboard**: View all expenses in a paginated table with quick delete actions
 - **Expense Management**: Add/edit expenses with category and merchant autocomplete
 - **File Attachments**: Upload receipts and invoices (images, PDFs up to 10MB)
 - **Reports**: Generate monthly CSV exports and download attachments as ZIP
