@@ -90,6 +90,7 @@ test.describe('Attachment upload and download', () => {
 
     await page.getByRole('button', { name: /create expense/i }).click()
     await page.waitForURL('**/dashboard', { timeout: 15_000 })
+    await expect(page.getByText('Remove Attach Shop')).toBeVisible()
 
     await page.getByRole('link', { name: /edit/i }).first().click()
     await page.waitForURL(/\/expenses\//)
@@ -134,5 +135,53 @@ test.describe('Attachment upload and download', () => {
     await expect(page.getByRole('link', { name: /view attachment/i })).toBeVisible({
       timeout: 15_000,
     })
+  })
+
+  test('replaces an existing attachment with a new one', async ({ page }) => {
+    // Create expense with PNG
+    await navigateToNewExpense(page)
+    await fillExpenseForm(page, 'Replace Attach Shop')
+    await uploadPngAttachment(page)
+    await expect(page.getByText('File uploaded')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByAltText('Attachment preview')).toBeVisible({ timeout: 10_000 })
+    await page.getByRole('button', { name: /create expense/i }).click()
+    await page.waitForURL('**/dashboard', { timeout: 15_000 })
+    await expect(page.getByText('Replace Attach Shop')).toBeVisible()
+
+    // Edit the expense
+    await page.getByRole('link', { name: /edit/i }).first().click()
+    await page.waitForURL(/\/expenses\//)
+    await page.getByRole('button', { name: /save changes/i }).waitFor()
+    await expect(page.getByAltText('Attachment preview')).toBeVisible({ timeout: 10_000 })
+
+    // Remove existing PNG
+    await page.getByRole('button', { name: /remove attachment/i }).click()
+    const dialog = page.getByRole('alertdialog')
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: 'Remove' }).click()
+    await expect(page.getByText('Attachment removed')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByAltText('Attachment preview')).not.toBeVisible()
+
+    // Upload PDF
+    await uploadPdfAttachment(page)
+    await expect(page.getByText('File uploaded')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('link', { name: /view attachment/i })).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(page.getByAltText('Attachment preview')).not.toBeVisible()
+
+    // Save and verify
+    await page.getByRole('button', { name: /save changes/i }).click()
+    await page.waitForURL('**/dashboard', { timeout: 15_000 })
+
+    // Re-open edit to confirm PDF persisted
+    await expect(page.getByText('Replace Attach Shop')).toBeVisible()
+    await page.getByRole('link', { name: /edit/i }).first().click()
+    await page.waitForURL(/\/expenses\//)
+    await page.getByRole('button', { name: /save changes/i }).waitFor()
+    await expect(page.getByRole('link', { name: /view attachment/i })).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(page.getByAltText('Attachment preview')).not.toBeVisible()
   })
 })
