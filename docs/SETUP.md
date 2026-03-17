@@ -219,6 +219,29 @@ pnpm dlx wrangler login
 
 This opens a browser to authenticate your local machine with Cloudflare.
 
+### 2.4 Set Up a Custom Domain
+
+By default, your Worker is accessible at `<worker-name>.<account-subdomain>.workers.dev`. To use your own domain:
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages**
+2. Select your Worker → **Settings** → **Domains & Routes** → **Add** → **Custom Domain**
+3. Enter your domain (e.g., `app.yourdomain.com`) and click **Add Domain**
+
+#### DNS requirements
+
+- The domain (or its parent zone) **must** be on Cloudflare DNS.
+- **Zone already on Cloudflare:** Cloudflare creates the required DNS record automatically when you add the custom domain.
+- **Zone managed elsewhere:** You must first transfer DNS management for the zone to Cloudflare (update nameservers). Once the zone is on Cloudflare, add the custom domain and Cloudflare will create the proxied record.
+
+#### Verification
+
+1. After adding the custom domain, the dashboard shows a status of **Active** once DNS propagation completes (usually under a minute for zones already on Cloudflare).
+2. Confirm the domain resolves to your Worker:
+   ```bash
+   curl -sI https://app.yourdomain.com | head -5
+   ```
+3. Update the production **site URL** in your Convex auth configuration (step 1.5) to match the new domain.
+
 ---
 
 ## 3. GitHub Repository Setup
@@ -317,8 +340,8 @@ npx convex dev
 # Start app (Terminal 2)
 pnpm dev
 
-# Run unit tests
-pnpm test:unit
+# Run all local CI checks (lint, format, typecheck, unit tests)
+pnpm check
 
 # Run E2E tests (requires .env.e2e with valid values)
 pnpm test:e2e
