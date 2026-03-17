@@ -71,13 +71,13 @@ test.describe('Visual Regression - Settings', () => {
   })
 
   test('rename merchant dialog', async ({ page }) => {
-    await createExpense(page, 'Rename Me Shop', '10,00')
+    await createExpense(page, 'Renamable Shop', '10,00')
 
     await page.goto('/settings')
     await page.getByRole('heading', { name: /settings/i }).waitFor()
-    await page.getByText('Rename Me Shop').waitFor()
+    await page.getByText('Renamable Shop').waitFor()
 
-    await page.getByRole('button', { name: 'Rename Rename Me Shop' }).click()
+    await page.getByRole('button', { name: 'Rename Renamable Shop' }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
 
     await expect(page).toHaveScreenshot('settings-rename-merchant-dialog.png', {
