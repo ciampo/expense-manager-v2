@@ -32,9 +32,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:unit",
     "setup": "bash scripts/setup.sh",
     "setup:e2e": "bash scripts/setup-e2e.sh",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:unit",
     "prepare": "husky"
   },
   "dependencies": {
