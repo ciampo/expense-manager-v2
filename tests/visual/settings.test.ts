@@ -13,6 +13,7 @@ test.describe('Visual Regression - Settings', () => {
     await page.goto('/settings')
     await page.getByRole('heading', { name: /settings/i }).waitFor()
     await page.getByText(/manage your categories/i).waitFor()
+    await page.getByText(/no merchants found/i).waitFor()
 
     await expect(page).toHaveScreenshot('settings-default.png', {
       fullPage: true,
