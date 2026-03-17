@@ -13,9 +13,9 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CSV_BOM, CSV_EOL, csvRow } from '@/lib/csv'
-import { centsToInputValue, formatCurrency, getItalianMonthName, getMonthName } from '@/lib/format'
-import { extensionFromContentType, promiseAllSettledPooled } from '@/lib/download-utils'
+import { formatCurrency, getItalianMonthName, getMonthName } from '@/lib/format'
+import { promiseAllSettledPooled } from '@/lib/download-utils'
+import { buildCsvContent, buildZipFilename } from '@/lib/reports'
 import { toast } from 'sonner'
 import { Suspense, useState } from 'react'
 import { RouteErrorComponent } from '@/components/route-error'
@@ -162,51 +162,11 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
     setIsDownloadingCsv(true)
     try {
-      const italianMonth = getItalianMonthName(month)
+      const csvContent = buildCsvContent(data.expenses, month)
 
-      // Group expenses by day-of-month and category, summing amounts
-      const grouped: Record<string, Record<string, number>> = {}
-
-      for (const expense of data.expenses) {
-        const day = String(parseInt(expense.date.split('-')[2], 10))
-        if (!grouped[day]) {
-          grouped[day] = {}
-        }
-        if (!grouped[day][expense.categoryName]) {
-          grouped[day][expense.categoryName] = 0
-        }
-        grouped[day][expense.categoryName] += expense.amount
-      }
-
-      let csv = csvRow([italianMonth]) + CSV_EOL
-      csv +=
-        csvRow([
-          'giorno',
-          'descrizione',
-          'aliquota',
-          'imponibile',
-          'imposta',
-          'imponibile',
-          'imposta',
-          'totale spese documentate',
-        ]) + CSV_EOL
-
-      const days = Object.keys(grouped)
-        .map(Number)
-        .sort((a, b) => a - b)
-
-      for (const day of days) {
-        const categories = Object.keys(grouped[String(day)]).sort()
-        for (const category of categories) {
-          const amount = grouped[String(day)][category]
-          csv +=
-            csvRow([String(day), category, '', '', '', '', '', centsToInputValue(amount)]) + CSV_EOL
-        }
-      }
-
-      const blob = new Blob([CSV_BOM + csv], { type: 'text/csv;charset=utf-8;' })
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const saveAs = await loadFileSaver()
-      saveAs(blob, `expenses-${italianMonth}.csv`)
+      saveAs(blob, `expenses-${getItalianMonthName(month)}.csv`)
 
       toast.success('CSV downloaded')
     } catch {
@@ -273,14 +233,12 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
         const { attachment, blob, contentType } = result.value
 
-        const extension = extensionFromContentType(contentType)
-        const baseFilename = `${attachment.date}-${attachment.merchant.replace(/[^a-zA-Z0-9]+/g, '_')}`
-
-        const countKey = baseFilename + extension
-        const count = filenameCount[countKey] || 0
-        filenameCount[countKey] = count + 1
-        const filename =
-          count > 0 ? `${baseFilename}-${count}${extension}` : `${baseFilename}${extension}`
+        const filename = buildZipFilename(
+          attachment.date,
+          attachment.merchant,
+          contentType,
+          filenameCount,
+        )
 
         zip.file(filename, blob)
         successfulDownloads++
