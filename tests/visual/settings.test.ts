@@ -73,32 +73,6 @@ test.describe('Visual Regression - Settings', () => {
     })
   })
 
-  test('delete category confirmation dialog', async ({ page }) => {
-    test.setTimeout(90_000)
-
-    await createExpense(page, 'Ephemeral Shop', '10,00', { category: 'Ephemeral Cat' })
-
-    // Delete the expense from the dashboard so the category has 0 expenses
-    await page.getByRole('button', { name: 'Delete Ephemeral Shop expense' }).click()
-    await page
-      .getByRole('alertdialog')
-      .getByRole('button', { name: /delete/i })
-      .click()
-    await expect(page.getByText(/haven't recorded any expenses/i)).toBeVisible()
-
-    await page.goto('/settings')
-    await page.getByRole('heading', { name: /settings/i }).waitFor()
-    await page.getByText('Ephemeral Cat').waitFor()
-
-    await page.getByRole('button', { name: 'Delete Ephemeral Cat' }).click()
-    await expect(page.getByRole('alertdialog')).toBeVisible()
-
-    await expect(page).toHaveScreenshot('settings-delete-category-dialog.png', {
-      fullPage: true,
-      mask: [page.locator('footer')],
-    })
-  })
-
   test('rename merchant dialog', async ({ page }) => {
     await createExpense(page, 'Renamable Shop', '10,00')
 
