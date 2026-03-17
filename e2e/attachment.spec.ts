@@ -90,6 +90,7 @@ test.describe('Attachment upload and download', () => {
 
     await page.getByRole('button', { name: /create expense/i }).click()
     await page.waitForURL('**/dashboard', { timeout: 15_000 })
+    await expect(page.getByText('Remove Attach Shop')).toBeVisible()
 
     await page.getByRole('link', { name: /edit/i }).first().click()
     await page.waitForURL(/\/expenses\//)
