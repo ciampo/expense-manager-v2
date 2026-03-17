@@ -3,7 +3,7 @@ import { signUpTestUser } from '../shared/auth'
 import { createExpense } from '../shared/expenses'
 
 test.describe('Visual Regression - Settings', () => {
-  test.setTimeout(90_000)
+  test.setTimeout(60_000)
 
   test.beforeEach(async ({ page }) => {
     await signUpTestUser(page)
@@ -22,6 +22,8 @@ test.describe('Visual Regression - Settings', () => {
   })
 
   test('with custom category and merchants', async ({ page }) => {
+    test.setTimeout(90_000)
+
     await createExpense(page, 'Visual Merchant A', '10,00', { category: 'Custom Cat' })
     await createExpense(page, 'Visual Merchant B', '20,00')
 
