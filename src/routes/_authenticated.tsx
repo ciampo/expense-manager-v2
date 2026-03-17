@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
+import { useConvexAuth } from 'convex/react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { RouteNotFoundComponent } from '@/components/route-not-found'
@@ -17,19 +18,27 @@ import { Menu01Icon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_authenticated')({
-  // Auth state is client-side only (Convex), so beforeLoad must not run during SSR
-  // — it awaits a promise that depends on React effects which don't fire on the server.
+  // Synchronous guard following TanStack Router's recommended auth pattern.
+  // When auth is still loading we let the route render (the component shows
+  // a skeleton). Once AuthBridge calls router.invalidate() after auth settles,
+  // beforeLoad re-runs and redirects if the user is not authenticated.
   ssr: false,
-  beforeLoad: async ({ context }) => {
-    const { isAuthenticated } = await context.authStore.waitForAuth()
-    if (!isAuthenticated) {
+  beforeLoad: ({ context }) => {
+    if (!context.authStore.isLoading && !context.authStore.isAuthenticated) {
       throw redirect({ to: '/sign-in' })
     }
   },
-  pendingComponent: AuthenticatedSkeleton,
   notFoundComponent: RouteNotFoundComponent,
-  component: AuthenticatedLayout,
+  component: AuthenticatedRoute,
 })
+
+function AuthenticatedRoute() {
+  const { isLoading } = useConvexAuth()
+  if (isLoading) {
+    return <AuthenticatedSkeleton />
+  }
+  return <AuthenticatedLayout />
+}
 
 function AuthenticatedSkeleton() {
   return (
