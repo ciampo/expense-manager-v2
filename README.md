@@ -88,31 +88,33 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ### Scripts
 
-| Command                          | Description                                   |
-| -------------------------------- | --------------------------------------------- |
-| `pnpm setup`                     | Guided interactive local dev setup            |
-| `pnpm setup:e2e`                 | Guided interactive E2E test project setup     |
-| `pnpm dev`                       | Start development server                      |
-| `pnpm dev:e2e`                   | Start dev server with E2E test config         |
-| `pnpm build`                     | Build for production (includes typecheck)     |
-| `pnpm preview`                   | Preview production build locally              |
-| `pnpm deploy`                    | Build and deploy to Cloudflare Workers        |
-| `pnpm migrate`                   | Run pending Convex migrations                 |
-| `pnpm test`                      | Run all Vitest tests                          |
-| `pnpm test:unit`                 | Run unit tests only                           |
-| `pnpm test:e2e`                  | Run Playwright E2E tests                      |
-| `pnpm test:e2e:seed`             | Seed test data to E2E Convex project          |
-| `pnpm test:e2e:cleanup`          | Clean up E2E test data                        |
-| `pnpm test:visual`               | Run visual regression tests locally           |
-| `pnpm test:visual:update`        | Update visual regression baselines locally    |
-| `pnpm test:visual:docker`        | Run visual regression tests in Docker         |
-| `pnpm test:visual:docker:update` | Update visual regression baselines in Docker  |
-| `pnpm lint`                      | Run ESLint                                    |
-| `pnpm lint:fix`                  | Run ESLint with auto-fix                      |
-| `pnpm format`                    | Format code with Prettier                     |
-| `pnpm format:check`              | Check code formatting                         |
-| `pnpm typecheck`                 | Run TypeScript type checking (`tsc --noEmit`) |
-| `pnpm cf-typegen`                | Generate Cloudflare Worker types              |
+| Command                          | Description                                                |
+| -------------------------------- | ---------------------------------------------------------- |
+| `pnpm setup`                     | Guided interactive local dev setup                         |
+| `pnpm setup:e2e`                 | Guided interactive E2E test project setup                  |
+| `pnpm dev`                       | Start development server                                   |
+| `pnpm dev:e2e`                   | Start dev server with E2E test config                      |
+| `pnpm build`                     | Build for production (includes typecheck)                  |
+| `pnpm preview`                   | Preview production build locally                           |
+| `pnpm deploy`                    | Build and deploy to Cloudflare Workers                     |
+| `pnpm migrate`                   | Run pending Convex migrations                              |
+| `pnpm test`                      | Run all Vitest tests                                       |
+| `pnpm test:unit`                 | Run unit tests only                                        |
+| `pnpm test:coverage`             | Run unit tests with coverage report                        |
+| `pnpm test:e2e`                  | Run Playwright E2E tests                                   |
+| `pnpm test:e2e:seed`             | Seed test data to E2E Convex project                       |
+| `pnpm test:e2e:cleanup`          | Clean up E2E test data                                     |
+| `pnpm test:visual`               | Run visual regression tests locally                        |
+| `pnpm test:visual:update`        | Update visual regression baselines locally                 |
+| `pnpm test:visual:docker`        | Run visual regression tests in Docker                      |
+| `pnpm test:visual:docker:update` | Update visual regression baselines in Docker               |
+| `pnpm lint`                      | Run ESLint                                                 |
+| `pnpm lint:fix`                  | Run ESLint with auto-fix                                   |
+| `pnpm format`                    | Format code with Prettier                                  |
+| `pnpm format:check`              | Check code formatting                                      |
+| `pnpm typecheck`                 | Run TypeScript type checking (`tsc --noEmit`)              |
+| `pnpm check`                     | Run all CI checks locally (lint, format, typecheck, tests) |
+| `pnpm cf-typegen`                | Generate Cloudflare Worker types                           |
 
 ### Project Structure
 
