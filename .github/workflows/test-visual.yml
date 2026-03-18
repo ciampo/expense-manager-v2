@@ -11,6 +11,9 @@ concurrency:
   group: convex-test-deploy
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   visual:
     runs-on: ubuntu-latest
