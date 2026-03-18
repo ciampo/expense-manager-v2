@@ -51,7 +51,7 @@
     "@tanstack/react-router": "^1.167.4",
     "@tanstack/react-router-ssr-query": "^1.166.9",
     "@tanstack/react-router-with-query": "^1.130.17",
-    "@tanstack/react-start": "^1.166.15",
+    "@tanstack/react-start": "^1.166.16",
     "@tanstack/router-plugin": "^1.166.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -70,7 +70,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
-    "@cloudflare/vite-plugin": "^1.29.0",
+    "@cloudflare/vite-plugin": "^1.29.1",
     "@edge-runtime/vm": "^5.0.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
@@ -107,7 +107,7 @@
     "vite": "^8.0.0",
     "vitest": "^4.1.0",
     "web-vitals": "^5.1.0",
-    "wrangler": "^4.74.0"
+    "wrangler": "^4.75.0"
   },
   "lint-staged": {
     "*.{js,ts,tsx}": [
