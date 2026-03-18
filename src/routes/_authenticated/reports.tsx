@@ -169,7 +169,8 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       saveAs(blob, `expenses-${getItalianMonthName(month)}.csv`)
 
       toast.success('CSV downloaded')
-    } catch {
+    } catch (error) {
+      console.error('CSV generation failed:', error)
       toast.error('Error generating CSV')
     } finally {
       setIsDownloadingCsv(false)
@@ -261,7 +262,8 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
       } else {
         toast.success(`ZIP downloaded (${successfulDownloads} ${fileLabel})`)
       }
-    } catch {
+    } catch (error) {
+      console.error('ZIP generation failed:', error)
       toast.error('Error generating ZIP')
     } finally {
       setIsDownloadingZip(false)
