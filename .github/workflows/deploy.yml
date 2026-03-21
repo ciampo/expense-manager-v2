@@ -71,15 +71,42 @@ jobs:
             }));
             const allGreen = results.every(r => r.conclusion === 'success');
 
+            // Skip if this SHA was already successfully deployed (dedup
+            // across the up-to-5 workflow_run triggers per push).
+            let alreadyDeployed = false;
+            if (allGreen) {
+              const { data: deployments } = await github.rest.repos.listDeployments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha,
+                environment: 'production',
+                per_page: 5,
+              });
+              for (const d of deployments) {
+                const { data: statuses } = await github.rest.repos.listDeploymentStatuses({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  deployment_id: d.id,
+                  per_page: 1,
+                });
+                if (statuses[0]?.state === 'success' || statuses[0]?.state === 'in_progress') {
+                  alreadyDeployed = true;
+                  break;
+                }
+              }
+            }
+
             core.summary.addHeading('CI Gate', 3);
             core.summary.addTable([
               [{ data: 'Workflow', header: true }, { data: 'Status', header: true }],
               ...results.map(r => [r.name, r.conclusion === 'success' ? '✅' : `❌ ${r.conclusion}`]),
             ]);
-            core.summary.addRaw(`\n\nCommit: ${sha}\nDeploy: ${allGreen ? 'proceeding' : 'skipped'}`);
+            const shouldDeploy = allGreen && !alreadyDeployed;
+            const reason = alreadyDeployed ? 'already deployed' : shouldDeploy ? 'proceeding' : 'skipped';
+            core.summary.addRaw(`\n\nCommit: ${sha}\nDeploy: ${reason}`);
             await core.summary.write();
 
-            core.setOutput('should-deploy', String(allGreen));
+            core.setOutput('should-deploy', String(shouldDeploy));
 
   deploy:
     needs: gate
@@ -148,7 +175,7 @@ jobs:
               environment_url: '${{ steps.cf-deploy.outputs.deployment-url }}',
             });
       - name: Mark deployment failed
-        if: failure()
+        if: failure() && steps.deployment.outputs.id
         uses: actions/github-script@v7
         with:
           script: |
