@@ -90,28 +90,29 @@
     "@vitest/browser-playwright": "^4.1.0",
     "@vitest/coverage-v8": "^4.1.0",
     "convex-test": "^0.0.43",
-    "eslint": "^10.0.3",
+    "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "husky": "^9.1.7",
-    "jsdom": "^29.0.0",
+    "jsdom": "^29.0.1",
     "lint-staged": "^16.4.0",
     "playwright": "^1.58.2",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "shadcn": "^4.0.8",
+    "shadcn": "^4.1.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.1",
     "vite": "^8.0.1",
     "vitest": "^4.1.0",
     "web-vitals": "^5.1.0",
-    "wrangler": "^4.75.0"
+    "wrangler": "^4.76.0"
   },
   "pnpm": {
     "overrides": {
-      "h3-v2": "npm:h3@2.0.1-rc.18"
+      "h3-v2": "npm:h3@2.0.1-rc.18",
+      "flatted": ">=3.4.2"
     }
   },
   "lint-staged": {
