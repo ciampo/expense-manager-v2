@@ -55,7 +55,7 @@ export async function upsertCategory(
   const predefined = await findCategory(ctx, undefined, name, normalizedName)
   if (predefined) return predefined._id
 
-  return ctx.db.insert('categories', { name, normalizedName, userId })
+  return ctx.db.insert('categories', { name, normalizedName, userId, source: 'auto' })
 }
 
 /**
@@ -187,6 +187,7 @@ export const create = mutation({
       normalizedName,
       userId,
       icon,
+      source: 'manual',
     })
 
     return categoryId
@@ -316,9 +317,15 @@ export const remove = mutation({
 const CLEANUP_BATCH_SIZE = 100
 
 /**
- * Delete user-custom categories that are not referenced by any expense.
- * Predefined categories are never removed. Scans all user-custom
- * categories and deletes up to {@link CLEANUP_BATCH_SIZE} orphans per run.
+ * Delete auto-created user-custom categories not referenced by any expense.
+ *
+ * Only categories with `source: "auto"` (implicitly created during expense
+ * upsert) are eligible. Categories explicitly created by the user via
+ * Settings (`source: "manual"`) and legacy rows (`source: undefined`) are
+ * always preserved. Predefined categories are never removed.
+ *
+ * Scans all user-custom categories and deletes up to
+ * {@link CLEANUP_BATCH_SIZE} orphans per run.
  */
 export const cleanupOrphanedCategories = internalMutation({
   args: {},
@@ -330,11 +337,14 @@ export const cleanupOrphanedCategories = internalMutation({
 
     if (userCategories.length === 0) return
 
+    const autoCategories = userCategories.filter((c) => c.source === 'auto')
+    if (autoCategories.length === 0) return
+
     const allExpenses = await ctx.db.query('expenses').collect()
     const referencedCategoryIds = new Set(allExpenses.map((e) => e.categoryId))
 
     let deleted = 0
-    for (const category of userCategories) {
+    for (const category of autoCategories) {
       if (deleted >= CLEANUP_BATCH_SIZE) break
       if (!referencedCategoryIds.has(category._id)) {
         await ctx.db.delete('categories', category._id)

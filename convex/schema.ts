@@ -25,6 +25,10 @@ export default defineSchema({
     normalizedName: v.optional(v.string()), // lowercased for case-insensitive dedup
     userId: v.optional(v.id('users')), // undefined/omitted = predefined, set = user custom
     icon: v.optional(v.string()),
+    // "manual" = explicitly created by user in Settings (never auto-deleted)
+    // "auto"   = implicitly created during expense upsert (eligible for cleanup)
+    // undefined = legacy row, treated as "manual" to prevent data loss
+    source: v.optional(v.union(v.literal('manual'), v.literal('auto'))),
   })
     .index('by_user_and_name', ['userId', 'name'])
     .index('by_user_and_normalized_name', ['userId', 'normalizedName']),
