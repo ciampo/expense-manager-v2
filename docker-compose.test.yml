@@ -1,6 +1,6 @@
 services:
   visual-tests:
-    # Keep in sync with @playwright/test version in package.json
+    # Keep in sync with Playwright packages in package.json
     image: mcr.microsoft.com/playwright:v1.58.2-noble
     working_dir: /app
     volumes:
