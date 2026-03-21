@@ -47,12 +47,12 @@
     "@hugeicons/react": "^1.1.6",
     "@oslojs/crypto": "^1.0.1",
     "@tanstack/react-form": "^1.28.5",
-    "@tanstack/react-query": "^5.90.21",
-    "@tanstack/react-router": "^1.167.4",
-    "@tanstack/react-router-ssr-query": "^1.166.9",
+    "@tanstack/react-query": "^5.91.3",
+    "@tanstack/react-router": "^1.168.1",
+    "@tanstack/react-router-ssr-query": "^1.166.10",
     "@tanstack/react-router-with-query": "^1.130.17",
-    "@tanstack/react-start": "^1.166.16",
-    "@tanstack/router-plugin": "^1.166.13",
+    "@tanstack/react-start": "^1.167.2",
+    "@tanstack/router-plugin": "^1.167.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -78,7 +78,7 @@
     "@tanstack/devtools-vite": "^0.6.0",
     "@tanstack/react-devtools": "^0.10.0",
     "@tanstack/react-query-devtools": "^5.91.3",
-    "@tanstack/react-router-devtools": "^1.166.9",
+    "@tanstack/react-router-devtools": "^1.166.10",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/file-saver": "^2.0.7",
@@ -108,6 +108,11 @@
     "vitest": "^4.1.0",
     "web-vitals": "^5.1.0",
     "wrangler": "^4.75.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "h3-v2": "npm:h3@2.0.1-rc.18"
+    }
   },
   "lint-staged": {
     "*.{js,ts,tsx}": [
