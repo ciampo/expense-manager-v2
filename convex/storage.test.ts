@@ -12,13 +12,12 @@ import {
   setupStorageFile,
   setupUploadRecord,
   insertExpense,
+  type TestCtx,
 } from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
 
-// Uses .filter() instead of .withIndex() because ReturnType<typeof convexTest>
-// loses schema-specific index types, causing tsc errors with custom indexes.
-function getUploadRecord(t: ReturnType<typeof convexTest>, storageId: Id<'_storage'>) {
+function getUploadRecord(t: TestCtx, storageId: Id<'_storage'>) {
   return t.run(async (ctx) => {
     return await ctx.db
       .query('uploads')

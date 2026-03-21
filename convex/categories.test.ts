@@ -5,12 +5,12 @@ import { api, internal } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { upsertCategory } from './categories'
-import { setupAuthenticatedUser } from './testHelpers'
+import { setupAuthenticatedUser, type TestCtx } from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
 
 async function insertCategory(
-  t: ReturnType<typeof convexTest>,
+  t: TestCtx,
   fields: { name: string; userId?: Id<'users'>; icon?: string; source?: 'manual' | 'auto' },
 ) {
   return await t.run(async (ctx) => {
@@ -22,7 +22,7 @@ async function insertCategory(
 }
 
 async function insertLegacyCategory(
-  t: ReturnType<typeof convexTest>,
+  t: TestCtx,
   fields: { name: string; userId?: Id<'users'>; icon?: string },
 ) {
   return await t.run(async (ctx) => {
@@ -194,7 +194,7 @@ describe('legacy rows without normalizedName', () => {
 // ── Helper for tests that need expenses ─────────────────────────────────
 
 async function insertExpense(
-  t: ReturnType<typeof convexTest>,
+  t: TestCtx,
   userId: Id<'users'>,
   categoryId: Id<'categories'>,
   overrides: Partial<{ merchant: string; date: string }> = {},

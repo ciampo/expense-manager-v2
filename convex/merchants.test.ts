@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
-import { setupAuthenticatedUser, setupCategory, insertExpense } from './testHelpers'
+import { setupAuthenticatedUser, setupCategory, insertExpense, type TestCtx } from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
 
-async function insertMerchant(t: ReturnType<typeof convexTest>, userId: Id<'users'>, name: string) {
+async function insertMerchant(t: TestCtx, userId: Id<'users'>, name: string) {
   return await t.run(async (ctx) => {
     return await ctx.db.insert('merchants', {
       name,
