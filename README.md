@@ -101,8 +101,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `pnpm migrate`                   | Run pending Convex migrations                              |
 | `pnpm test`                      | Run all Vitest tests                                       |
 | `pnpm test:unit`                 | Run unit tests only                                        |
-| `pnpm test:coverage`             | Run unit tests with coverage report                        |
-| `pnpm test:coverage:changed`     | Run coverage for changed files only                        |
+| `pnpm test:coverage`             | Run all Vitest tests with coverage report                  |
+| `pnpm test:coverage:changed`     | Run all Vitest tests with coverage for changed files only  |
 | `pnpm test:e2e`                  | Run Playwright E2E tests                                   |
 | `pnpm test:e2e:seed`             | Seed test data to E2E Convex project                       |
 | `pnpm test:e2e:cleanup`          | Clean up E2E test data                                     |
