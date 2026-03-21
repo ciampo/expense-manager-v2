@@ -1,0 +1,51 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    groups:
+      tanstack:
+        patterns:
+          - '@tanstack/*'
+      convex:
+        patterns:
+          - 'convex'
+          - 'convex-test'
+          - '@convex-dev/*'
+      cloudflare-vite:
+        patterns:
+          - '@cloudflare/*'
+          - 'vite'
+          - '@vitejs/*'
+      tailwind:
+        patterns:
+          - 'tailwindcss'
+          - '@tailwindcss/*'
+          - 'prettier-plugin-tailwindcss'
+      testing:
+        patterns:
+          - '@playwright/*'
+          - 'playwright'
+          - '@testing-library/*'
+          - '@vitest/*'
+          - 'vitest'
+      eslint:
+        patterns:
+          - 'eslint'
+          - 'eslint-*'
+          - '@eslint/*'
+          - 'typescript-eslint'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
