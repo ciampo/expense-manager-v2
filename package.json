@@ -15,7 +15,7 @@
     "migrate": "convex run seed:postDeploy",
     "cf-typegen": "wrangler types",
     "test": "vitest run --config vitest.config.ts",
-    "test:unit": "vitest run --config vitest.config.ts src/",
+    "test:unit": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "test:coverage:changed": "vitest run --config vitest.config.ts --coverage --coverage.changed",
     "test:e2e": "playwright test",

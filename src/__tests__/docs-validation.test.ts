@@ -107,7 +107,7 @@ describe('documentation validation', () => {
 
     // The README CI/CD section lists workflows as bold list items
     const workflowNames = [
-      'Unit Tests',
+      'Unit & Integration Tests',
       'E2E Tests',
       'Visual Regression',
       'Lint',

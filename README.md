@@ -88,35 +88,35 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ### Scripts
 
-| Command                          | Description                                                     |
-| -------------------------------- | --------------------------------------------------------------- |
-| `pnpm setup`                     | Guided interactive local dev setup                              |
-| `pnpm setup:e2e`                 | Guided interactive E2E test project setup                       |
-| `pnpm dev`                       | Start development server                                        |
-| `pnpm dev:e2e`                   | Start dev server with E2E test config                           |
-| `pnpm build`                     | Build for production (includes typecheck)                       |
-| `pnpm preview`                   | Preview production build locally                                |
-| `pnpm preview:e2e`               | Build in E2E mode and preview locally                           |
-| `pnpm deploy`                    | Build and deploy to Cloudflare Workers                          |
-| `pnpm migrate`                   | Run pending Convex migrations                                   |
-| `pnpm test`                      | Run all Vitest tests                                            |
-| `pnpm test:unit`                 | Run unit tests only                                             |
-| `pnpm test:coverage`             | Run all Vitest tests with coverage report                       |
-| `pnpm test:coverage:changed`     | Run all Vitest tests with coverage for changed files only       |
-| `pnpm test:e2e`                  | Run Playwright E2E tests                                        |
-| `pnpm test:e2e:seed`             | Seed test data to E2E Convex project                            |
-| `pnpm test:e2e:cleanup`          | Clean up E2E test data                                          |
-| `pnpm test:visual`               | Run visual regression tests locally                             |
-| `pnpm test:visual:update`        | Update visual regression baselines locally                      |
-| `pnpm test:visual:docker`        | Run visual regression tests in Docker                           |
-| `pnpm test:visual:docker:update` | Update visual regression baselines in Docker                    |
-| `pnpm lint`                      | Run ESLint                                                      |
-| `pnpm lint:fix`                  | Run ESLint with auto-fix                                        |
-| `pnpm format`                    | Format code with Prettier                                       |
-| `pnpm format:check`              | Check code formatting                                           |
-| `pnpm typecheck`                 | Run TypeScript type checking (`tsc --noEmit`)                   |
-| `pnpm check`                     | Run all CI checks locally (lint, format, typecheck, unit tests) |
-| `pnpm cf-typegen`                | Generate Cloudflare Worker types                                |
+| Command                          | Description                                                |
+| -------------------------------- | ---------------------------------------------------------- |
+| `pnpm setup`                     | Guided interactive local dev setup                         |
+| `pnpm setup:e2e`                 | Guided interactive E2E test project setup                  |
+| `pnpm dev`                       | Start development server                                   |
+| `pnpm dev:e2e`                   | Start dev server with E2E test config                      |
+| `pnpm build`                     | Build for production (includes typecheck)                  |
+| `pnpm preview`                   | Preview production build locally                           |
+| `pnpm preview:e2e`               | Build in E2E mode and preview locally                      |
+| `pnpm deploy`                    | Build and deploy to Cloudflare Workers                     |
+| `pnpm migrate`                   | Run pending Convex migrations                              |
+| `pnpm test`                      | Run all Vitest tests                                       |
+| `pnpm test:unit`                 | Run unit and Convex backend integration tests              |
+| `pnpm test:coverage`             | Run all Vitest tests with coverage report                  |
+| `pnpm test:coverage:changed`     | Run all Vitest tests with coverage for changed files only  |
+| `pnpm test:e2e`                  | Run Playwright E2E tests                                   |
+| `pnpm test:e2e:seed`             | Seed test data to E2E Convex project                       |
+| `pnpm test:e2e:cleanup`          | Clean up E2E test data                                     |
+| `pnpm test:visual`               | Run visual regression tests locally                        |
+| `pnpm test:visual:update`        | Update visual regression baselines locally                 |
+| `pnpm test:visual:docker`        | Run visual regression tests in Docker                      |
+| `pnpm test:visual:docker:update` | Update visual regression baselines in Docker               |
+| `pnpm lint`                      | Run ESLint                                                 |
+| `pnpm lint:fix`                  | Run ESLint with auto-fix                                   |
+| `pnpm format`                    | Format code with Prettier                                  |
+| `pnpm format:check`              | Check code formatting                                      |
+| `pnpm typecheck`                 | Run TypeScript type checking (`tsc --noEmit`)              |
+| `pnpm check`                     | Run all CI checks locally (lint, format, typecheck, tests) |
+| `pnpm cf-typegen`                | Generate Cloudflare Worker types                           |
 
 ### Project Structure
 
@@ -161,7 +161,7 @@ expense-manager-v2/
 pnpm test:unit
 ```
 
-Unit tests live in `src/__tests__/`. Shared Zod schema assertion helpers (`expectSuccess`, `expectFailure`, `getErrorMessages`) are in `src/__tests__/test-utils.ts`.
+Unit tests live in `src/__tests__/` and Convex backend integration tests live in `convex/*.test.ts`. Shared Zod schema assertion helpers (`expectSuccess`, `expectFailure`, `getErrorMessages`) are in `src/__tests__/test-utils.ts`; shared Convex test setup functions are in `convex/testHelpers.ts`.
 
 ### E2E Tests
 
@@ -282,7 +282,7 @@ The project includes GitHub Actions workflows for:
 
 - **Lint** (`lint.yml`): ESLint and Prettier checks on every push/PR
 - **Type Check** (`typecheck.yml`): TypeScript type checking on every push/PR
-- **Unit Tests** (`test-unit.yml`): Vitest unit tests on every push/PR
+- **Unit & Integration Tests** (`test-unit.yml`): Vitest unit and Convex backend integration tests on every push/PR
 - **E2E Tests** (`test-e2e.yml`): Playwright E2E tests on every push/PR with test data seeding
 - **Visual Regression** (`test-visual.yml`): Playwright visual regression tests on every push/PR in Docker
 - **Deploy** (`deploy.yml`): CI-gated production deploy — see [Production deploy pipeline](#production-deploy-pipeline) below
