@@ -13,6 +13,7 @@ This document lists all environment variables used in the Expense Manager projec
 | `CONVEX_DEPLOY_KEY`     | `.env.e2e`, GitHub Secrets | Deploy/run functions on Convex projects (test and production) |
 | `CLOUDFLARE_API_TOKEN`  | GitHub Secrets             | Deploy to Cloudflare Workers                                  |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets             | Cloudflare account identifier                                 |
+| `E2E_CLEANUP_ALLOWED`   | Convex Environment         | Guardrail — must be `true` for `seed:cleanup` to run          |
 | `CONVEX_SITE_URL`       | Convex Environment         | Base site URL for auth (auto-set by `npx @convex-dev/auth`)   |
 | `JWT_PRIVATE_KEY`       | Convex Environment         | Private key for signing JWTs (auto-set by auth setup)         |
 | `JWKS`                  | Convex Environment         | JSON Web Key Set for verifying JWTs (auto-set by auth setup)  |
@@ -171,10 +172,13 @@ npx convex env set VARIABLE_NAME value
 
 ### Application Variables
 
-| Variable           | Required for              | Description                                                                                                                              |
-| ------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `AUTH_RESEND_KEY`  | Password reset (optional) | Resend API key for password reset emails                                                                                                 |
-| `AUTH_RESEND_FROM` | Production (optional)     | Sender address for password reset emails (e.g., `App <noreply@yourdomain.com>`). Falls back to `Expense Manager <onboarding@resend.dev>` |
+| Variable              | Required for              | Description                                                                                                                              |
+| --------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `E2E_CLEANUP_ALLOWED` | E2E test deployment       | Must be `true` on test deployments — prevents destructive `seed:cleanup` from running against production                                 |
+| `AUTH_RESEND_KEY`     | Password reset (optional) | Resend API key for password reset emails                                                                                                 |
+| `AUTH_RESEND_FROM`    | Production (optional)     | Sender address for password reset emails (e.g., `App <noreply@yourdomain.com>`). Falls back to `Expense Manager <onboarding@resend.dev>` |
+
+`E2E_CLEANUP_ALLOWED` is a safety guardrail: the `seed:cleanup` mutation refuses to run unless this variable is `true` on the targeted Convex deployment. Set it only on the `expense-manager-test` project — **never** on production. It is set automatically by `pnpm setup:e2e` and by the CI workflows.
 
 The app runs without `AUTH_RESEND_KEY`, but the forgot-password flow will not work.
 `AUTH_RESEND_FROM` is optional — omit it during development to use Resend's sandbox sender.

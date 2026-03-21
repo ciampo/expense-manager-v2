@@ -235,6 +235,22 @@ describe('setup scripts validation', () => {
     expect(placeholderCheck).toBeLessThan(deployCommand)
   })
 
+  it('setup-e2e.sh sets E2E_CLEANUP_ALLOWED on the test deployment', () => {
+    const content = readFile('scripts/setup-e2e.sh')
+    expect(content).toContain('E2E_CLEANUP_ALLOWED')
+    expect(content).toContain('npx convex env set E2E_CLEANUP_ALLOWED true --prod')
+  })
+
+  it('seed:cleanup mutation checks E2E_CLEANUP_ALLOWED guardrail', () => {
+    const content = readFile('convex/seed.ts')
+    expect(content).toContain('E2E_CLEANUP_ALLOWED')
+    const guardIndex = content.indexOf('E2E_CLEANUP_ALLOWED')
+    const cleanupIndex = content.indexOf('Delete all expenses')
+    expect(guardIndex).toBeGreaterThan(-1)
+    expect(cleanupIndex).toBeGreaterThan(-1)
+    expect(guardIndex).toBeLessThan(cleanupIndex)
+  })
+
   it('placeholder values in scripts match the example files', () => {
     const envExample = readFile('.env.example')
     const envE2eExample = readFile('.env.e2e.example')

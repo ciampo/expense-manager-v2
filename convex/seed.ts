@@ -135,6 +135,25 @@ export const postDeploy = internalMutation({
 // ============================================
 
 /**
+ * Throw unless the Convex deployment has `E2E_CLEANUP_ALLOWED=true` in its
+ * environment variables. This prevents destructive E2E mutations from running
+ * against the wrong deployment (e.g. production).
+ *
+ * Set the variable once per deployment:
+ *   npx convex env set E2E_CLEANUP_ALLOWED true           # dev
+ *   CONVEX_DEPLOY_KEY=<key> npx convex env set E2E_CLEANUP_ALLOWED true --prod
+ */
+function assertTestDeployment(caller: string) {
+  if (process.env.E2E_CLEANUP_ALLOWED !== 'true') {
+    throw new Error(
+      `[${caller}] Destructive E2E operation blocked — this deployment does not have ` +
+        'E2E_CLEANUP_ALLOWED=true set in its Convex environment variables. ' +
+        'Set it with: npx convex env set E2E_CLEANUP_ALLOWED true --prod',
+    )
+  }
+}
+
+/**
  * Seed data for E2E tests
  * Creates predefined categories if they don't exist
  */
@@ -169,6 +188,8 @@ export const e2e = internalMutation({
 export const cleanup = internalMutation({
   args: {},
   handler: async (ctx) => {
+    assertTestDeployment('seed:cleanup')
+
     // Delete all expenses (and their attachments)
     const expenses = await ctx.db.query('expenses').collect()
     for (const expense of expenses) {
