@@ -155,7 +155,7 @@ expense-manager-v2/
 
 ## Testing
 
-### Unit Tests
+### Unit & Integration Tests
 
 ```bash
 pnpm test:unit
