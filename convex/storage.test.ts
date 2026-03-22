@@ -21,7 +21,7 @@ function getUploadRecord(t: TestCtx, storageId: Id<'_storage'>) {
   return t.run(async (ctx) => {
     return await ctx.db
       .query('uploads')
-      .filter((q) => q.eq(q.field('storageId'), storageId))
+      .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
       .first()
   })
 }
