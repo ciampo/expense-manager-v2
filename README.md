@@ -100,7 +100,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `pnpm deploy`                    | Build and deploy to Cloudflare Workers                     |
 | `pnpm migrate`                   | Run pending Convex migrations                              |
 | `pnpm test`                      | Run all Vitest tests                                       |
-| `pnpm test:unit`                 | Run unit and Convex backend integration tests              |
+| `pnpm test:unit`                 | CI alias for `pnpm test` (unit + Convex backend tests)     |
 | `pnpm test:coverage`             | Run all Vitest tests with coverage report                  |
 | `pnpm test:coverage:changed`     | Run all Vitest tests with coverage for changed files only  |
 | `pnpm test:e2e`                  | Run Playwright E2E tests                                   |
