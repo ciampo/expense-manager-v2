@@ -175,7 +175,7 @@ jobs:
               environment_url: '${{ steps.cf-deploy.outputs.deployment-url }}',
             });
       - name: Mark deployment failed
-        if: failure() && steps.deployment.outputs.id
+        if: failure() && steps.deployment.outputs.id && steps.cf-deploy.outcome != 'success'
         uses: actions/github-script@v7
         with:
           script: |
