@@ -139,12 +139,6 @@ function ExpenseTable() {
   const canGoNext = !expensesPage?.isDone
   const canGoPrevious = cursors.length > 1
 
-  // Auto-navigate backwards when the current page becomes empty (e.g. after
-  // deleting the last item on a non-first page).
-  if (expenses.length === 0 && canGoPrevious) {
-    setCursors((prev) => prev.slice(0, -1))
-  }
-
   const expensesQueryKey = convexQuery(api.expenses.list, queryArgs).queryKey
 
   const deleteExpense = useMutation({
@@ -158,11 +152,43 @@ function ExpenseTable() {
         old ? { ...old, expenses: old.expenses.filter((e) => e._id !== args.id) } : old,
       )
 
-      return { previousExpenses }
+      // Navigate to the previous page when this deletion empties the
+      // current one. Checking the cache after the optimistic update
+      // avoids a render-phase or effect-based setState.
+      const updated = queryClient.getQueryData(expensesQueryKey) as typeof expensesPage | undefined
+      const previousCursors =
+        updated?.expenses.length === 0 && cursors.length > 1 ? [...cursors] : null
+      let previousPageEntry: { queryKey: readonly unknown[]; data: unknown } | null = null
+      if (previousCursors) {
+        // Mark the previous page as the last page so "Next" is
+        // disabled until the post-mutation refetch corrects the cache.
+        const prevCursor = cursors[cursors.length - 2]
+        const prevQueryKey = convexQuery(api.expenses.list, {
+          cursor: prevCursor,
+          limit: pageSize,
+        }).queryKey
+        previousPageEntry = {
+          queryKey: prevQueryKey,
+          data: queryClient.getQueryData(prevQueryKey),
+        }
+        queryClient.setQueryData(prevQueryKey, (old: typeof expensesPage) =>
+          old ? { ...old, isDone: true } : old,
+        )
+
+        setCursors((prev) => prev.slice(0, -1))
+      }
+
+      return { previousExpenses, previousCursors, previousPageEntry }
     },
     onError: (_err, _args, context) => {
       if (context?.previousExpenses) {
         queryClient.setQueryData(expensesQueryKey, context.previousExpenses)
+      }
+      if (context?.previousPageEntry) {
+        queryClient.setQueryData(context.previousPageEntry.queryKey, context.previousPageEntry.data)
+      }
+      if (context?.previousCursors) {
+        setCursors(context.previousCursors)
       }
       toast.error('Error deleting expense')
     },
