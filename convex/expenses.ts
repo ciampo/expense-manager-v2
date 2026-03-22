@@ -9,9 +9,12 @@ import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
 import { normalizeMerchantName, validateExpenseFields } from './validation'
 
 /**
- * Delete a user-custom category if no expenses reference it.
- * Predefined categories (no userId) are never deleted.
- * Only deletes categories owned by the given user.
+ * Delete an auto-created user-custom category if no expenses reference it.
+ *
+ * Only categories with `source: "auto"` are eligible. Categories
+ * explicitly created by the user (`source: "manual"`) and legacy rows
+ * (`source: undefined`) are always preserved. Predefined categories
+ * (no userId) are never deleted.
  */
 async function cleanupOrphanedCategory(
   ctx: { db: MutationCtx['db'] },
@@ -25,7 +28,7 @@ async function cleanupOrphanedCategory(
   if (referencing) return
 
   const category = await ctx.db.get('categories', categoryId)
-  if (category?.userId && category.userId === userId) {
+  if (category?.userId && category.userId === userId && category.source === 'auto') {
     await ctx.db.delete('categories', category._id)
   }
 }

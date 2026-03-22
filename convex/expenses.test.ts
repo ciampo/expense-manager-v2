@@ -413,7 +413,7 @@ describe('expenses.remove', () => {
     expect(uploadRecord).toBeNull()
   })
 
-  it('cleans up orphaned user-custom category on deletion', async () => {
+  it('cleans up orphaned auto-created category on deletion', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
@@ -423,6 +423,18 @@ describe('expenses.remove', () => {
 
     const category = await t.run(async (ctx) => ctx.db.get('categories', categoryId))
     expect(category).toBeNull()
+  })
+
+  it('preserves manually-created category on expense deletion', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId, 'Manual Cat', 'manual')
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await asUser.mutation(api.expenses.remove, { id: expenseId })
+
+    const category = await t.run(async (ctx) => ctx.db.get('categories', categoryId))
+    expect(category).not.toBeNull()
   })
 
   it('does not delete category still referenced by other expenses', async () => {
@@ -710,7 +722,7 @@ describe('expenses.update — attachment handling', () => {
 })
 
 describe('expenses.update — category orphan cleanup', () => {
-  it('deletes orphaned user-custom category when expense changes category', async () => {
+  it('deletes orphaned auto-created category when expense changes category', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
 
@@ -733,6 +745,25 @@ describe('expenses.update — category orphan cleanup', () => {
 
     const oldCategory = await t.run(async (ctx) => ctx.db.get('categories', catA))
     expect(oldCategory).toBeNull()
+  })
+
+  it('preserves manually-created category when expense changes category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    const catA = await setupCategory(t, userId, 'Manual A', 'manual')
+    const catB = await setupCategory(t, userId, 'Category B')
+
+    const expenseId = await insertExpense(t, userId, catA)
+
+    await asUser.mutation(api.expenses.update, {
+      id: expenseId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId: catB,
+    })
+
+    const oldCategory = await t.run(async (ctx) => ctx.db.get('categories', catA))
+    expect(oldCategory).not.toBeNull()
   })
 
   it('does not delete predefined category when expense changes category', async () => {

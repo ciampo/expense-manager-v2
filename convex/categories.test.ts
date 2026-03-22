@@ -11,7 +11,7 @@ const modules = import.meta.glob('./**/*.ts')
 
 async function insertCategory(
   t: ReturnType<typeof convexTest>,
-  fields: { name: string; userId?: Id<'users'>; icon?: string },
+  fields: { name: string; userId?: Id<'users'>; icon?: string; source?: 'manual' | 'auto' },
 ) {
   return await t.run(async (ctx) => {
     return await ctx.db.insert('categories', {
@@ -74,6 +74,20 @@ describe('upsertCategory — case-insensitive dedup', () => {
     expect(created!.name).toBe('Transport')
     expect(created!.normalizedName).toBe('transport')
   })
+
+  it('marks auto-created categories with source "auto"', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+
+    const newId = await t.run(async (ctx) => {
+      return await upsertCategory(ctx, userId, 'AutoCategory')
+    })
+
+    const created = await t.run(async (ctx) => {
+      return await ctx.db.get('categories', newId)
+    })
+    expect(created!.source).toBe('auto')
+  })
 })
 
 describe('categories.create — case-insensitive dedup', () => {
@@ -111,6 +125,20 @@ describe('categories.create — case-insensitive dedup', () => {
       return await ctx.db.get('categories', categoryId)
     })
     expect(category!.normalizedName).toBe('my category')
+  })
+
+  it('marks explicitly created categories with source "manual"', async () => {
+    const t = convexTest(schema, modules)
+    const { asUser } = await setupAuthenticatedUser(t)
+
+    const categoryId = await asUser.mutation(api.categories.create, {
+      name: 'Settings Category',
+    })
+
+    const category = await t.run(async (ctx) => {
+      return await ctx.db.get('categories', categoryId)
+    })
+    expect(category!.source).toBe('manual')
   })
 })
 
@@ -216,6 +244,31 @@ describe('categories.rename', () => {
       asUser.mutation(api.categories.rename, { id: catId, newName: 'transport' }),
     ).rejects.toThrow('Category already exists')
   })
+
+  it('promotes auto-created category to manual on rename', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'AutoCat', userId, source: 'auto' })
+
+    await asUser.mutation(api.categories.rename, { id: catId, newName: 'My Category' })
+
+    const updated = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(updated?.source).toBe('manual')
+  })
+
+  it('renamed auto-created category survives orphan cleanup', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'AutoCat', userId, source: 'auto' })
+
+    await asUser.mutation(api.categories.rename, { id: catId, newName: 'Kept Category' })
+
+    await t.mutation(internal.categories.cleanupOrphanedCategories, {})
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(cat).not.toBeNull()
+    expect(cat?.name).toBe('Kept Category')
+  })
 })
 
 describe('categories.remove', () => {
@@ -287,15 +340,37 @@ describe('categories.listWithCounts', () => {
 })
 
 describe('cleanupOrphanedCategories', () => {
-  it('deletes orphaned user-custom categories', async () => {
+  it('deletes orphaned auto-created categories', async () => {
     const t = convexTest(schema, modules)
     const { userId } = await setupAuthenticatedUser(t)
-    const orphanedId = await insertCategory(t, { name: 'Orphaned', userId })
+    const orphanedId = await insertCategory(t, { name: 'Orphaned', userId, source: 'auto' })
 
     await t.mutation(internal.categories.cleanupOrphanedCategories, {})
 
     const cat = await t.run(async (ctx) => ctx.db.get('categories', orphanedId))
     expect(cat).toBeNull()
+  })
+
+  it('preserves orphaned manually-created categories', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const manualId = await insertCategory(t, { name: 'ManualEmpty', userId, source: 'manual' })
+
+    await t.mutation(internal.categories.cleanupOrphanedCategories, {})
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', manualId))
+    expect(cat).not.toBeNull()
+  })
+
+  it('preserves orphaned legacy categories (no source field)', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const legacyId = await insertCategory(t, { name: 'Legacy', userId })
+
+    await t.mutation(internal.categories.cleanupOrphanedCategories, {})
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', legacyId))
+    expect(cat).not.toBeNull()
   })
 
   it('preserves predefined categories even if unreferenced', async () => {
@@ -308,10 +383,10 @@ describe('cleanupOrphanedCategories', () => {
     expect(cat).not.toBeNull()
   })
 
-  it('preserves referenced user-custom categories', async () => {
+  it('preserves referenced auto-created categories', async () => {
     const t = convexTest(schema, modules)
     const { userId } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, { name: 'InUse', userId })
+    const catId = await insertCategory(t, { name: 'InUse', userId, source: 'auto' })
     await insertExpense(t, userId, catId)
 
     await t.mutation(internal.categories.cleanupOrphanedCategories, {})
@@ -322,16 +397,28 @@ describe('cleanupOrphanedCategories', () => {
 })
 
 describe('expense deletion cleans up orphaned categories', () => {
-  it('deletes orphaned user-custom category when last expense is removed', async () => {
+  it('deletes orphaned auto-created category when last expense is removed', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
-    const catId = await insertCategory(t, { name: 'Orphanable', userId })
+    const catId = await insertCategory(t, { name: 'Orphanable', userId, source: 'auto' })
     const expenseId = await insertExpense(t, userId, catId)
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
     const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
     expect(cat).toBeNull()
+  })
+
+  it('preserves manually-created category even after last expense is removed', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'ManualCat', userId, source: 'manual' })
+    const expenseId = await insertExpense(t, userId, catId)
+
+    await asUser.mutation(api.expenses.remove, { id: expenseId })
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(cat).not.toBeNull()
   })
 
   it('preserves predefined category even after last expense is removed', async () => {

@@ -25,13 +25,21 @@ export async function setupAuthenticatedUser(t: TestCtx) {
 
 /**
  * Insert a user-owned category. Returns the category ID.
+ * Defaults to `source: "auto"` to match the most common test scenario
+ * (categories created via expense upsert that are eligible for cleanup).
  */
-export async function setupCategory(t: TestCtx, userId: Id<'users'>, name = 'Test Category') {
+export async function setupCategory(
+  t: TestCtx,
+  userId: Id<'users'>,
+  name = 'Test Category',
+  source: 'manual' | 'auto' = 'auto',
+) {
   return await t.run(async (ctx) => {
     return await ctx.db.insert('categories', {
       name,
       normalizedName: name.trim().toLowerCase(),
       userId,
+      source,
     })
   })
 }
