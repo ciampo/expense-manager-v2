@@ -238,7 +238,7 @@ describe('setup scripts validation', () => {
   it('setup-e2e.sh sets E2E_CLEANUP_ALLOWED on the test deployment', () => {
     const content = readFile('scripts/setup-e2e.sh')
     expect(content).toContain('E2E_CLEANUP_ALLOWED')
-    expect(content).toContain('npx convex env set E2E_CLEANUP_ALLOWED true --prod')
+    expect(content).toMatch(/^\s*(?!#)\s*npx convex env set E2E_CLEANUP_ALLOWED true --prod\b.*$/m)
   })
 
   it('seed:cleanup mutation checks E2E_CLEANUP_ALLOWED guardrail', () => {

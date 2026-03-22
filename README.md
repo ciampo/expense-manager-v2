@@ -181,11 +181,11 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
    export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -f2- | tr -d '\r')
    npx convex deploy
    ```
-5. Enable the E2E cleanup guardrail on the test deployment (required — `seed:cleanup` refuses to run without it):
+5. Copy the **production** deployment URL from the Convex Dashboard (shown after step 4) and update `VITE_CONVEX_URL` in `.env.e2e`
+6. Enable the E2E cleanup guardrail on the test deployment (required — `seed:cleanup` refuses to run without it):
    ```bash
    npx convex env set E2E_CLEANUP_ALLOWED true --prod
    ```
-6. Copy the **production** deployment URL from the Convex Dashboard (shown after step 4) and update `VITE_CONVEX_URL` in `.env.e2e`
 7. Configure auth keys for the test project's production deployment:
    ```bash
    npx @convex-dev/auth --prod
