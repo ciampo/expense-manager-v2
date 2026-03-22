@@ -2,7 +2,7 @@ name: Deploy
 on:
   workflow_run:
     # Keep in sync with the `required` list in the gate job below.
-    workflows: [Lint, Type Check, Unit Tests, E2E Tests, Visual Regression Tests]
+    workflows: [Lint, Type Check, Unit & Integration Tests, E2E Tests, Visual Regression Tests]
     branches: [main]
     types: [completed]
 
@@ -29,7 +29,7 @@ jobs:
             const required = [
               'Lint',
               'Type Check',
-              'Unit Tests',
+              'Unit & Integration Tests',
               'E2E Tests',
               'Visual Regression Tests',
             ];
