@@ -114,7 +114,7 @@ This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respecti
 
 ### 1.6 Deploy Schema and Auth Keys to Test Project
 
-> **Shortcut:** `pnpm setup:e2e` guides you through steps 1.6 and 1.7 interactively — creates `.env.e2e`, validates credentials, deploys the schema, prompts for the production URL, configures auth, and seeds data.
+> **Shortcut:** `pnpm setup:e2e` guides you through steps 1.6 and 1.7 interactively — creates `.env.e2e`, validates credentials, deploys the schema, prompts for the production URL, sets the `E2E_CLEANUP_ALLOWED` guardrail, configures auth, and seeds data.
 
 The test project needs the same schema deployed to its **production** deployment. This step creates the production deployment if it doesn't exist yet.
 
