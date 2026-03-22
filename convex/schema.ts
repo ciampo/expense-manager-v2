@@ -27,7 +27,7 @@ export default defineSchema({
     icon: v.optional(v.string()),
     // "manual" = explicitly created by user in Settings (never auto-deleted)
     // "auto"   = implicitly created during expense upsert (eligible for cleanup)
-    // undefined = legacy row, treated as "manual" to prevent data loss
+    // undefined = no source set (legacy and/or predefined); treated as non-auto to avoid accidental deletion
     source: v.optional(v.union(v.literal('manual'), v.literal('auto'))),
   })
     .index('by_user_and_name', ['userId', 'name'])

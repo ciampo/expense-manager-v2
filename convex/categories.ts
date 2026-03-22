@@ -324,7 +324,7 @@ const CLEANUP_BATCH_SIZE = 100
  * Settings (`source: "manual"`) and legacy rows (`source: undefined`) are
  * always preserved. Predefined categories are never removed.
  *
- * Scans all user-custom categories and deletes up to
+ * Scans auto-created user-custom categories and deletes up to
  * {@link CLEANUP_BATCH_SIZE} orphans per run.
  */
 export const cleanupOrphanedCategories = internalMutation({
