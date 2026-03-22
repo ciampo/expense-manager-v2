@@ -229,16 +229,16 @@ The project uses three **fully isolated** Convex environments. Each has its own 
 
 No CI workflow ever writes to an environment it shouldn't:
 
-| Workflow                 | Trigger                    | Convex environment touched             | What it does                                                                       |
-| ------------------------ | -------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------- |
-| `test-e2e.yml`           | PR, push to `main`         | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after                       |
-| `test-visual.yml`        | PR, push to `main`         | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs visual regression tests, cleans up               |
-| `update-screenshots.yml` | Manual (workflow_dispatch) | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up          |
-| `preview.yml`            | PR open/sync/reopen/close  | **Dev** project (read-only via URL)    | Deploys frontend preview to CF Workers pointing to dev backend; cleans up on close |
-| `deploy.yml`             | Push to `main` **only**    | **Production** project (deploy)        | Deploys Convex backend, then builds and deploys frontend to CF Workers             |
-| Others                   | PR, push to `main`         | None                                   | Lint, typecheck, unit tests — no Convex interaction                                |
+| Workflow                 | Trigger                     | Convex environment touched             | What it does                                                                                                  |
+| ------------------------ | --------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `test-e2e.yml`           | PR, push to `main`          | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after                                                  |
+| `test-visual.yml`        | PR, push to `main`          | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs visual regression tests, cleans up                                          |
+| `update-screenshots.yml` | Manual (workflow_dispatch)  | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up                                     |
+| `preview.yml`            | PR open/sync/reopen/close   | **Dev** project (read-only via URL)    | Deploys frontend preview to CF Workers pointing to dev backend; cleans up on close                            |
+| `deploy.yml`             | CI green on `main` **only** | **Production** project (deploy)        | Gates on all CI passing, then deploys Convex backend + frontend to CF Workers and records a GitHub deployment |
+| Others                   | PR, push to `main`          | None                                   | Lint, typecheck, unit tests — no Convex interaction                                                           |
 
-**Key guarantee:** Only merges to `main` trigger production deployment. PRs are tested entirely against the isolated test project.
+**Key guarantee:** Only merges to `main` trigger production deployment, and only after all CI checks (lint, typecheck, unit, E2E, visual) pass for that commit. PRs are tested entirely against the isolated test project. Each successful deploy records a [GitHub deployment](https://docs.github.com/en/actions/deployment/about-deployments) for at-a-glance verification.
 
 #### Setting up auth keys
 
@@ -280,14 +280,58 @@ This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respecti
 
 The project includes GitHub Actions workflows for:
 
-- **Unit Tests**: Run on every push/PR
-- **E2E Tests**: Run on every push/PR with test data seeding
-- **Visual Regression**: Run on every push/PR in Docker
-- **Lint**: Run ESLint and Prettier checks on every push/PR
-- **Type Check**: Run TypeScript type checking on every push/PR
-- **Deploy**: Auto-deploy Convex backend, run migrations, and deploy Cloudflare Workers on push to `main`
-- **Preview**: Deploy preview on every PR (automatically cleaned up when the PR is closed)
-- **Update Screenshots**: Manually triggered workflow to update and commit visual regression baselines
+- **Lint** (`lint.yml`): ESLint and Prettier checks on every push/PR
+- **Type Check** (`typecheck.yml`): TypeScript type checking on every push/PR
+- **Unit Tests** (`test-unit.yml`): Vitest unit tests on every push/PR
+- **E2E Tests** (`test-e2e.yml`): Playwright E2E tests on every push/PR with test data seeding
+- **Visual Regression** (`test-visual.yml`): Playwright visual regression tests on every push/PR in Docker
+- **Deploy** (`deploy.yml`): CI-gated production deploy — see [Production deploy pipeline](#production-deploy-pipeline) below
+- **Preview** (`preview.yml`): Deploy preview on every PR (automatically cleaned up when the PR is closed)
+- **Update Screenshots** (`update-screenshots.yml`): Manually triggered workflow to update and commit visual regression baselines
+
+#### Production deploy pipeline
+
+Production deploys are gated on all five CI workflows passing for the same commit on `main`. The `deploy.yml` workflow uses `workflow_run` triggers (not `push`) so it only fires after a CI workflow completes:
+
+1. A push to `main` triggers the 5 CI workflows (lint, typecheck, unit, E2E, visual)
+2. Each CI completion fires the Deploy workflow. A **gate** job checks:
+   - Is this the current `main` HEAD? (prevents stale re-runs from rolling back production)
+   - Have all 5 CI workflows succeeded for this SHA? (only `push`-triggered runs on `main` count)
+3. When all checks pass, the **deploy** job runs (serialized via a `deploy-production` concurrency group):
+   - A dedup check skips the deploy if this SHA was already deployed (prevents redundant deploys from the up-to-5 concurrent triggers)
+   - Creates a GitHub deployment record (`in_progress`)
+   - Deploys Convex backend + runs migrations
+   - Builds the frontend and deploys to Cloudflare Workers
+   - Updates the deployment record to `success` (or `failure` on error)
+
+#### Verifying production is current
+
+Each successful deploy creates a [GitHub deployment](https://docs.github.com/en/actions/deployment/about-deployments) linked to the deployed commit. To check at a glance:
+
+```bash
+# Latest deployed SHA
+gh api repos/ciampo/expense-manager-v2/deployments --jq '.[0].sha'
+
+# Current main HEAD
+git rev-parse origin/main
+```
+
+If they match, production is current. You can also check the commit page on GitHub for the "Deployed to production" badge, or view the repo's **Environments** tab.
+
+#### Recovering from deploy failures
+
+| Scenario                                      | Recovery                                                                                      |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| CI flake (e.g., E2E timeout)                  | Re-run the failed CI workflow from the Actions tab. The gate will re-evaluate.                |
+| Deploy failed (Convex/Cloudflare error)       | Fix the issue and push to `main`, or re-run the Deploy workflow if the failure was transient. |
+| Gate never fires (GitHub API transient error) | Re-run any CI workflow for the target commit to trigger a new gate check.                     |
+| Deployment stuck as `in_progress`             | The job was likely cancelled or timed out. Re-run the Deploy workflow, or push a new commit.  |
+
+#### Known trade-offs
+
+- **Partial deploy / version skew:** The deploy job deploys Convex first, then Cloudflare. Between these steps, the backend has new code but the frontend is still old. If the schema changed, users may briefly see errors. A blue-green deploy strategy would fix this but is out of scope.
+- **Event delivery:** GitHub can theoretically drop `workflow_run` events under extreme load. If this happens, re-run any CI workflow to recover.
+- **Workflow name coupling:** The `workflow_run` trigger list and the `required` array in the gate script reference CI workflows by their `name:` string. Both must stay in sync — a mismatch silently breaks deploys. The workflow file includes sync comments to flag this.
 
 Configure these GitHub Actions secrets:
 

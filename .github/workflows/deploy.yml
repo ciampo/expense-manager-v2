@@ -1,39 +1,199 @@
 name: Deploy
 on:
-  push:
+  workflow_run:
+    # Keep in sync with the `required` list in the gate job below.
+    workflows: [Lint, Type Check, Unit Tests, E2E Tests, Visual Regression Tests]
     branches: [main]
-
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
+    types: [completed]
 
 permissions:
   contents: read
+  actions: read
+  deployments: write
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-deploy: ${{ steps.check.outputs.should-deploy }}
+      commit-sha: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Check all required CI workflows passed
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.payload.workflow_run.head_sha;
+            // Keep in sync with the workflows list in the workflow_run trigger above.
+            const required = [
+              'Lint',
+              'Type Check',
+              'Unit Tests',
+              'E2E Tests',
+              'Visual Regression Tests',
+            ];
+
+            // Only deploy the commit currently at the tip of main.
+            // Re-running stale CI checks must not roll back production.
+            const { data: { commit: { sha: mainSha } } } = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main',
+            });
+            if (sha !== mainSha) {
+              core.info(`Skipping: SHA ${sha} is not the current main HEAD (${mainSha})`);
+              core.setOutput('should-deploy', 'false');
+              return;
+            }
+
+            // Scope to push-triggered runs on main so PR runs for the
+            // same SHA cannot satisfy the gate.
+            const { data: { workflow_runs: runs } } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: sha,
+              branch: 'main',
+              event: 'push',
+              status: 'completed',
+              per_page: 100,
+            });
+
+            const latestByName = new Map();
+            for (const run of runs) {
+              const prev = latestByName.get(run.name);
+              if (!prev || new Date(run.created_at) > new Date(prev.created_at)) {
+                latestByName.set(run.name, run);
+              }
+            }
+
+            const results = required.map(name => ({
+              name,
+              conclusion: latestByName.get(name)?.conclusion ?? 'missing',
+            }));
+            const allGreen = results.every(r => r.conclusion === 'success');
+
+            core.summary.addHeading('CI Gate', 3);
+            core.summary.addTable([
+              [{ data: 'Workflow', header: true }, { data: 'Status', header: true }],
+              ...results.map(r => [r.name, r.conclusion === 'success' ? '✅' : `❌ ${r.conclusion}`]),
+            ]);
+            core.summary.addRaw(`\n\nCommit: ${sha}\nDeploy: ${allGreen ? 'proceeding' : 'skipped'}`);
+            await core.summary.write();
+
+            core.setOutput('should-deploy', String(allGreen));
+
   deploy:
+    needs: gate
+    if: needs.gate.outputs.should-deploy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     steps:
+      - name: Check for existing deployment
+        id: dedup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ needs.gate.outputs.commit-sha }}';
+            const { data: deployments } = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha,
+              environment: 'production',
+              per_page: 5,
+            });
+            for (const d of deployments) {
+              const { data: statuses } = await github.rest.repos.listDeploymentStatuses({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: d.id,
+                per_page: 1,
+              });
+              if (statuses[0]?.state === 'success' || statuses[0]?.state === 'in_progress') {
+                core.info(`Skipping: deployment ${d.id} already ${statuses[0].state} for ${sha}`);
+                core.setOutput('skip', 'true');
+                return;
+              }
+            }
+            core.setOutput('skip', 'false');
+      - name: Create GitHub deployment
+        if: steps.dedup.outputs.skip != 'true'
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: '${{ needs.gate.outputs.commit-sha }}',
+              environment: 'production',
+              auto_merge: false,
+              required_contexts: [],
+            });
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.id,
+              state: 'in_progress',
+            });
+            core.setOutput('id', deployment.id);
       - uses: actions/checkout@v4
+        if: steps.dedup.outputs.skip != 'true'
+        with:
+          ref: ${{ needs.gate.outputs.commit-sha }}
       - uses: pnpm/action-setup@v4
+        if: steps.dedup.outputs.skip != 'true'
       - uses: actions/setup-node@v4
+        if: steps.dedup.outputs.skip != 'true'
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+        if: steps.dedup.outputs.skip != 'true'
       - name: Deploy Convex backend
+        if: steps.dedup.outputs.skip != 'true'
         run: npx convex deploy
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
       - name: Run post-deploy migrations
+        if: steps.dedup.outputs.skip != 'true'
         run: npx convex run seed:postDeploy --prod
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
       - run: pnpm build
+        if: steps.dedup.outputs.skip != 'true'
         env:
           VITE_CONVEX_URL: ${{ secrets.CONVEX_PROD_URL }}
-      - uses: cloudflare/wrangler-action@v3
+      - name: Deploy to Cloudflare
+        if: steps.dedup.outputs.skip != 'true'
+        id: cf-deploy
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Mark deployment successful
+        if: steps.dedup.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.id }},
+              state: 'success',
+              environment_url: '${{ steps.cf-deploy.outputs.deployment-url }}',
+            });
+      - name: Mark deployment failed
+        if: "!success() && steps.deployment.outputs.id && steps.cf-deploy.outcome != 'success'"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.id }},
+              state: 'failure',
+            });
