@@ -330,14 +330,11 @@ const CLEANUP_BATCH_SIZE = 100
 export const cleanupOrphanedCategories = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const userCategories = await ctx.db
+    const autoCategories = await ctx.db
       .query('categories')
-      .filter((q) => q.neq(q.field('userId'), undefined))
+      .filter((q) => q.and(q.neq(q.field('userId'), undefined), q.eq(q.field('source'), 'auto')))
       .collect()
 
-    if (userCategories.length === 0) return
-
-    const autoCategories = userCategories.filter((c) => c.source === 'auto')
     if (autoCategories.length === 0) return
 
     const allExpenses = await ctx.db.query('expenses').collect()
