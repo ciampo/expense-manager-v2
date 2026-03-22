@@ -114,7 +114,7 @@ This sets the `JWT_PRIVATE_KEY` and `JWKS` environment variables on the respecti
 
 ### 1.6 Deploy Schema and Auth Keys to Test Project
 
-> **Shortcut:** `pnpm setup:e2e` guides you through steps 1.6 and 1.7 interactively — creates `.env.e2e`, validates credentials, deploys the schema, prompts for the production URL, configures auth, and seeds data.
+> **Shortcut:** `pnpm setup:e2e` guides you through steps 1.6 and 1.7 interactively — creates `.env.e2e`, validates credentials, deploys the schema, prompts for the production URL, sets the `E2E_CLEANUP_ALLOWED` guardrail, configures auth, and seeds data.
 
 The test project needs the same schema deployed to its **production** deployment. This step creates the production deployment if it doesn't exist yet.
 
@@ -125,10 +125,15 @@ export CONVEX_DEPLOY_KEY=$(grep -m1 '^CONVEX_DEPLOY_KEY=' .env.e2e | cut -d'=' -
 # Deploy schema — creates the production deployment on first run
 npx convex deploy
 
+# Enable destructive E2E cleanup on this deployment (safety guardrail)
+npx convex env set E2E_CLEANUP_ALLOWED true --prod
+
 # Configure auth keys for the test project's production deployment
 # Site URL when prompted: http://localhost:3000 (E2E tests run locally)
 npx @convex-dev/auth --prod
 ```
+
+> **Safety:** The `E2E_CLEANUP_ALLOWED` env var is a guardrail that prevents `seed:cleanup` from running against a deployment where it isn't explicitly allowed. **Never** set this on the production project.
 
 After deploying, go to the Convex Dashboard → test project and copy the **production** deployment URL. Update `VITE_CONVEX_URL` in `.env.e2e`:
 
@@ -319,6 +324,7 @@ pnpm test:visual:docker
 
 - [ ] `.env.local` contains development Convex URL
 - [ ] `.env.e2e` contains test Convex URL and `CONVEX_DEPLOY_KEY`
+- [ ] `E2E_CLEANUP_ALLOWED` set to `true` on the test deployment
 - [ ] `npx convex dev` runs without errors
 - [ ] Categories seeded: `npx convex run seed:seedCategories` (or `pnpm test:e2e:seed` for test project)
 - [ ] Migrations applied: `pnpm migrate`

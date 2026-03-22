@@ -82,16 +82,20 @@ if [ -z "${VITE_CONVEX_URL}" ] || [ "${VITE_CONVEX_URL}" = "https://your-test-pr
 fi
 
 echo ""
-echo "2. Running post-deploy migrations..."
+echo "2. Setting E2E_CLEANUP_ALLOWED env var on test deployment..."
+npx convex env set E2E_CLEANUP_ALLOWED true --prod
+
+echo ""
+echo "3. Running post-deploy migrations..."
 npx convex run seed:postDeploy --prod
 
 echo ""
-echo "3. Configuring auth keys for test project..."
+echo "4. Configuring auth keys for test project..."
 echo "   When prompted for the site URL, enter: http://localhost:3000"
 npx @convex-dev/auth --prod
 
 echo ""
-echo "4. Seeding test data..."
+echo "5. Seeding test data..."
 pnpm test:e2e:seed
 
 echo ""

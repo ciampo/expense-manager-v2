@@ -167,7 +167,7 @@ Unit tests live in `src/__tests__/` and Convex backend integration tests live in
 
 E2E tests run against the **production deployment** of a dedicated Convex test project (separate from your dev project). See [Convex deployments](#convex) below for background on the project/deployment model.
 
-> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–7 below (creates `.env.e2e`, validates credentials, deploys, prompts for the production URL, configures auth, and seeds data).
+> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–8 below (creates `.env.e2e`, validates credentials, deploys, prompts for the production URL, sets the cleanup guardrail, configures auth, and seeds data).
 
 1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
 2. Generate a deploy key: Dashboard → test project → Settings → Deploy Keys → Generate Deploy Key — select **production**
@@ -182,13 +182,17 @@ E2E tests run against the **production deployment** of a dedicated Convex test p
    npx convex deploy
    ```
 5. Copy the **production** deployment URL from the Convex Dashboard (shown after step 4) and update `VITE_CONVEX_URL` in `.env.e2e`
-6. Configure auth keys for the test project's production deployment:
+6. Enable the E2E cleanup guardrail on the test deployment (required — `seed:cleanup` refuses to run without it):
+   ```bash
+   npx convex env set E2E_CLEANUP_ALLOWED true --prod
+   ```
+7. Configure auth keys for the test project's production deployment:
    ```bash
    npx @convex-dev/auth --prod
    ```
    When prompted for the **site URL**, enter `http://localhost:3000` (E2E tests run locally).
-7. Seed test data: `pnpm test:e2e:seed`
-8. Run tests:
+8. Seed test data: `pnpm test:e2e:seed`
+9. Run tests:
    ```bash
    pnpm test:e2e
    ```
