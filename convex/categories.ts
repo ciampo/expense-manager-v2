@@ -278,7 +278,7 @@ export const rename = mutation({
       }
     }
 
-    await ctx.db.patch('categories', args.id, { name, normalizedName, icon })
+    await ctx.db.patch('categories', args.id, { name, normalizedName, icon, source: 'manual' })
     return args.id
   },
 })

@@ -244,6 +244,31 @@ describe('categories.rename', () => {
       asUser.mutation(api.categories.rename, { id: catId, newName: 'transport' }),
     ).rejects.toThrow('Category already exists')
   })
+
+  it('promotes auto-created category to manual on rename', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'AutoCat', userId, source: 'auto' })
+
+    await asUser.mutation(api.categories.rename, { id: catId, newName: 'My Category' })
+
+    const updated = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(updated?.source).toBe('manual')
+  })
+
+  it('renamed auto-created category survives orphan cleanup', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'AutoCat', userId, source: 'auto' })
+
+    await asUser.mutation(api.categories.rename, { id: catId, newName: 'Kept Category' })
+
+    await t.mutation(internal.categories.cleanupOrphanedCategories, {})
+
+    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    expect(cat).not.toBeNull()
+    expect(cat?.name).toBe('Kept Category')
+  })
 })
 
 describe('categories.remove', () => {
