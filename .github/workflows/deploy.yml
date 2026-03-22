@@ -1,6 +1,7 @@
 name: Deploy
 on:
   workflow_run:
+    # Keep in sync with the `required` list in the gate job below.
     workflows: [Lint, Type Check, Unit Tests, E2E Tests, Visual Regression Tests]
     branches: [main]
     types: [completed]
@@ -24,6 +25,7 @@ jobs:
         with:
           script: |
             const sha = context.payload.workflow_run.head_sha;
+            // Keep in sync with the workflows list in the workflow_run trigger above.
             const required = [
               'Lint',
               'Type Check',
@@ -71,42 +73,15 @@ jobs:
             }));
             const allGreen = results.every(r => r.conclusion === 'success');
 
-            // Skip if this SHA was already successfully deployed (dedup
-            // across the up-to-5 workflow_run triggers per push).
-            let alreadyDeployed = false;
-            if (allGreen) {
-              const { data: deployments } = await github.rest.repos.listDeployments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                sha,
-                environment: 'production',
-                per_page: 5,
-              });
-              for (const d of deployments) {
-                const { data: statuses } = await github.rest.repos.listDeploymentStatuses({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  deployment_id: d.id,
-                  per_page: 1,
-                });
-                if (statuses[0]?.state === 'success' || statuses[0]?.state === 'in_progress') {
-                  alreadyDeployed = true;
-                  break;
-                }
-              }
-            }
-
             core.summary.addHeading('CI Gate', 3);
             core.summary.addTable([
               [{ data: 'Workflow', header: true }, { data: 'Status', header: true }],
               ...results.map(r => [r.name, r.conclusion === 'success' ? '✅' : `❌ ${r.conclusion}`]),
             ]);
-            const shouldDeploy = allGreen && !alreadyDeployed;
-            const reason = alreadyDeployed ? 'already deployed' : shouldDeploy ? 'proceeding' : 'skipped';
-            core.summary.addRaw(`\n\nCommit: ${sha}\nDeploy: ${reason}`);
+            core.summary.addRaw(`\n\nCommit: ${sha}\nDeploy: ${allGreen ? 'proceeding' : 'skipped'}`);
             await core.summary.write();
 
-            core.setOutput('should-deploy', String(shouldDeploy));
+            core.setOutput('should-deploy', String(allGreen));
 
   deploy:
     needs: gate
@@ -117,7 +92,35 @@ jobs:
       group: deploy-production
       cancel-in-progress: false
     steps:
+      - name: Check for existing deployment
+        id: dedup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ needs.gate.outputs.commit-sha }}';
+            const { data: deployments } = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha,
+              environment: 'production',
+              per_page: 5,
+            });
+            for (const d of deployments) {
+              const { data: statuses } = await github.rest.repos.listDeploymentStatuses({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: d.id,
+                per_page: 1,
+              });
+              if (statuses[0]?.state === 'success' || statuses[0]?.state === 'in_progress') {
+                core.info(`Skipping: deployment ${d.id} already ${statuses[0].state} for ${sha}`);
+                core.setOutput('skip', 'true');
+                return;
+              }
+            }
+            core.setOutput('skip', 'false');
       - name: Create GitHub deployment
+        if: steps.dedup.outputs.skip != 'true'
         id: deployment
         uses: actions/github-script@v7
         with:
@@ -138,32 +141,41 @@ jobs:
             });
             core.setOutput('id', deployment.id);
       - uses: actions/checkout@v4
+        if: steps.dedup.outputs.skip != 'true'
         with:
           ref: ${{ needs.gate.outputs.commit-sha }}
       - uses: pnpm/action-setup@v4
+        if: steps.dedup.outputs.skip != 'true'
       - uses: actions/setup-node@v4
+        if: steps.dedup.outputs.skip != 'true'
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+        if: steps.dedup.outputs.skip != 'true'
       - name: Deploy Convex backend
+        if: steps.dedup.outputs.skip != 'true'
         run: npx convex deploy
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
       - name: Run post-deploy migrations
+        if: steps.dedup.outputs.skip != 'true'
         run: npx convex run seed:postDeploy --prod
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
       - run: pnpm build
+        if: steps.dedup.outputs.skip != 'true'
         env:
           VITE_CONVEX_URL: ${{ secrets.CONVEX_PROD_URL }}
       - name: Deploy to Cloudflare
+        if: steps.dedup.outputs.skip != 'true'
         id: cf-deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Mark deployment successful
+        if: steps.dedup.outputs.skip != 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -175,7 +187,7 @@ jobs:
               environment_url: '${{ steps.cf-deploy.outputs.deployment-url }}',
             });
       - name: Mark deployment failed
-        if: failure() && steps.deployment.outputs.id && steps.cf-deploy.outcome != 'success'
+        if: "!success() && steps.deployment.outputs.id && steps.cf-deploy.outcome != 'success'"
         uses: actions/github-script@v7
         with:
           script: |
