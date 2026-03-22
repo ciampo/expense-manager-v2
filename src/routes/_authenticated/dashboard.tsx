@@ -159,6 +159,17 @@ function ExpenseTable() {
       const previousCursors =
         updated?.expenses.length === 0 && cursors.length > 1 ? [...cursors] : null
       if (previousCursors) {
+        // Mark the previous page as the last page so "Next" is
+        // disabled until the post-mutation refetch corrects the cache.
+        const prevCursor = cursors[cursors.length - 2]
+        const prevQueryKey = convexQuery(api.expenses.list, {
+          cursor: prevCursor,
+          limit: pageSize,
+        }).queryKey
+        queryClient.setQueryData(prevQueryKey, (old: typeof expensesPage) =>
+          old ? { ...old, isDone: true } : old,
+        )
+
         setCursors((prev) => prev.slice(0, -1))
       }
 
