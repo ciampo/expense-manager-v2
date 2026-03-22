@@ -139,12 +139,6 @@ function ExpenseTable() {
   const canGoNext = !expensesPage?.isDone
   const canGoPrevious = cursors.length > 1
 
-  // Auto-navigate backwards when the current page becomes empty (e.g. after
-  // deleting the last item on a non-first page).
-  if (expenses.length === 0 && canGoPrevious) {
-    setCursors((prev) => prev.slice(0, -1))
-  }
-
   const expensesQueryKey = convexQuery(api.expenses.list, queryArgs).queryKey
 
   const deleteExpense = useMutation({
@@ -158,11 +152,24 @@ function ExpenseTable() {
         old ? { ...old, expenses: old.expenses.filter((e) => e._id !== args.id) } : old,
       )
 
-      return { previousExpenses }
+      // Navigate to the previous page when this deletion empties the
+      // current one. Checking the cache after the optimistic update
+      // avoids a render-phase or effect-based setState.
+      const updated = queryClient.getQueryData(expensesQueryKey) as typeof expensesPage | undefined
+      const previousCursors =
+        updated?.expenses.length === 0 && cursors.length > 1 ? [...cursors] : null
+      if (previousCursors) {
+        setCursors((prev) => prev.slice(0, -1))
+      }
+
+      return { previousExpenses, previousCursors }
     },
     onError: (_err, _args, context) => {
       if (context?.previousExpenses) {
         queryClient.setQueryData(expensesQueryKey, context.previousExpenses)
+      }
+      if (context?.previousCursors) {
+        setCursors(context.previousCursors)
       }
       toast.error('Error deleting expense')
     },
