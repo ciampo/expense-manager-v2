@@ -158,6 +158,7 @@ function ExpenseTable() {
       const updated = queryClient.getQueryData(expensesQueryKey) as typeof expensesPage | undefined
       const previousCursors =
         updated?.expenses.length === 0 && cursors.length > 1 ? [...cursors] : null
+      let previousPageEntry: { queryKey: readonly unknown[]; data: unknown } | null = null
       if (previousCursors) {
         // Mark the previous page as the last page so "Next" is
         // disabled until the post-mutation refetch corrects the cache.
@@ -166,6 +167,10 @@ function ExpenseTable() {
           cursor: prevCursor,
           limit: pageSize,
         }).queryKey
+        previousPageEntry = {
+          queryKey: prevQueryKey,
+          data: queryClient.getQueryData(prevQueryKey),
+        }
         queryClient.setQueryData(prevQueryKey, (old: typeof expensesPage) =>
           old ? { ...old, isDone: true } : old,
         )
@@ -173,11 +178,14 @@ function ExpenseTable() {
         setCursors((prev) => prev.slice(0, -1))
       }
 
-      return { previousExpenses, previousCursors }
+      return { previousExpenses, previousCursors, previousPageEntry }
     },
     onError: (_err, _args, context) => {
       if (context?.previousExpenses) {
         queryClient.setQueryData(expensesQueryKey, context.previousExpenses)
+      }
+      if (context?.previousPageEntry) {
+        queryClient.setQueryData(context.previousPageEntry.queryKey, context.previousPageEntry.data)
       }
       if (context?.previousCursors) {
         setCursors(context.previousCursors)
