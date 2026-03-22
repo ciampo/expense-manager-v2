@@ -148,7 +148,9 @@ function assertTestDeployment(caller: string) {
     throw new Error(
       `[${caller}] Destructive E2E operation blocked — this deployment does not have ` +
         'E2E_CLEANUP_ALLOWED=true set in its Convex environment variables. ' +
-        'Set it with: npx convex env set E2E_CLEANUP_ALLOWED true --prod',
+        'Set it on the targeted deployment, e.g.: ' +
+        'npx convex env set E2E_CLEANUP_ALLOWED true (dev) or ' +
+        'CONVEX_DEPLOY_KEY=<key> npx convex env set E2E_CLEANUP_ALLOWED true --prod (prod).',
     )
   }
 }

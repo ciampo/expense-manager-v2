@@ -167,7 +167,7 @@ Unit tests live in `src/__tests__/`. Shared Zod schema assertion helpers (`expec
 
 E2E tests run against the **production deployment** of a dedicated Convex test project (separate from your dev project). See [Convex deployments](#convex) below for background on the project/deployment model.
 
-> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–8 below (creates `.env.e2e`, validates credentials, deploys, sets the cleanup guardrail, prompts for the production URL, configures auth, and seeds data).
+> **Quick setup:** Run `pnpm setup:e2e` for a guided interactive walkthrough of steps 3–8 below (creates `.env.e2e`, validates credentials, deploys, prompts for the production URL, sets the cleanup guardrail, configures auth, and seeds data).
 
 1. Create a test Convex project in the [Convex Dashboard](https://dashboard.convex.dev/): `expense-manager-test`
 2. Generate a deploy key: Dashboard → test project → Settings → Deploy Keys → Generate Deploy Key — select **production**

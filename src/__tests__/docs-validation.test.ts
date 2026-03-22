@@ -243,12 +243,14 @@ describe('setup scripts validation', () => {
 
   it('seed:cleanup mutation checks E2E_CLEANUP_ALLOWED guardrail', () => {
     const content = readFile('convex/seed.ts')
-    expect(content).toContain('E2E_CLEANUP_ALLOWED')
-    const guardIndex = content.indexOf('E2E_CLEANUP_ALLOWED')
-    const cleanupIndex = content.indexOf('Delete all expenses')
-    expect(guardIndex).toBeGreaterThan(-1)
-    expect(cleanupIndex).toBeGreaterThan(-1)
-    expect(guardIndex).toBeLessThan(cleanupIndex)
+
+    const cleanupExportIndex = content.indexOf('export const cleanup')
+    expect(cleanupExportIndex).toBeGreaterThan(-1)
+
+    const guardCall = "assertTestDeployment('seed:cleanup')"
+    const guardCallIndex = content.indexOf(guardCall)
+    expect(guardCallIndex).toBeGreaterThan(-1)
+    expect(guardCallIndex).toBeGreaterThan(cleanupExportIndex)
   })
 
   it('placeholder values in scripts match the example files', () => {

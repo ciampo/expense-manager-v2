@@ -40,6 +40,13 @@ describe('seed:cleanup — E2E_CLEANUP_ALLOWED guardrail', () => {
     const { userId } = await setupAuthenticatedUser(t)
     const catId = await setupCategory(t, userId)
     await insertExpense(t, userId, catId)
+    await t.run(async (ctx) => {
+      await ctx.db.insert('merchants', {
+        name: 'Test Merchant',
+        normalizedName: 'test merchant',
+        userId,
+      })
+    })
 
     await t.mutation(internal.seed.cleanup, {})
 
