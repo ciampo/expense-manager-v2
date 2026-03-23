@@ -150,13 +150,18 @@ function ExpenseTable() {
     ...convexQuery(api.expenses.list, { cursor: nextCursor, limit: 1 }),
     enabled: shouldPeekNext,
   })
-  const canGoNext = !shouldPeekNext
-    ? !expensesPage?.isDone
-    : isNextPagePeekLoading
-      ? false
-      : isNextPagePeekError
-        ? !expensesPage?.isDone
-        : !!nextPagePeek && nextPagePeek.expenses.length > 0
+  const canGoNext = (() => {
+    if (!shouldPeekNext) {
+      return !expensesPage?.isDone
+    }
+    if (isNextPagePeekLoading) {
+      return false
+    }
+    if (isNextPagePeekError) {
+      return !expensesPage?.isDone
+    }
+    return !!nextPagePeek && nextPagePeek.expenses.length > 0
+  })()
   const canGoPrevious = cursors.length > 1
 
   const expensesQueryKey = convexQuery(api.expenses.list, queryArgs).queryKey
