@@ -167,6 +167,10 @@ function ExpenseTable() {
           cursor: prevCursor,
           limit: pageSize,
         }).queryKey
+        // Cancel any in-flight fetches / reactive subscription pushes
+        // for the previous page so they don't overwrite our optimistic
+        // isDone before the server-side mutation commits.
+        await queryClient.cancelQueries({ queryKey: prevQueryKey })
         previousPageEntry = {
           queryKey: prevQueryKey,
           data: queryClient.getQueryData(prevQueryKey),
