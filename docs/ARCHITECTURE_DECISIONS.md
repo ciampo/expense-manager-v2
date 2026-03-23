@@ -254,3 +254,23 @@ unset — if only the server key is set, auth flows fail because no widget
 produces a token. For local development, leave both unset (do not set
 `TURNSTILE_SECRET_KEY` on the dev Convex deployment) so no Turnstile
 keys are required for local work.
+
+---
+
+## 11. Security headers via Cloudflare Worker
+
+Standard security headers (HSTS, X-Content-Type-Options, X-Frame-Options,
+Referrer-Policy, Permissions-Policy, CSP) are added to all Worker
+responses via a custom server entry point (`src/server.ts`).
+
+**Why:** Defense-in-depth. While React's JSX escaping prevents most XSS,
+security headers provide additional layers (clickjacking protection, MIME
+sniffing prevention, referrer control). CSP restricts script sources to
+mitigate any future XSS vectors.
+
+**Trade-off:** CSP requires maintenance — any new third-party script or
+resource needs to be added to the policy. The
+`Content-Security-Policy-Report-Only` header is used during initial
+rollout to catch violations without breaking functionality. Once
+monitoring confirms no false positives, switch to the enforcing
+`Content-Security-Policy` header.
