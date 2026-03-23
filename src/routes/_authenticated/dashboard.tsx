@@ -142,13 +142,21 @@ function ExpenseTable() {
   // disable "Next" when the next page is actually empty.
   const nextCursor = expensesPage?.continueCursor
   const shouldPeekNext = !expensesPage?.isDone && !!nextCursor
-  const { data: nextPagePeek } = useQuery({
+  const {
+    data: nextPagePeek,
+    isLoading: isNextPagePeekLoading,
+    isError: isNextPagePeekError,
+  } = useQuery({
     ...convexQuery(api.expenses.list, { cursor: nextCursor, limit: 1 }),
     enabled: shouldPeekNext,
   })
-  const canGoNext = shouldPeekNext
-    ? !!nextPagePeek && nextPagePeek.expenses.length > 0
-    : !expensesPage?.isDone
+  const canGoNext = !shouldPeekNext
+    ? !expensesPage?.isDone
+    : isNextPagePeekLoading
+      ? false
+      : isNextPagePeekError
+        ? !expensesPage?.isDone
+        : !!nextPagePeek && nextPagePeek.expenses.length > 0
   const canGoPrevious = cursors.length > 1
 
   const expensesQueryKey = convexQuery(api.expenses.list, queryArgs).queryKey
