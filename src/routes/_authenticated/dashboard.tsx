@@ -147,7 +147,7 @@ function ExpenseTable() {
     enabled: shouldPeekNext,
   })
   const canGoNext = shouldPeekNext
-    ? !nextPagePeek || nextPagePeek.expenses.length > 0
+    ? !!nextPagePeek && nextPagePeek.expenses.length > 0
     : !expensesPage?.isDone
   const canGoPrevious = cursors.length > 1
 

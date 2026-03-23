@@ -38,9 +38,13 @@ test.describe('Dashboard pagination', () => {
       .click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
 
-    // Should auto-navigate back to page 1 with "Next" disabled.
-    await expect(page.getByText('Page 1')).toBeVisible()
+    // Should auto-navigate back to page 1.  With exactly 10 items and
+    // limit 10, the peek-ahead confirms no second page exists, so the
+    // entire pagination section (including "Page N" and Next/Previous
+    // buttons) is correctly hidden — only the rows-per-page selector
+    // remains.
     await expect(rows).toHaveCount(10)
-    await expect(page.getByRole('button', { name: /next/i })).toBeDisabled()
+    await expect(page.getByText('Page 2')).not.toBeVisible()
+    await expect(page.getByRole('button', { name: /next/i })).not.toBeVisible()
   })
 })
