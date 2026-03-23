@@ -79,6 +79,12 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
 
+      - name: Release Convex test lock
+        if: always() && steps.lock.outputs.acquired == 'true'
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: unlock
+
       - name: Check for changes
         id: check_changes
         run: |
@@ -123,9 +129,3 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "All screenshots are already up to date! 🎉" >> $GITHUB_STEP_SUMMARY
           fi
-
-      - name: Release Convex test lock
-        if: always() && steps.lock.outputs.acquired == 'true'
-        uses: ./.github/actions/convex-test-lock
-        with:
-          mode: unlock
