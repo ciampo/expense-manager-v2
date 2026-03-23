@@ -24,7 +24,9 @@ env:
 #    auto-releases locks from crashed/timed-out jobs.
 #
 # PR jobs are opt-in: they only run when the "ci: integration" label
-# is present. This keeps the lock queue short and avoids burning
+# is present on a same-repo PR. Fork PRs are excluded because the
+# pull_request token from forks is read-only and cannot manage the
+# lock ref. This keeps the lock queue short and avoids burning
 # runner minutes on PRs that don't need pre-merge integration
 # validation. All changes get integration-tested on merge to main.
 concurrency:
@@ -36,7 +38,7 @@ permissions:
 
 jobs:
   e2e:
-    if: "${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci: integration') }}"
+    if: "${{ github.event_name == 'push' || (contains(github.event.pull_request.labels.*.name, 'ci: integration') && github.event.pull_request.head.repo.full_name == github.repository) }}"
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -95,7 +97,7 @@ jobs:
 
   visual:
     needs: e2e
-    if: "${{ always() && !cancelled() && (github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci: integration')) }}"
+    if: "${{ always() && !cancelled() && (github.event_name == 'push' || (contains(github.event.pull_request.labels.*.name, 'ci: integration') && github.event.pull_request.head.repo.full_name == github.repository)) }}"
     runs-on: ubuntu-latest
     timeout-minutes: 40
     container:

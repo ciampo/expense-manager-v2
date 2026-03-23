@@ -1,8 +1,10 @@
 name: 'Convex Test Backend Lock'
 description: >
   Acquire or release a mutex for the shared Convex test backend.
-  Uses a git branch ref as a spinlock — createRef is atomic, so only
-  one job can hold the lock at a time. All others poll until it's free.
+  Uses a git branch ref as a spinlock — updateRef(force: false) acts as
+  an atomic compare-and-swap (only fast-forwards succeed), so the ref
+  is never deleted. State is encoded in the latest commit message:
+  "lock:*" = held, "released:*" = free.
 
 inputs:
   mode:
@@ -64,55 +66,104 @@ runs:
           const { owner, repo } = context.repo;
           const lockId = `lock:${context.runId}:${context.job}`;
 
-          async function createLockCommit() {
+          async function makeCommit(message, parentSha) {
             const { data: blob } = await github.rest.git.createBlob({
-              owner, repo, content: lockId, encoding: 'utf-8',
+              owner, repo, content: message, encoding: 'utf-8',
             });
             const { data: tree } = await github.rest.git.createTree({
               owner, repo,
               tree: [{ path: 'lock', mode: '100644', sha: blob.sha }],
             });
+            const parents = parentSha ? [parentSha] : [];
             const { data: commit } = await github.rest.git.createCommit({
-              owner, repo, message: lockId, tree: tree.sha, parents: [],
+              owner, repo, message, tree: tree.sha, parents,
             });
             return commit.sha;
           }
 
-          const lockSha = await createLockCommit();
-
-          // Spin until the lock is ours or the job times out.
-          while (true) {
+          async function readRef() {
             try {
-              await github.rest.git.createRef({
-                owner, repo, ref: `refs/${lockRef}`, sha: lockSha,
+              const { data: ref } = await github.rest.git.getRef({ owner, repo, ref: lockRef });
+              const { data: commit } = await github.rest.git.getCommit({
+                owner, repo, commit_sha: ref.object.sha,
+              });
+              return {
+                sha: ref.object.sha,
+                message: commit.message,
+                date: new Date(commit.committer.date),
+              };
+            } catch (e) {
+              if (e.status === 404) return null;
+              throw e;
+            }
+          }
+
+          while (true) {
+            const state = await readRef();
+
+            if (state === null) {
+              // Ref doesn't exist yet — bootstrap it with our lock commit.
+              const sha = await makeCommit(lockId, null);
+              try {
+                await github.rest.git.createRef({
+                  owner, repo, ref: `refs/${lockRef}`, sha,
+                });
+                core.info(`Lock acquired (${lockId}) — initialized ref`);
+                core.setOutput('acquired', 'true');
+                return;
+              } catch (e) {
+                if (e.status === 422) continue;
+                throw e;
+              }
+            }
+
+            const isLocked = state.message.startsWith('lock:');
+
+            if (isLocked) {
+              const age = Date.now() - state.date.getTime();
+              core.info(`Lock held by ${state.message} (age ${Math.round(age / 1000)}s)`);
+
+              if (age > staleTTL) {
+                // Stale — release via atomic fast-forward. If the ref moved
+                // since we read it, updateRef rejects the non-fast-forward
+                // and we simply retry. This eliminates the TOCTOU race.
+                const releaseSha = await makeCommit(
+                  `released:stale:${state.message}`, state.sha,
+                );
+                try {
+                  await github.rest.git.updateRef({
+                    owner, repo, ref: lockRef, sha: releaseSha, force: false,
+                  });
+                  core.warning(
+                    `Stale lock released (${Math.round(age / 1000)}s > ${staleTTL / 1000}s)`,
+                  );
+                } catch (e) {
+                  if (e.status === 422) {
+                    core.info('Stale release raced — ref moved, retrying');
+                  } else {
+                    throw e;
+                  }
+                }
+                continue;
+              }
+
+              const jitter = poll * (0.75 + Math.random() * 0.5);
+              await new Promise((r) => setTimeout(r, jitter));
+              continue;
+            }
+
+            // Ref is in a released state — try to acquire via fast-forward.
+            const lockSha = await makeCommit(lockId, state.sha);
+            try {
+              await github.rest.git.updateRef({
+                owner, repo, ref: lockRef, sha: lockSha, force: false,
               });
               core.info(`Lock acquired (${lockId})`);
               core.setOutput('acquired', 'true');
               return;
             } catch (e) {
-              if (e.status !== 422) throw e;
-
-              // Lock exists — check for staleness.
-              try {
-                const { data: ref } = await github.rest.git.getRef({ owner, repo, ref: lockRef });
-                const { data: commit } = await github.rest.git.getCommit({
-                  owner, repo, commit_sha: ref.object.sha,
-                });
-                const age = Date.now() - new Date(commit.committer.date).getTime();
-                core.info(`Lock held by ${commit.message} (age ${Math.round(age / 1000)}s)`);
-
-                if (age > staleTTL) {
-                  core.warning(`Force-releasing stale lock (${Math.round(age / 1000)}s > ${staleTTL / 1000}s)`);
-                  await github.rest.git.deleteRef({ owner, repo, ref: lockRef });
-                  continue;
-                }
-              } catch (refErr) {
-                if (refErr.status === 404) continue; // released between check and delete
-                throw refErr;
-              }
-
-              const jitter = poll * (0.75 + Math.random() * 0.5);
-              await new Promise(r => setTimeout(r, jitter));
+              if (e.status === 422) continue;
+              throw e;
             }
           }
 
@@ -137,21 +188,44 @@ runs:
               });
 
               if (commit.message !== lockId) {
-                core.info(`Lock held by different job (${commit.message}), skipping release`);
+                core.info(`Lock held by different owner (${commit.message}), skipping release`);
                 return;
               }
 
-              await github.rest.git.deleteRef({ owner, repo, ref: lockRef });
+              // Release by fast-forwarding to a "released" child commit.
+              const { data: blob } = await github.rest.git.createBlob({
+                owner, repo, content: `released:${lockId}`, encoding: 'utf-8',
+              });
+              const { data: tree } = await github.rest.git.createTree({
+                owner, repo,
+                tree: [{ path: 'lock', mode: '100644', sha: blob.sha }],
+              });
+              const { data: releaseCommit } = await github.rest.git.createCommit({
+                owner, repo,
+                message: `released:${lockId}`,
+                tree: tree.sha,
+                parents: [ref.object.sha],
+              });
+
+              await github.rest.git.updateRef({
+                owner, repo, ref: lockRef, sha: releaseCommit.sha, force: false,
+              });
               core.info(`Lock released (${lockId})`);
               return;
             } catch (e) {
               if (e.status === 404) {
-                core.info('Lock already released');
+                core.info('Lock ref not found, nothing to release');
+                return;
+              }
+              if (e.status === 422) {
+                // Ref moved between read and update — stale cleanup or
+                // another mechanism already released our lock.
+                core.info('Lock ref moved during release, lock already released');
                 return;
               }
               if (attempt < MAX_RETRIES) {
                 core.warning(`Unlock attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying...`);
-                await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+                await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
               } else {
                 core.setFailed(`Failed to release lock after ${MAX_RETRIES} attempts: ${e.message}`);
               }
