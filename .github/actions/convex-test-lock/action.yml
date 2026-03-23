@@ -29,6 +29,13 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Validate mode
+      if: inputs.mode != 'lock' && inputs.mode != 'unlock'
+      shell: bash
+      run: |
+        echo "::error::Invalid mode '${{ inputs.mode }}'. Must be 'lock' or 'unlock'."
+        exit 1
+
     - name: Acquire lock
       id: acquire
       if: inputs.mode == 'lock'
@@ -40,8 +47,20 @@ runs:
       with:
         script: |
           const lockRef = `heads/${process.env.LOCK_BRANCH}`;
-          const poll = parseInt(process.env.POLL_INTERVAL) * 1000;
-          const staleTTL = parseInt(process.env.STALE_TIMEOUT) * 1000;
+
+          const DEFAULT_POLL_MS = 15_000;
+          const DEFAULT_STALE_MS = 3_000_000;
+          let poll = parseInt(process.env.POLL_INTERVAL, 10) * 1000;
+          if (!Number.isFinite(poll) || poll <= 0) {
+            core.warning(`Invalid POLL_INTERVAL "${process.env.POLL_INTERVAL}", using default ${DEFAULT_POLL_MS / 1000}s`);
+            poll = DEFAULT_POLL_MS;
+          }
+          let staleTTL = parseInt(process.env.STALE_TIMEOUT, 10) * 1000;
+          if (!Number.isFinite(staleTTL) || staleTTL <= 0) {
+            core.warning(`Invalid STALE_TIMEOUT "${process.env.STALE_TIMEOUT}", using default ${DEFAULT_STALE_MS / 1000}s`);
+            staleTTL = DEFAULT_STALE_MS;
+          }
+
           const { owner, repo } = context.repo;
           const lockId = `lock:${context.runId}:${context.job}`;
 
@@ -107,24 +126,34 @@ runs:
           const lockRef = `heads/${process.env.LOCK_BRANCH}`;
           const { owner, repo } = context.repo;
           const lockId = `lock:${context.runId}:${context.job}`;
+          const MAX_RETRIES = 3;
+          const RETRY_DELAY_MS = 2000;
 
-          try {
-            const { data: ref } = await github.rest.git.getRef({ owner, repo, ref: lockRef });
-            const { data: commit } = await github.rest.git.getCommit({
-              owner, repo, commit_sha: ref.object.sha,
-            });
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              const { data: ref } = await github.rest.git.getRef({ owner, repo, ref: lockRef });
+              const { data: commit } = await github.rest.git.getCommit({
+                owner, repo, commit_sha: ref.object.sha,
+              });
 
-            if (commit.message !== lockId) {
-              core.info(`Lock held by different job (${commit.message}), skipping release`);
+              if (commit.message !== lockId) {
+                core.info(`Lock held by different job (${commit.message}), skipping release`);
+                return;
+              }
+
+              await github.rest.git.deleteRef({ owner, repo, ref: lockRef });
+              core.info(`Lock released (${lockId})`);
               return;
-            }
-
-            await github.rest.git.deleteRef({ owner, repo, ref: lockRef });
-            core.info(`Lock released (${lockId})`);
-          } catch (e) {
-            if (e.status === 404) {
-              core.info('Lock already released');
-            } else {
-              core.warning(`Failed to release lock: ${e.message}`);
+            } catch (e) {
+              if (e.status === 404) {
+                core.info('Lock already released');
+                return;
+              }
+              if (attempt < MAX_RETRIES) {
+                core.warning(`Unlock attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying...`);
+                await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+              } else {
+                core.setFailed(`Failed to release lock after ${MAX_RETRIES} attempts: ${e.message}`);
+              }
             }
           }
