@@ -2,6 +2,7 @@
 import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 import { api } from './_generated/api'
+import type { Doc } from './_generated/dataModel'
 import schema from './schema'
 import {
   setupAuthenticatedUser,
@@ -123,6 +124,34 @@ describe('expenses.list', () => {
     expect(result.isDone).toBe(true)
   })
 
+  it('paginates correctly when earlier items are deleted between pages', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    for (let i = 1; i <= 6; i++) {
+      await insertExpense(t, userId, categoryId, {
+        date: `2026-03-${String(i).padStart(2, '0')}`,
+      })
+    }
+
+    const page1 = await asUser.query(api.expenses.list, { limit: 3 })
+    expect(page1.expenses).toHaveLength(3)
+    expect(page1.expenses.map((e) => e.date)).toEqual(['2026-03-06', '2026-03-05', '2026-03-04'])
+
+    await t.run(async (ctx) => {
+      await ctx.db.delete(page1.expenses[0]._id)
+    })
+
+    const page2 = await asUser.query(api.expenses.list, {
+      limit: 3,
+      cursor: page1.continueCursor,
+    })
+    expect(page2.expenses).toHaveLength(3)
+    expect(page2.expenses.map((e) => e.date)).toEqual(['2026-03-03', '2026-03-02', '2026-03-01'])
+    expect(page2.isDone).toBe(true)
+  })
+
   it('does not return expenses from other users', async () => {
     const t = convexTest(schema, modules)
     const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
@@ -136,6 +165,50 @@ describe('expenses.list', () => {
     const result = await asUser1.query(api.expenses.list, {})
     expect(result.expenses).toHaveLength(1)
     expect(result.expenses[0].merchant).toBe('User1 Merchant')
+  })
+})
+
+// ── pagination (low-level) ──────────────────────────────────────────────
+
+describe('expenses pagination (low-level)', () => {
+  it('handles page splitting via maximumRowsRead', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    for (let i = 1; i <= 5; i++) {
+      await insertExpense(t, userId, categoryId, {
+        date: `2026-03-${String(i).padStart(2, '0')}`,
+      })
+    }
+
+    const collected: Doc<'expenses'>[] = []
+    let cursor: string | null = null
+    let pages = 0
+
+    while (true) {
+      const page = await t.query(async (ctx) => {
+        return await ctx.db
+          .query('expenses')
+          .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+          .order('desc')
+          .paginate({ numItems: 10, cursor, maximumRowsRead: 2 })
+      })
+      collected.push(...page.page)
+      cursor = page.continueCursor
+      pages++
+      if (page.isDone) break
+    }
+
+    expect(pages).toBeGreaterThan(1)
+    expect(collected).toHaveLength(5)
+    expect(collected.map((e) => e.date)).toEqual([
+      '2026-03-05',
+      '2026-03-04',
+      '2026-03-03',
+      '2026-03-02',
+      '2026-03-01',
+    ])
   })
 })
 
@@ -250,7 +323,7 @@ describe('expenses.create', () => {
       categoryId,
     })
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense).not.toBeNull()
     expect(expense?.date).toBe('2026-03-01')
     expect(expense?.merchant).toBe('Test Merchant')
@@ -270,7 +343,7 @@ describe('expenses.create', () => {
       comment: 'Business lunch',
     })
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense?.comment).toBe('Business lunch')
   })
 
@@ -287,7 +360,7 @@ describe('expenses.create', () => {
       attachmentId: storageId,
     })
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense?.attachmentId).toBe(storageId)
   })
 
@@ -319,10 +392,10 @@ describe('expenses.create', () => {
       merchant: 'New Merchant',
     })
 
-    const merchants = await t.run(async (ctx) =>
+    const merchants = await t.query(async (ctx) =>
       ctx.db
         .query('merchants')
-        .filter((q) => q.eq(q.field('userId'), userId))
+        .withIndex('by_user_and_normalized_name', (q) => q.eq('userId', userId))
         .collect(),
     )
     expect(merchants).toHaveLength(1)
@@ -338,10 +411,10 @@ describe('expenses.create', () => {
       newCategoryName: 'Custom Category',
     })
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense).not.toBeNull()
 
-    const category = await t.run(async (ctx) => ctx.db.get('categories', expense!.categoryId))
+    const category = await t.query(async (ctx) => ctx.db.get('categories', expense!.categoryId))
     expect(category?.name).toBe('Custom Category')
     expect(category?.userId).toBe(userId)
   })
@@ -381,7 +454,7 @@ describe('expenses.remove', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense).toBeNull()
   })
 
@@ -404,10 +477,10 @@ describe('expenses.remove', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const uploadRecord = await t.run(async (ctx) =>
+    const uploadRecord = await t.query(async (ctx) =>
       ctx.db
         .query('uploads')
-        .filter((q) => q.eq(q.field('storageId'), storageId))
+        .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
         .first(),
     )
     expect(uploadRecord).toBeNull()
@@ -421,7 +494,7 @@ describe('expenses.remove', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const category = await t.run(async (ctx) => ctx.db.get('categories', categoryId))
+    const category = await t.query(async (ctx) => ctx.db.get('categories', categoryId))
     expect(category).toBeNull()
   })
 
@@ -433,7 +506,7 @@ describe('expenses.remove', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const category = await t.run(async (ctx) => ctx.db.get('categories', categoryId))
+    const category = await t.query(async (ctx) => ctx.db.get('categories', categoryId))
     expect(category).not.toBeNull()
   })
 
@@ -447,7 +520,7 @@ describe('expenses.remove', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseToDelete })
 
-    const category = await t.run(async (ctx) => ctx.db.get('categories', categoryId))
+    const category = await t.query(async (ctx) => ctx.db.get('categories', categoryId))
     expect(category).not.toBeNull()
   })
 
@@ -469,10 +542,10 @@ describe('expenses.remove', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const merchants = await t.run(async (ctx) =>
+    const merchants = await t.query(async (ctx) =>
       ctx.db
         .query('merchants')
-        .filter((q) => q.eq(q.field('userId'), userId))
+        .withIndex('by_user_and_normalized_name', (q) => q.eq('userId', userId))
         .collect(),
     )
     expect(merchants).toHaveLength(0)
@@ -524,13 +597,13 @@ describe('expenses.removeAttachment', () => {
 
     await asUser.mutation(api.expenses.removeAttachment, { id: expenseId })
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense?.attachmentId).toBeUndefined()
 
-    const uploadRecord = await t.run(async (ctx) =>
+    const uploadRecord = await t.query(async (ctx) =>
       ctx.db
         .query('uploads')
-        .filter((q) => q.eq(q.field('storageId'), storageId))
+        .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
         .first(),
     )
     expect(uploadRecord).toBeNull()
@@ -545,7 +618,7 @@ describe('expenses.removeAttachment', () => {
     // Should not throw
     await asUser.mutation(api.expenses.removeAttachment, { id: expenseId })
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense).not.toBeNull()
     expect(expense?.attachmentId).toBeUndefined()
   })
@@ -599,7 +672,7 @@ describe('expenses.update', () => {
       categoryId,
     })
 
-    const updated = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(updated).toMatchObject({
       date: '2026-06-15',
       merchant: 'Updated Merchant',
@@ -635,12 +708,12 @@ describe('expenses.update — attachment handling', () => {
       merchant: 'Updated Merchant',
     })
 
-    const updated = await t.run(async (ctx) => {
+    const updated = await t.query(async (ctx) => {
       return await ctx.db.get('expenses', expenseId)
     })
     expect(updated?.attachmentId).toBe(storageId)
 
-    const fileStillExists = await t.run(async (ctx) => {
+    const fileStillExists = await t.query(async (ctx) => {
       return await ctx.storage.getUrl(storageId)
     })
     expect(fileStillExists).not.toBeNull()
@@ -673,12 +746,12 @@ describe('expenses.update — attachment handling', () => {
       attachmentId: newStorageId,
     })
 
-    const updated = await t.run(async (ctx) => {
+    const updated = await t.query(async (ctx) => {
       return await ctx.db.get('expenses', expenseId)
     })
     expect(updated?.attachmentId).toBe(newStorageId)
 
-    const oldFileStillExists = await t.run(async (ctx) => {
+    const oldFileStillExists = await t.query(async (ctx) => {
       return await ctx.storage.getUrl(oldStorageId)
     })
     expect(oldFileStillExists).toBeNull()
@@ -709,12 +782,12 @@ describe('expenses.update — attachment handling', () => {
       attachmentId: storageId,
     })
 
-    const updated = await t.run(async (ctx) => {
+    const updated = await t.query(async (ctx) => {
       return await ctx.db.get('expenses', expenseId)
     })
     expect(updated?.attachmentId).toBe(storageId)
 
-    const fileStillExists = await t.run(async (ctx) => {
+    const fileStillExists = await t.query(async (ctx) => {
       return await ctx.storage.getUrl(storageId)
     })
     expect(fileStillExists).not.toBeNull()
@@ -743,7 +816,7 @@ describe('expenses.update — category orphan cleanup', () => {
       categoryId: catB,
     })
 
-    const oldCategory = await t.run(async (ctx) => ctx.db.get('categories', catA))
+    const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', catA))
     expect(oldCategory).toBeNull()
   })
 
@@ -762,7 +835,7 @@ describe('expenses.update — category orphan cleanup', () => {
       categoryId: catB,
     })
 
-    const oldCategory = await t.run(async (ctx) => ctx.db.get('categories', catA))
+    const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', catA))
     expect(oldCategory).not.toBeNull()
   })
 
@@ -786,7 +859,7 @@ describe('expenses.update — category orphan cleanup', () => {
       categoryId: userCatId,
     })
 
-    const predefinedCat = await t.run(async (ctx) => ctx.db.get('categories', predefinedCatId))
+    const predefinedCat = await t.query(async (ctx) => ctx.db.get('categories', predefinedCatId))
     expect(predefinedCat).not.toBeNull()
   })
 
@@ -812,7 +885,7 @@ describe('expenses.update — category orphan cleanup', () => {
       categoryId: catB,
     })
 
-    const oldCategory = await t.run(async (ctx) => ctx.db.get('categories', catA))
+    const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', catA))
     expect(oldCategory).not.toBeNull()
   })
 })

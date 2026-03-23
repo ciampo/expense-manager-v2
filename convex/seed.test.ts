@@ -50,7 +50,7 @@ describe('seed:cleanup — E2E_CLEANUP_ALLOWED guardrail', () => {
 
     await t.mutation(internal.seed.cleanup, {})
 
-    const remaining = await t.run(async (ctx) => ({
+    const remaining = await t.query(async (ctx) => ({
       expenses: await ctx.db.query('expenses').collect(),
       merchants: await ctx.db.query('merchants').collect(),
     }))

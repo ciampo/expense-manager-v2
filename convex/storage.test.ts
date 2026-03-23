@@ -12,17 +12,16 @@ import {
   setupStorageFile,
   setupUploadRecord,
   insertExpense,
+  type TestCtx,
 } from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
 
-// Uses .filter() instead of .withIndex() because ReturnType<typeof convexTest>
-// loses schema-specific index types, causing tsc errors with custom indexes.
-function getUploadRecord(t: ReturnType<typeof convexTest>, storageId: Id<'_storage'>) {
-  return t.run(async (ctx) => {
+function getUploadRecord(t: TestCtx, storageId: Id<'_storage'>) {
+  return t.query(async (ctx) => {
     return await ctx.db
       .query('uploads')
-      .filter((q) => q.eq(q.field('storageId'), storageId))
+      .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
       .first()
   })
 }
@@ -197,7 +196,7 @@ describe('storage.confirmUpload', () => {
     // Second call should not throw
     await asUser.mutation(api.storage.confirmUpload, { storageId })
 
-    const uploads = await t.run(async (ctx) => {
+    const uploads = await t.query(async (ctx) => {
       return await ctx.db
         .query('uploads')
         .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
@@ -359,7 +358,7 @@ describe('storage.deleteFile', () => {
 
     await asUser.mutation(api.storage.deleteFile, { storageId })
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense?.attachmentId).toBeUndefined()
 
     const upload = await getUploadRecord(t, storageId)
@@ -397,7 +396,7 @@ describe('storage.cleanupOrphanedUploads', () => {
     const upload = await getUploadRecord(t, storageId)
     expect(upload).toBeNull()
 
-    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    const url = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
     expect(url).toBeNull()
   })
 
@@ -417,7 +416,7 @@ describe('storage.cleanupOrphanedUploads', () => {
     const upload = await getUploadRecord(t, storageId)
     expect(upload).toBeNull()
 
-    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    const url = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
     expect(url).not.toBeNull()
   })
 
@@ -429,7 +428,7 @@ describe('storage.cleanupOrphanedUploads', () => {
     vi.advanceTimersByTime(TWENTY_FIVE_HOURS_MS)
     await t.mutation(internal.storage.cleanupOrphanedUploads, {})
 
-    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    const url = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
     expect(url).toBeNull()
   })
 
@@ -445,7 +444,7 @@ describe('storage.cleanupOrphanedUploads', () => {
     vi.advanceTimersByTime(TWENTY_FIVE_HOURS_MS)
     await t.mutation(internal.storage.cleanupOrphanedUploads, {})
 
-    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    const url = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
     expect(url).not.toBeNull()
   })
 
@@ -461,7 +460,7 @@ describe('storage.cleanupOrphanedUploads', () => {
     await t.mutation(internal.storage.cleanupOrphanedUploads, {})
 
     // File still exists — Pass 2 skips files that have upload records
-    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    const url = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
     expect(url).not.toBeNull()
   })
 
@@ -478,7 +477,7 @@ describe('storage.cleanupOrphanedUploads', () => {
     const upload = await getUploadRecord(t, storageId)
     expect(upload).not.toBeNull()
 
-    const url = await t.run(async (ctx) => ctx.storage.getUrl(storageId))
+    const url = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
     expect(url).not.toBeNull()
   })
 })
