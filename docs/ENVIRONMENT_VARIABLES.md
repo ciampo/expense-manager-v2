@@ -19,6 +19,8 @@ This document lists all environment variables used in the Expense Manager projec
 | `JWKS`                  | Convex Environment         | JSON Web Key Set for verifying JWTs (auto-set by auth setup)  |
 | `AUTH_RESEND_KEY`       | Convex Environment         | Resend API key for password reset emails                      |
 | `AUTH_RESEND_FROM`      | Convex Environment         | Sender address for password reset emails (optional)           |
+| `ALLOWED_EMAILS`        | Convex Environment         | Comma-separated allowlist of emails/domain wildcards          |
+| `REGISTRATION_ENABLED`  | Convex Environment         | Set to `false` to block all new sign-ups                      |
 
 ---
 
@@ -182,6 +184,38 @@ npx convex env set VARIABLE_NAME value
 
 The app runs without `AUTH_RESEND_KEY`, but the forgot-password flow will not work.
 `AUTH_RESEND_FROM` is optional — omit it during development to use Resend's sandbox sender.
+
+### Registration Controls
+
+| Variable               | Required | Description                                                                                                                                                                  |
+| ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_EMAILS`       | No       | Comma-separated list of allowed email addresses or domain wildcards (e.g. `alice@example.com,*@mycompany.org`). When empty or unset, all emails are accepted (no filtering). |
+| `REGISTRATION_ENABLED` | No       | Set to `false` to instantly block all new sign-ups. Any other value (or unset) means registration is open (subject to the allowlist).                                        |
+
+`ALLOWED_EMAILS` entries are case-insensitive. Entries starting with `*@` match by domain suffix (e.g. `*@mycompany.org` allows `alice@mycompany.org`); all others are exact email matches.
+
+`REGISTRATION_ENABLED=false` acts as a hard kill switch — it blocks all new registrations regardless of the allowlist. Existing users can still sign in. To re-enable, set the variable to any other value or remove it.
+
+A `beforeSessionCreation` callback also validates the allowlist on every sign-in (defense-in-depth). If a previously allowed email is removed from `ALLOWED_EMAILS`, that user will be blocked on their next sign-in attempt.
+
+#### Setting Registration Controls
+
+```bash
+# Development — allow specific emails
+npx convex env set ALLOWED_EMAILS "your-email@example.com"
+
+# Multiple emails and domain wildcards
+npx convex env set ALLOWED_EMAILS "alice@example.com,bob@example.com,*@mycompany.org"
+
+# Production — requires CONVEX_DEPLOY_KEY
+CONVEX_DEPLOY_KEY=<prod-deploy-key> npx convex env set ALLOWED_EMAILS "your-email@example.com"
+
+# Emergency: disable all new registrations
+CONVEX_DEPLOY_KEY=<prod-deploy-key> npx convex env set REGISTRATION_ENABLED false
+
+# Re-enable registrations
+CONVEX_DEPLOY_KEY=<prod-deploy-key> npx convex env set REGISTRATION_ENABLED true
+```
 
 ### Setting Up Email Provider
 
