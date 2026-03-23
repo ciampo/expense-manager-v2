@@ -62,9 +62,21 @@ pnpm test:unit
 pnpm test:visual:docker
 ```
 
-**E2E** (run after pushing, via CI):
+**E2E** (prefer local, fall back to CI):
 
-E2E tests (`pnpm test:e2e`) require a deployed preview and seeded backend — they run in CI after the preview deploys. After pushing, monitor the CI "Integration Tests" check and investigate any failures from the CI logs (`gh run view <run-id> --log`). If e2e tests fail, check the Playwright report artifact uploaded by CI.
+E2E tests (`pnpm test:e2e`) can and should run locally before pushing — they use `localhost:3000` via `pnpm dev:e2e` (started automatically by Playwright) with the Convex test backend configured in `.env.e2e`. Run a specific spec to iterate quickly:
+
+```bash
+npx playwright test e2e/my-spec.spec.ts
+```
+
+Caveats for local E2E:
+- Requires `.env.e2e` with valid `VITE_CONVEX_URL` and `CONVEX_DEPLOY_KEY` for the test project.
+- Convex functions must be deployed to the test project if the branch changes backend code (`npx convex deploy` with the test project's deploy key).
+- The test project is shared — if CI is running E2E concurrently, the global cleanup in `globalTeardown` may conflict. The job-level `convex-test-deploy` concurrency group in CI prevents this in GitHub Actions, but local runs have no such guard.
+- Chromium must be installed (`npx playwright install chromium`).
+
+After pushing, CI also runs E2E as the "Integration Tests" workflow. Monitor with `gh run view <run-id>` and check the Playwright report artifact on failure.
 
 ## Principles
 
