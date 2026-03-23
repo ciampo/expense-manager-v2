@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Check all required CI workflows passed
         id: check
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const sha = context.payload.workflow_run.head_sha;
@@ -93,7 +93,7 @@ jobs:
     steps:
       - name: Check for existing deployment
         id: dedup
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const sha = '${{ needs.gate.outputs.commit-sha }}';
@@ -121,7 +121,7 @@ jobs:
       - name: Create GitHub deployment
         if: steps.dedup.outputs.skip != 'true'
         id: deployment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const { data: deployment } = await github.rest.repos.createDeployment({
@@ -175,7 +175,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Mark deployment successful
         if: steps.dedup.outputs.skip != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
@@ -187,7 +187,7 @@ jobs:
             });
       - name: Mark deployment failed
         if: "!success() && steps.deployment.outputs.id && steps.cf-deploy.outcome != 'success'"
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
