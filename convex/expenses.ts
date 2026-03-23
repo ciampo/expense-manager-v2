@@ -78,19 +78,33 @@ export const list = query({
       return { expenses: [], continueCursor: null, isDone: true }
     }
 
+    const numItems = Math.max(1, Math.min(Math.trunc(args.limit ?? 50), 100))
     const result = await ctx.db
       .query('expenses')
       .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
       .order('desc')
       .paginate({
-        numItems: Math.max(1, Math.min(Math.trunc(args.limit ?? 50), 100)),
+        numItems,
         cursor: args.cursor ?? null,
       })
+
+    // Convex returns isDone: false when a full page is returned, even if
+    // no more items exist.  Peek at the next cursor so callers get an
+    // accurate isDone without a redundant round-trip.
+    let { isDone } = result
+    if (!isDone && result.page.length === numItems) {
+      const next = await ctx.db
+        .query('expenses')
+        .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+        .order('desc')
+        .paginate({ numItems: 1, cursor: result.continueCursor })
+      isDone = next.page.length === 0
+    }
 
     return {
       expenses: result.page,
       continueCursor: result.continueCursor,
-      isDone: result.isDone,
+      isDone,
     }
   },
 })

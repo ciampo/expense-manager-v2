@@ -41,6 +41,22 @@ describe('expenses.list', () => {
     expect(result.isDone).toBe(true)
   })
 
+  it('returns isDone true when item count equals the limit (look-ahead)', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    for (let i = 1; i <= 3; i++) {
+      await insertExpense(t, userId, categoryId, {
+        date: `2026-03-${String(i).padStart(2, '0')}`,
+      })
+    }
+
+    const result = await asUser.query(api.expenses.list, { limit: 3 })
+    expect(result.expenses).toHaveLength(3)
+    expect(result.isDone).toBe(true)
+  })
+
   it('respects the limit parameter', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)

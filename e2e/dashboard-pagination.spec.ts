@@ -38,12 +38,9 @@ test.describe('Dashboard pagination', () => {
       .click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
 
-    // Should auto-navigate back to page 1.
-    // Note: "Next" remains enabled because Convex pagination returns
-    // isDone: false whenever a full page (numItems) is returned — it
-    // can't distinguish "exactly full" from "more exist" without a
-    // look-ahead.  This is correct Convex behavior.
+    // Should auto-navigate back to page 1 with "Next" disabled.
     await expect(page.getByText('Page 1')).toBeVisible()
     await expect(rows).toHaveCount(10)
+    await expect(page.getByRole('button', { name: /next/i })).toBeDisabled()
   })
 })
