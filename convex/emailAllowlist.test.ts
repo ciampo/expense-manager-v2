@@ -84,6 +84,13 @@ describe('isEmailAllowed', () => {
     expect(isEmailAllowed('Alice@MyCompany.ORG', allowed)).toBe(true)
   })
 
+  it('treats allowlist entries case-insensitively', () => {
+    const allowed = ['ALICE@Example.COM', '*@MyCompany.ORG']
+    expect(isEmailAllowed('alice@example.com', allowed)).toBe(true)
+    expect(isEmailAllowed('bob@mycompany.org', allowed)).toBe(true)
+    expect(isEmailAllowed('eve@other.com', allowed)).toBe(false)
+  })
+
   it('does not match partial domain names', () => {
     const allowed = ['*@company.org']
     expect(isEmailAllowed('alice@notcompany.org', allowed)).toBe(false)

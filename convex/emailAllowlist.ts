@@ -14,8 +14,11 @@ export function parseAllowedEmails(): string[] {
 export function isEmailAllowed(email: string | undefined, allowedEmails: string[]): boolean {
   if (allowedEmails.length === 0) return true
   if (!email) return false
-  const normalized = email.toLowerCase()
-  return allowedEmails.some((entry) =>
-    entry.startsWith('*@') ? normalized.endsWith(entry.slice(1)) : normalized === entry,
-  )
+  const normalizedEmail = email.toLowerCase()
+  return allowedEmails.some((raw) => {
+    const entry = raw.toLowerCase()
+    return entry.startsWith('*@')
+      ? normalizedEmail.endsWith(entry.slice(1))
+      : normalizedEmail === entry
+  })
 }

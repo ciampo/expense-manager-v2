@@ -9,7 +9,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     async createOrUpdateUser(ctx, { existingUserId, profile }) {
       if (!existingUserId) {
         if (process.env.REGISTRATION_ENABLED === 'false') {
-          throw new Error('Registration is currently disabled')
+          throw new Error('Registration is not available')
         }
 
         const allowed = parseAllowedEmails()
