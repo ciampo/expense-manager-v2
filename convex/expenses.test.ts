@@ -322,7 +322,7 @@ describe('expenses.create', () => {
     const merchants = await t.run(async (ctx) =>
       ctx.db
         .query('merchants')
-        .filter((q) => q.eq(q.field('userId'), userId))
+        .withIndex('by_user_and_normalized_name', (q) => q.eq('userId', userId))
         .collect(),
     )
     expect(merchants).toHaveLength(1)
@@ -407,7 +407,7 @@ describe('expenses.remove', () => {
     const uploadRecord = await t.run(async (ctx) =>
       ctx.db
         .query('uploads')
-        .filter((q) => q.eq(q.field('storageId'), storageId))
+        .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
         .first(),
     )
     expect(uploadRecord).toBeNull()
@@ -472,7 +472,7 @@ describe('expenses.remove', () => {
     const merchants = await t.run(async (ctx) =>
       ctx.db
         .query('merchants')
-        .filter((q) => q.eq(q.field('userId'), userId))
+        .withIndex('by_user_and_normalized_name', (q) => q.eq('userId', userId))
         .collect(),
     )
     expect(merchants).toHaveLength(0)
@@ -530,7 +530,7 @@ describe('expenses.removeAttachment', () => {
     const uploadRecord = await t.run(async (ctx) =>
       ctx.db
         .query('uploads')
-        .filter((q) => q.eq(q.field('storageId'), storageId))
+        .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
         .first(),
     )
     expect(uploadRecord).toBeNull()
