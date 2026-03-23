@@ -190,13 +190,24 @@ confirmed to work correctly:
 - `vi.useFakeTimers()` + `vi.advanceTimersByTime()` — works for
   testing time-dependent logic like the 24 h TTL in
   `cleanupOrphanedUploads`
+- **Inline functions** — `t.query(async (ctx) => ...)` and
+  `t.mutation(async (ctx) => ...)` accept inline functions in addition
+  to function references. Use `t.query()` for read-only assertions
+  (provides `GenericQueryCtx` — no write methods) and `t.run()` /
+  `t.mutation()` only when writing. This enforces read-only semantics
+  at compile time and prevents accidental writes in verification code.
+- **Pagination options** — `.paginate()` supports `maximumRowsRead`
+  and `maximumBytesRead` to simulate page splitting in tests.
 
 ---
 
 ## Shared test helpers
 
-Common test setup functions live in `convex/testHelpers.ts` to avoid
-duplication and subtle drift across test files:
+Common test setup functions and the schema-aware `TestCtx` type live
+in `convex/testHelpers.ts` to avoid duplication and subtle drift
+across test files. `TestCtx` is typed as `TestConvex<typeof schema>`,
+which enables `withIndex()` in inline functions and type-safe DB
+operations:
 
 | Helper                   | Purpose                                                     |
 | ------------------------ | ----------------------------------------------------------- |
