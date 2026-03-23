@@ -139,7 +139,7 @@ jobs:
               state: 'in_progress',
             });
             core.setOutput('id', deployment.id);
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: steps.dedup.outputs.skip != 'true'
         with:
           ref: ${{ needs.gate.outputs.commit-sha }}
