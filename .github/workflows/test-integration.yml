@@ -3,37 +3,46 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
 
 env:
   VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
 
 # Two-level concurrency:
 #
-# 1. Workflow-level (below): scoped by ref. A new push to the SAME
-#    branch cancels any in-progress run for that branch, so only the
-#    latest commit is tested. Different branches don't interfere.
+# 1. Workflow-level (below): for PRs, scoped by ref — a new push to
+#    the same branch cancels any in-progress run. For pushes to main,
+#    each run gets a unique group (via run_id) so runs are never
+#    evicted. Native concurrency groups silently drop the oldest
+#    pending run when a third arrives — even with cancel-in-progress
+#    off — so a shared group would lose main runs under bursty merges.
 #
-# 2. Job-level (on each job): the shared `convex-test-deploy` group
-#    serializes all access to the Convex test backend across every
-#    branch. This prevents concurrent deploys/seeds/cleanups from
-#    corrupting each other's test data. `cancel-in-progress: false`
-#    ensures queued jobs wait rather than cancel — so a main run
-#    waiting behind a PR job will start as soon as the PR job finishes,
-#    and vice-versa.
+# 2. Job-level: the convex-test-lock composite action implements a
+#    spinlock via git refs (branch mutex/convex-test-deploy). The ref
+#    is never deleted — state is encoded in commit messages (lock:* =
+#    held, released:* = free) and updateRef(force: false) acts as an
+#    atomic compare-and-swap. Unlike native concurrency groups, this
+#    supports unlimited queue depth with no evictions. A stale-timeout
+#    auto-releases locks from crashed/timed-out jobs.
+#
+# PR jobs are opt-in: they only run when the "ci: integration" label
+# is present on a same-repo PR. Fork PRs are excluded because the
+# pull_request token from forks is read-only and cannot manage the
+# lock ref. This keeps the lock queue short and avoids burning
+# runner minutes on PRs that don't need pre-merge integration
+# validation. All changes get integration-tested on merge to main.
 concurrency:
-  group: integration-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'pull_request' && format('integration-{0}', github.ref) || format('integration-{0}-{1}', github.ref, github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   e2e:
+    if: "${{ github.event_name == 'push' || (contains(github.event.pull_request.labels.*.name, 'ci: integration') && github.event.pull_request.head.repo.full_name == github.repository) }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    concurrency:
-      group: convex-test-deploy
-      cancel-in-progress: false
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -43,6 +52,12 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: npx playwright install --with-deps chromium
+      - name: Acquire Convex test lock
+        id: lock
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: lock
+          stale-timeout: '1500'
       - name: Deploy Convex functions
         run: npx convex deploy
         env:
@@ -72,6 +87,11 @@ jobs:
         run: pnpm test:e2e:cleanup
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+      - name: Release Convex test lock
+        if: always() && steps.lock.outputs.acquired == 'true'
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: unlock
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -80,12 +100,9 @@ jobs:
 
   visual:
     needs: e2e
-    if: ${{ always() && !cancelled() }}
+    if: "${{ always() && !cancelled() && (github.event_name == 'push' || (contains(github.event.pull_request.labels.*.name, 'ci: integration') && github.event.pull_request.head.repo.full_name == github.repository)) }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    concurrency:
-      group: convex-test-deploy
-      cancel-in-progress: false
+    timeout-minutes: 60
     container:
       # Version coupled: tag must match @playwright/test and playwright versions
       # in package.json (source of truth). Format: v<version>-noble
@@ -98,6 +115,12 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - name: Acquire Convex test lock
+        id: lock
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: lock
+          stale-timeout: '1500'
       - name: Deploy Convex functions
         run: npx convex deploy
         env:
@@ -127,6 +150,11 @@ jobs:
         run: pnpm test:e2e:cleanup
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+      - name: Release Convex test lock
+        if: always() && steps.lock.outputs.acquired == 'true'
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: unlock
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

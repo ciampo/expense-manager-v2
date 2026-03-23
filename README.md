@@ -221,11 +221,11 @@ pnpm test:visual:docker:update
 
 The project uses three **fully isolated** Convex environments. Each has its own database, auth keys, and backend functions — data never leaks between them:
 
-| Environment    | Convex Project         | Deployment  | Backend deployed by                                     | Frontend connects via                        |
-| -------------- | ---------------------- | ----------- | ------------------------------------------------------- | -------------------------------------------- |
-| **Local dev**  | `expense-manager`      | development | `npx convex dev` (auto-syncs on file save)              | `.env.local` → `VITE_CONVEX_URL`             |
-| **Production** | `expense-manager`      | production  | `deploy.yml` (on merge to `main`)                       | GitHub secret `CONVEX_PROD_URL`              |
-| **Test (E2E)** | `expense-manager-test` | production  | `test-integration.yml` (on every PR and push to `main`) | `.env.e2e` / GitHub secret `CONVEX_TEST_URL` |
+| Environment    | Convex Project         | Deployment  | Backend deployed by                                                       | Frontend connects via                        |
+| -------------- | ---------------------- | ----------- | ------------------------------------------------------------------------- | -------------------------------------------- |
+| **Local dev**  | `expense-manager`      | development | `npx convex dev` (auto-syncs on file save)                                | `.env.local` → `VITE_CONVEX_URL`             |
+| **Production** | `expense-manager`      | production  | `deploy.yml` (on merge to `main`)                                         | GitHub secret `CONVEX_PROD_URL`              |
+| **Test (E2E)** | `expense-manager-test` | production  | `test-integration.yml` (push to `main`; PRs with `ci: integration` label) | `.env.e2e` / GitHub secret `CONVEX_TEST_URL` |
 
 > **Why "production" for test?** Convex deploy keys only work with production deployments. The "production" label is Convex terminology for the non-interactive, CLI-accessible deployment — it doesn't mean live user-facing. The test project is a **completely separate Convex project** with its own database.
 
@@ -233,13 +233,13 @@ The project uses three **fully isolated** Convex environments. Each has its own 
 
 No CI workflow ever writes to an environment it shouldn't:
 
-| Workflow                 | Trigger                     | Convex environment touched             | What it does                                                                                                  |
-| ------------------------ | --------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `test-integration.yml`   | PR, push to `main`          | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E + visual regression tests sequentially, cleans up after each            |
-| `update-screenshots.yml` | Manual (workflow_dispatch)  | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up                                     |
-| `preview.yml`            | PR open/sync/reopen/close   | **Dev** project (read-only via URL)    | Deploys frontend preview to CF Workers pointing to dev backend; cleans up on close                            |
-| `deploy.yml`             | CI green on `main` **only** | **Production** project (deploy)        | Gates on all CI passing, then deploys Convex backend + frontend to CF Workers and records a GitHub deployment |
-| Others                   | PR, push to `main`          | None                                   | Lint, typecheck, unit tests — no Convex interaction                                                           |
+| Workflow                 | Trigger                                          | Convex environment touched             | What it does                                                                                                  |
+| ------------------------ | ------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `test-integration.yml`   | push to `main`; PRs with `ci: integration` label | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E + visual regression tests sequentially, cleans up after each            |
+| `update-screenshots.yml` | Manual (workflow_dispatch)                       | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up                                     |
+| `preview.yml`            | PR open/sync/reopen/close                        | **Dev** project (read-only via URL)    | Deploys frontend preview to CF Workers pointing to dev backend; cleans up on close                            |
+| `deploy.yml`             | CI green on `main` **only**                      | **Production** project (deploy)        | Gates on all CI passing, then deploys Convex backend + frontend to CF Workers and records a GitHub deployment |
+| Others                   | PR, push to `main`                               | None                                   | Lint, typecheck, unit tests — no Convex interaction                                                           |
 
 **Key guarantee:** Only merges to `main` trigger production deployment, and only after all CI checks (lint, typecheck, unit, integration) pass for that commit. PRs are tested entirely against the isolated test project. Each successful deploy records a [GitHub deployment](https://docs.github.com/en/actions/deployment/about-deployments) for at-a-glance verification.
 
@@ -286,10 +286,26 @@ The project includes GitHub Actions workflows for:
 - **Lint** (`lint.yml`): ESLint and Prettier checks on every push/PR
 - **Type Check** (`typecheck.yml`): TypeScript type checking on every push/PR
 - **Unit & Integration Tests** (`test-unit.yml`): Vitest unit and Convex backend integration tests on every push/PR
-- **Integration Tests** (`test-integration.yml`): Playwright E2E + visual regression tests on every push/PR (sequential jobs sharing the Convex test backend)
+- **Integration Tests** (`test-integration.yml`): Playwright E2E + visual regression tests on push to `main` and on PRs labeled `ci: integration` (sequential jobs sharing the Convex test backend via a spinlock mutex)
 - **Deploy** (`deploy.yml`): CI-gated production deploy — see [Production deploy pipeline](#production-deploy-pipeline) below
 - **Preview** (`preview.yml`): Deploy preview on every PR (automatically cleaned up when the PR is closed)
 - **Update Screenshots** (`update-screenshots.yml`): Manually triggered workflow to update and commit visual regression baselines
+
+#### Integration test backend lock
+
+The E2E and visual regression tests share a single Convex test backend that cannot handle concurrent deploys or data mutations. The `convex-test-lock` composite action (`.github/actions/convex-test-lock`) serializes access using a branch-ref spinlock (`mutex/convex-test-deploy`):
+
+- **Acquire**: atomic `updateRef(force: false)` — only one job can fast-forward from a given commit
+- **Release**: fast-forward to a `released:*` commit — no branch deletion needed
+- **Stale recovery**: locks held longer than 25 minutes are automatically released by the next waiting job
+
+PR integration tests are **opt-in**: add the `ci: integration` label to trigger them. This keeps the lock queue short and avoids runner costs on PRs that don't need pre-merge integration validation. Fork PRs are excluded (read-only token). All changes are integration-tested on merge to `main`.
+
+| Scenario                           | Recovery                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| Lock stuck (job crashed/timed out) | Automatic — any new integration run releases locks older than 25 min          |
+| Lock stuck and no runs pending     | Trigger any integration run (push to `main` or add `ci: integration` to a PR) |
+| Lock ref missing                   | Automatic — the first run bootstraps it via `createRef`                       |
 
 #### Production deploy pipeline
 

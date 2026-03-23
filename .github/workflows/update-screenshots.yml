@@ -14,12 +14,9 @@ env:
 jobs:
   update-screenshots:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     # Safety: don't run on main
     if: github.ref_name != github.event.repository.default_branch
-    concurrency:
-      group: convex-test-deploy
-      cancel-in-progress: false
     permissions:
       contents: write
     container:
@@ -46,6 +43,13 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Acquire Convex test lock
+        id: lock
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: lock
+          stale-timeout: '1500'
 
       - name: Deploy Convex functions
         run: npx convex deploy
@@ -75,6 +79,12 @@ jobs:
         run: pnpm test:e2e:cleanup
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_TEST_DEPLOY_KEY }}
+
+      - name: Release Convex test lock
+        if: always() && steps.lock.outputs.acquired == 'true'
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: unlock
 
       - name: Check for changes
         id: check_changes
