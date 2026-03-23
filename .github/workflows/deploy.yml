@@ -33,6 +33,13 @@ jobs:
               'Integration Tests',
             ];
 
+            // The deploy workflow fires on workflow_run:completed for each CI
+            // workflow.  The Actions API sometimes lags behind by a few seconds
+            // before a just-completed run shows up in status:completed queries,
+            // so we poll with a short back-off instead of checking once.
+            const MAX_ATTEMPTS = 5;
+            const RETRY_DELAY_MS = 30_000;
+
             // Only deploy the commit currently at the tip of main.
             // Re-running stale CI checks must not roll back production.
             const { data: { commit: { sha: mainSha } } } = await github.rest.repos.getBranch({
@@ -46,31 +53,49 @@ jobs:
               return;
             }
 
-            // Scope to push-triggered runs on main so PR runs for the
-            // same SHA cannot satisfy the gate.
-            const { data: { workflow_runs: runs } } = await github.rest.actions.listWorkflowRunsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head_sha: sha,
-              branch: 'main',
-              event: 'push',
-              status: 'completed',
-              per_page: 100,
-            });
+            let allGreen = false;
+            let results;
 
-            const latestByName = new Map();
-            for (const run of runs) {
-              const prev = latestByName.get(run.name);
-              if (!prev || new Date(run.created_at) > new Date(prev.created_at)) {
-                latestByName.set(run.name, run);
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+              // Scope to push-triggered runs on main so PR runs for the
+              // same SHA cannot satisfy the gate.
+              const { data: { workflow_runs: runs } } = await github.rest.actions.listWorkflowRunsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head_sha: sha,
+                branch: 'main',
+                event: 'push',
+                status: 'completed',
+                per_page: 100,
+              });
+
+              const latestByName = new Map();
+              for (const run of runs) {
+                const prev = latestByName.get(run.name);
+                if (!prev || new Date(run.created_at) > new Date(prev.created_at)) {
+                  latestByName.set(run.name, run);
+                }
               }
-            }
 
-            const results = required.map(name => ({
-              name,
-              conclusion: latestByName.get(name)?.conclusion ?? 'missing',
-            }));
-            const allGreen = results.every(r => r.conclusion === 'success');
+              results = required.map(name => ({
+                name,
+                conclusion: latestByName.get(name)?.conclusion ?? 'missing',
+              }));
+              allGreen = results.every(r => r.conclusion === 'success');
+
+              const missing = results.filter(r => r.conclusion !== 'success');
+              core.info(
+                `Attempt ${attempt}/${MAX_ATTEMPTS} — ` +
+                `API returned ${runs.length} completed run(s) [${[...new Set(runs.map(r => r.name))].join(', ')}] — ` +
+                (allGreen
+                  ? 'all required workflows green'
+                  : `waiting on: ${missing.map(r => `${r.name} (${r.conclusion})`).join(', ')}`)
+              );
+
+              if (allGreen || attempt === MAX_ATTEMPTS) break;
+
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            }
 
             core.summary.addHeading('CI Gate', 3);
             core.summary.addTable([
