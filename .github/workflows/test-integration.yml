@@ -76,7 +76,7 @@ jobs:
 
   visual:
     needs: e2e
-    if: ${{ !cancelled() }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
