@@ -29,12 +29,6 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
 
-      - name: Acquire Convex test lock
-        id: lock
-        uses: ./.github/actions/convex-test-lock
-        with:
-          mode: lock
-
       - name: Configure Git
         run: |
           git config --global user.name "${{ env.AUTHOR_NAME }}"
@@ -49,6 +43,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Acquire Convex test lock
+        id: lock
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: lock
 
       - name: Deploy Convex functions
         run: npx convex deploy

@@ -45,11 +45,6 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - name: Acquire Convex test lock
-        id: lock
-        uses: ./.github/actions/convex-test-lock
-        with:
-          mode: lock
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -57,6 +52,11 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: npx playwright install --with-deps chromium
+      - name: Acquire Convex test lock
+        id: lock
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: lock
       - name: Deploy Convex functions
         run: npx convex deploy
         env:
@@ -108,17 +108,17 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
     steps:
       - uses: actions/checkout@v4
-      - name: Acquire Convex test lock
-        id: lock
-        uses: ./.github/actions/convex-test-lock
-        with:
-          mode: lock
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - name: Acquire Convex test lock
+        id: lock
+        uses: ./.github/actions/convex-test-lock
+        with:
+          mode: lock
       - name: Deploy Convex functions
         run: npx convex deploy
         env:
