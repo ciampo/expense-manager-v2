@@ -52,25 +52,15 @@ requires **real auth and backend state**:
 
 ### Visual regression tests (Playwright + Docker)
 
-<<<<<<< HEAD
-> **Version coupling:** The Playwright Docker image tag in CI workflows
-> (`test-integration.yml`, `update-screenshots.yml`) and `docker-compose.test.yml`
-> must match the Playwright package versions in `package.json`.
-||||||| parent of 0b62ad0 (docs: make Playwright version coupling comments more actionable)
-> **Version coupling:** The Playwright Docker image tag in CI workflows
-> (`test-visual.yml`, `update-screenshots.yml`) and `docker-compose.test.yml`
-> must match the Playwright package versions in `package.json`.
-=======
 > **Version coupling:** The `@playwright/test` and `playwright` versions in
 > `package.json` are the source of truth. When bumping them, also update the
 > Docker image tag (`mcr.microsoft.com/playwright:v<version>-noble`) in:
 >
-> - `.github/workflows/test-visual.yml`
+> - `.github/workflows/test-integration.yml`
 > - `.github/workflows/update-screenshots.yml`
 > - `docker-compose.test.yml`
 >
 > Mismatched versions cause browser-version mismatch errors at runtime.
->>>>>>> 0b62ad0 (docs: make Playwright version coupling comments more actionable)
 
 Test here for **appearance correctness** that would be tedious to assert
 programmatically:
