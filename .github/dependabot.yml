@@ -22,6 +22,7 @@ updates:
           - '@cloudflare/*'
           - 'vite'
           - '@vitejs/*'
+          - 'wrangler'
       tailwind:
         patterns:
           - 'tailwindcss'
