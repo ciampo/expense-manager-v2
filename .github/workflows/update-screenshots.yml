@@ -49,6 +49,7 @@ jobs:
         uses: ./.github/actions/convex-test-lock
         with:
           mode: lock
+          stale-timeout: '1500'
 
       - name: Deploy Convex functions
         run: npx convex deploy

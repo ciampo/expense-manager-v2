@@ -221,11 +221,11 @@ pnpm test:visual:docker:update
 
 The project uses three **fully isolated** Convex environments. Each has its own database, auth keys, and backend functions — data never leaks between them:
 
-| Environment    | Convex Project         | Deployment  | Backend deployed by                                     | Frontend connects via                        |
-| -------------- | ---------------------- | ----------- | ------------------------------------------------------- | -------------------------------------------- |
-| **Local dev**  | `expense-manager`      | development | `npx convex dev` (auto-syncs on file save)              | `.env.local` → `VITE_CONVEX_URL`             |
-| **Production** | `expense-manager`      | production  | `deploy.yml` (on merge to `main`)                       | GitHub secret `CONVEX_PROD_URL`              |
-| **Test (E2E)** | `expense-manager-test` | production  | `test-integration.yml` (on every PR and push to `main`) | `.env.e2e` / GitHub secret `CONVEX_TEST_URL` |
+| Environment    | Convex Project         | Deployment  | Backend deployed by                                                       | Frontend connects via                        |
+| -------------- | ---------------------- | ----------- | ------------------------------------------------------------------------- | -------------------------------------------- |
+| **Local dev**  | `expense-manager`      | development | `npx convex dev` (auto-syncs on file save)                                | `.env.local` → `VITE_CONVEX_URL`             |
+| **Production** | `expense-manager`      | production  | `deploy.yml` (on merge to `main`)                                         | GitHub secret `CONVEX_PROD_URL`              |
+| **Test (E2E)** | `expense-manager-test` | production  | `test-integration.yml` (push to `main`; PRs with `ci: integration` label) | `.env.e2e` / GitHub secret `CONVEX_TEST_URL` |
 
 > **Why "production" for test?** Convex deploy keys only work with production deployments. The "production" label is Convex terminology for the non-interactive, CLI-accessible deployment — it doesn't mean live user-facing. The test project is a **completely separate Convex project** with its own database.
 
@@ -297,13 +297,13 @@ The E2E and visual regression tests share a single Convex test backend that cann
 
 - **Acquire**: atomic `updateRef(force: false)` — only one job can fast-forward from a given commit
 - **Release**: fast-forward to a `released:*` commit — no branch deletion needed
-- **Stale recovery**: locks held longer than 50 minutes are automatically released by the next waiting job
+- **Stale recovery**: locks held longer than 25 minutes are automatically released by the next waiting job
 
 PR integration tests are **opt-in**: add the `ci: integration` label to trigger them. This keeps the lock queue short and avoids runner costs on PRs that don't need pre-merge integration validation. Fork PRs are excluded (read-only token). All changes are integration-tested on merge to `main`.
 
 | Scenario                           | Recovery                                                                      |
 | ---------------------------------- | ----------------------------------------------------------------------------- |
-| Lock stuck (job crashed/timed out) | Automatic — any new integration run releases locks older than 50 min          |
+| Lock stuck (job crashed/timed out) | Automatic — any new integration run releases locks older than 25 min          |
 | Lock stuck and no runs pending     | Trigger any integration run (push to `main` or add `ci: integration` to a PR) |
 | Lock ref missing                   | Automatic — the first run bootstraps it via `createRef`                       |
 
