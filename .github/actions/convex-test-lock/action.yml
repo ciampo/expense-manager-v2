@@ -6,6 +6,11 @@ description: >
   is never deleted. State is encoded in the latest commit message:
   "lock:*" = held, "released:*" = free.
 
+  Timeout constraint: stale-timeout must be less than the calling
+  job's timeout-minutes minus setup time and expected test duration,
+  so a waiting job can recover a crashed holder and still finish its
+  own work before being killed.
+
 inputs:
   mode:
     description: '"lock" to acquire, "unlock" to release'
@@ -19,9 +24,9 @@ inputs:
     required: false
     default: '15'
   stale-timeout:
-    description: 'Seconds after which a held lock is considered stale and force-released'
+    description: 'Seconds after which a held lock is considered stale and force-released. Must be shorter than the caller job timeout minus setup and test time.'
     required: false
-    default: '3000'
+    default: '1500'
 
 outputs:
   acquired:
@@ -51,7 +56,7 @@ runs:
           const lockRef = `heads/${process.env.LOCK_BRANCH}`;
 
           const DEFAULT_POLL_MS = 15_000;
-          const DEFAULT_STALE_MS = 3_000_000;
+          const DEFAULT_STALE_MS = 1_500_000;
           let poll = parseInt(process.env.POLL_INTERVAL, 10) * 1000;
           if (!Number.isFinite(poll) || poll <= 0) {
             core.warning(`Invalid POLL_INTERVAL "${process.env.POLL_INTERVAL}", using default ${DEFAULT_POLL_MS / 1000}s`);

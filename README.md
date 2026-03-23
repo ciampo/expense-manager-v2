@@ -233,13 +233,13 @@ The project uses three **fully isolated** Convex environments. Each has its own 
 
 No CI workflow ever writes to an environment it shouldn't:
 
-| Workflow                 | Trigger                     | Convex environment touched             | What it does                                                                                                  |
-| ------------------------ | --------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `test-integration.yml`   | PR, push to `main`          | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E + visual regression tests sequentially, cleans up after each            |
-| `update-screenshots.yml` | Manual (workflow_dispatch)  | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up                                     |
-| `preview.yml`            | PR open/sync/reopen/close   | **Dev** project (read-only via URL)    | Deploys frontend preview to CF Workers pointing to dev backend; cleans up on close                            |
-| `deploy.yml`             | CI green on `main` **only** | **Production** project (deploy)        | Gates on all CI passing, then deploys Convex backend + frontend to CF Workers and records a GitHub deployment |
-| Others                   | PR, push to `main`          | None                                   | Lint, typecheck, unit tests — no Convex interaction                                                           |
+| Workflow                 | Trigger                                          | Convex environment touched             | What it does                                                                                                  |
+| ------------------------ | ------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `test-integration.yml`   | push to `main`; PRs with `ci: integration` label | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E + visual regression tests sequentially, cleans up after each            |
+| `update-screenshots.yml` | Manual (workflow_dispatch)                       | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up                                     |
+| `preview.yml`            | PR open/sync/reopen/close                        | **Dev** project (read-only via URL)    | Deploys frontend preview to CF Workers pointing to dev backend; cleans up on close                            |
+| `deploy.yml`             | CI green on `main` **only**                      | **Production** project (deploy)        | Gates on all CI passing, then deploys Convex backend + frontend to CF Workers and records a GitHub deployment |
+| Others                   | PR, push to `main`                               | None                                   | Lint, typecheck, unit tests — no Convex interaction                                                           |
 
 **Key guarantee:** Only merges to `main` trigger production deployment, and only after all CI checks (lint, typecheck, unit, integration) pass for that commit. PRs are tested entirely against the isolated test project. Each successful deploy records a [GitHub deployment](https://docs.github.com/en/actions/deployment/about-deployments) for at-a-glance verification.
 
