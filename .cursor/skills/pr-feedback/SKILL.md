@@ -120,7 +120,7 @@ gh pr edit <number> --body "$(cat <<'EOF'
 - [ ] `pnpm build` — clean build (includes `tsc --noEmit`)
 - [ ] `pnpm test:unit` — all tests pass
 - [ ] `pnpm test:visual:docker` — no visual regressions
-- [ ] CI: e2e tests pass (runs against deployed preview)
+- [ ] `pnpm test:e2e` — E2E tests pass (can run locally; also runs in CI)
 - [ ] <other relevant checks>
 
 Fixes #<issue-number>

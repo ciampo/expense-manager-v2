@@ -118,7 +118,7 @@ export const backfillCategoryNormalizedName = internalMutation({
 
 /**
  * Run all pending migrations. Called automatically after every
- * `npx convex deploy` in CI (deploy.yml, test-e2e.yml) and available
+ * `npx convex deploy` in CI (deploy.yml, test-integration.yml) and available
  * locally via `pnpm migrate`.
  */
 export const postDeploy = internalMutation({

@@ -136,7 +136,32 @@ function ExpenseTable() {
   const queryArgs = { cursor: currentCursor, limit: pageSize }
   const { data: expensesPage } = useSuspenseQuery(convexQuery(api.expenses.list, queryArgs))
   const expenses = expensesPage?.expenses ?? []
-  const canGoNext = !expensesPage?.isDone
+
+  // Convex's .paginate() returns isDone: false for a full page even when
+  // no more items exist.  Prefetch the next cursor (1 item) so we can
+  // disable "Next" when the next page is actually empty.
+  const nextCursor = expensesPage?.continueCursor
+  const shouldPeekNext = !expensesPage?.isDone && !!nextCursor
+  const {
+    data: nextPagePeek,
+    isLoading: isNextPagePeekLoading,
+    isError: isNextPagePeekError,
+  } = useQuery({
+    ...convexQuery(api.expenses.list, { cursor: nextCursor, limit: 1 }),
+    enabled: shouldPeekNext,
+  })
+  const canGoNext = (() => {
+    if (!shouldPeekNext) {
+      return !expensesPage?.isDone
+    }
+    if (isNextPagePeekLoading) {
+      return false
+    }
+    if (isNextPagePeekError) {
+      return !expensesPage?.isDone
+    }
+    return !!nextPagePeek && nextPagePeek.expenses.length > 0
+  })()
   const canGoPrevious = cursors.length > 1
 
   const expensesQueryKey = convexQuery(api.expenses.list, queryArgs).queryKey
@@ -199,8 +224,8 @@ function ExpenseTable() {
     onSuccess: () => {
       toast.success('Expense deleted')
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
         queryKey: convexQuery(api.expenses.list, {}).queryKey,
         exact: false,
       })
@@ -342,36 +367,34 @@ function ExpenseTable() {
             </Select>
           </Field>
 
-          {(canGoNext || canGoPrevious) && (
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm" aria-live="polite">
-                Page {pageNumber}
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => startTransition(() => setCursors((prev) => prev.slice(0, -1)))}
-                  disabled={!canGoPrevious}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const next = expensesPage?.continueCursor
-                    if (next) {
-                      startTransition(() => setCursors((prev) => [...prev, next]))
-                    }
-                  }}
-                  disabled={!canGoNext}
-                >
-                  Next
-                </Button>
-              </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm" aria-live="polite">
+              Page {pageNumber}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => startTransition(() => setCursors((prev) => prev.slice(0, -1)))}
+                disabled={!canGoPrevious}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const next = expensesPage?.continueCursor
+                  if (next) {
+                    startTransition(() => setCursors((prev) => [...prev, next]))
+                  }
+                }}
+                disabled={!canGoNext}
+              >
+                Next
+              </Button>
             </div>
-          )}
+          </div>
         </nav>
       )}
     </div>

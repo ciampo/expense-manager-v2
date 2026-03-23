@@ -37,11 +37,12 @@ test.describe('Visual Regression - Dashboard', () => {
 
     await expect(page.getByText(`Merchant ${EXPENSE_COUNT}`)).toBeVisible()
 
-    // Default page size is 25 — the server returns all 11 items in a single
-    // page (isDone=true), so Previous/Next buttons don't appear yet. The
-    // page-size selector is visible because 11 >= PAGINATION_THRESHOLD (10).
+    // Default page size is 25 — all 11 items fit in one page (isDone=true).
+    // The page-size selector and navigation buttons are visible because
+    // 11 >= PAGINATION_THRESHOLD (10), but both buttons are disabled.
     await expect(page.getByRole('combobox', { name: /rows per page/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /previous/i })).toBeHidden()
+    await expect(page.getByRole('button', { name: /previous/i })).toBeDisabled()
+    await expect(page.getByRole('button', { name: /next/i })).toBeDisabled()
 
     await expect(page).toHaveScreenshot('dashboard-pagination-selector-only.png', {
       fullPage: true,
