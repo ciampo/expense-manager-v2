@@ -152,9 +152,28 @@ describe('expenses.list', () => {
     expect(page2.isDone).toBe(true)
   })
 
+  it('does not return expenses from other users', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+    const cat1 = await setupCategory(t, user1Id)
+    const cat2 = await setupCategory(t, user2Id)
+
+    await insertExpense(t, user1Id, cat1, { merchant: 'User1 Merchant' })
+    await insertExpense(t, user2Id, cat2, { merchant: 'User2 Merchant' })
+
+    const result = await asUser1.query(api.expenses.list, {})
+    expect(result.expenses).toHaveLength(1)
+    expect(result.expenses[0].merchant).toBe('User1 Merchant')
+  })
+})
+
+// ── pagination (low-level) ──────────────────────────────────────────────
+
+describe('expenses pagination (low-level)', () => {
   it('handles page splitting via maximumRowsRead', async () => {
     const t = convexTest(schema, modules)
-    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const { userId } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
     for (let i = 1; i <= 5; i++) {
@@ -162,10 +181,6 @@ describe('expenses.list', () => {
         date: `2026-03-${String(i).padStart(2, '0')}`,
       })
     }
-
-    const allAtOnce = await asUser.query(api.expenses.list, { limit: 10 })
-    expect(allAtOnce.expenses).toHaveLength(5)
-    expect(allAtOnce.isDone).toBe(true)
 
     const collected: Doc<'expenses'>[] = []
     let cursor: string | null = null
@@ -194,21 +209,6 @@ describe('expenses.list', () => {
       '2026-03-02',
       '2026-03-01',
     ])
-  })
-
-  it('does not return expenses from other users', async () => {
-    const t = convexTest(schema, modules)
-    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
-    const { userId: user2Id } = await setupAuthenticatedUser(t)
-    const cat1 = await setupCategory(t, user1Id)
-    const cat2 = await setupCategory(t, user2Id)
-
-    await insertExpense(t, user1Id, cat1, { merchant: 'User1 Merchant' })
-    await insertExpense(t, user2Id, cat2, { merchant: 'User2 Merchant' })
-
-    const result = await asUser1.query(api.expenses.list, {})
-    expect(result.expenses).toHaveLength(1)
-    expect(result.expenses[0].merchant).toBe('User1 Merchant')
   })
 })
 
