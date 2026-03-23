@@ -71,11 +71,11 @@ describe('merchants.rename', () => {
       newName: 'New Name',
     })
 
-    const merchant = await t.run(async (ctx) => ctx.db.get('merchants', merchantId))
+    const merchant = await t.query(async (ctx) => ctx.db.get('merchants', merchantId))
     expect(merchant?.name).toBe('New Name')
     expect(merchant?.normalizedName).toBe('new name')
 
-    const expense = await t.run(async (ctx) => ctx.db.get('expenses', expenseId))
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense?.merchant).toBe('New Name')
   })
 
@@ -124,7 +124,7 @@ describe('merchants.remove', () => {
 
     await asUser.mutation(api.merchants.remove, { id: merchantId })
 
-    const merchant = await t.run(async (ctx) => ctx.db.get('merchants', merchantId))
+    const merchant = await t.query(async (ctx) => ctx.db.get('merchants', merchantId))
     expect(merchant).toBeNull()
   })
 
@@ -163,7 +163,7 @@ describe('cleanupOrphanedMerchants', () => {
 
     await t.mutation(internal.merchants.cleanupOrphanedMerchants, {})
 
-    const merchant = await t.run(async (ctx) => ctx.db.get('merchants', orphanedId))
+    const merchant = await t.query(async (ctx) => ctx.db.get('merchants', orphanedId))
     expect(merchant).toBeNull()
   })
 
@@ -177,7 +177,7 @@ describe('cleanupOrphanedMerchants', () => {
 
     await t.mutation(internal.merchants.cleanupOrphanedMerchants, {})
 
-    const merchant = await t.run(async (ctx) => ctx.db.get('merchants', merchantId))
+    const merchant = await t.query(async (ctx) => ctx.db.get('merchants', merchantId))
     expect(merchant).not.toBeNull()
   })
 })
@@ -193,7 +193,7 @@ describe('expense deletion cleans up orphaned merchants', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const merchants = await t.run(async (ctx) => ctx.db.query('merchants').collect())
+    const merchants = await t.query(async (ctx) => ctx.db.query('merchants').collect())
     expect(merchants).toHaveLength(0)
   })
 
@@ -208,7 +208,7 @@ describe('expense deletion cleans up orphaned merchants', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expense1 })
 
-    const merchants = await t.run(async (ctx) => ctx.db.query('merchants').collect())
+    const merchants = await t.query(async (ctx) => ctx.db.query('merchants').collect())
     expect(merchants).toHaveLength(1)
   })
 })

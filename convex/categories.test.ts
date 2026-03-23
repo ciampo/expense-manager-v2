@@ -67,7 +67,7 @@ describe('upsertCategory — case-insensitive dedup', () => {
       return await upsertCategory(ctx, userId, 'Transport')
     })
 
-    const created = await t.run(async (ctx) => {
+    const created = await t.query(async (ctx) => {
       return await ctx.db.get('categories', newId)
     })
     expect(created).not.toBeNull()
@@ -83,7 +83,7 @@ describe('upsertCategory — case-insensitive dedup', () => {
       return await upsertCategory(ctx, userId, 'AutoCategory')
     })
 
-    const created = await t.run(async (ctx) => {
+    const created = await t.query(async (ctx) => {
       return await ctx.db.get('categories', newId)
     })
     expect(created!.source).toBe('auto')
@@ -121,7 +121,7 @@ describe('categories.create — case-insensitive dedup', () => {
       name: 'My Category',
     })
 
-    const category = await t.run(async (ctx) => {
+    const category = await t.query(async (ctx) => {
       return await ctx.db.get('categories', categoryId)
     })
     expect(category!.normalizedName).toBe('my category')
@@ -135,7 +135,7 @@ describe('categories.create — case-insensitive dedup', () => {
       name: 'Settings Category',
     })
 
-    const category = await t.run(async (ctx) => {
+    const category = await t.query(async (ctx) => {
       return await ctx.db.get('categories', categoryId)
     })
     expect(category!.source).toBe('manual')
@@ -155,7 +155,7 @@ describe('legacy rows without normalizedName', () => {
 
     expect(returnedId).toBe(legacyId)
 
-    const patched = await t.run(async (ctx) => {
+    const patched = await t.query(async (ctx) => {
       return await ctx.db.get('categories', legacyId)
     })
     expect(patched!.normalizedName).toBe('food')
@@ -173,7 +173,7 @@ describe('legacy rows without normalizedName', () => {
 
     expect(returnedId).toBe(legacyId)
 
-    const patched = await t.run(async (ctx) => {
+    const patched = await t.query(async (ctx) => {
       return await ctx.db.get('categories', legacyId)
     })
     expect(patched!.normalizedName).toBe('coworking')
@@ -219,7 +219,7 @@ describe('categories.rename', () => {
 
     await asUser.mutation(api.categories.rename, { id: catId, newName: 'Groceries' })
 
-    const updated = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    const updated = await t.query(async (ctx) => ctx.db.get('categories', catId))
     expect(updated?.name).toBe('Groceries')
     expect(updated?.normalizedName).toBe('groceries')
   })
@@ -252,7 +252,7 @@ describe('categories.rename', () => {
 
     await asUser.mutation(api.categories.rename, { id: catId, newName: 'My Category' })
 
-    const updated = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    const updated = await t.query(async (ctx) => ctx.db.get('categories', catId))
     expect(updated?.source).toBe('manual')
   })
 
@@ -265,7 +265,7 @@ describe('categories.rename', () => {
 
     await t.mutation(internal.categories.cleanupOrphanedCategories, {})
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', catId))
     expect(cat).not.toBeNull()
     expect(cat?.name).toBe('Kept Category')
   })
@@ -279,7 +279,7 @@ describe('categories.remove', () => {
 
     await asUser.mutation(api.categories.remove, { id: catId })
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', catId))
     expect(cat).toBeNull()
   })
 
@@ -347,7 +347,7 @@ describe('cleanupOrphanedCategories', () => {
 
     await t.mutation(internal.categories.cleanupOrphanedCategories, {})
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', orphanedId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', orphanedId))
     expect(cat).toBeNull()
   })
 
@@ -358,7 +358,7 @@ describe('cleanupOrphanedCategories', () => {
 
     await t.mutation(internal.categories.cleanupOrphanedCategories, {})
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', manualId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', manualId))
     expect(cat).not.toBeNull()
   })
 
@@ -369,7 +369,7 @@ describe('cleanupOrphanedCategories', () => {
 
     await t.mutation(internal.categories.cleanupOrphanedCategories, {})
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', legacyId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', legacyId))
     expect(cat).not.toBeNull()
   })
 
@@ -379,7 +379,7 @@ describe('cleanupOrphanedCategories', () => {
 
     await t.mutation(internal.categories.cleanupOrphanedCategories, {})
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', predefinedId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', predefinedId))
     expect(cat).not.toBeNull()
   })
 
@@ -391,7 +391,7 @@ describe('cleanupOrphanedCategories', () => {
 
     await t.mutation(internal.categories.cleanupOrphanedCategories, {})
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', catId))
     expect(cat).not.toBeNull()
   })
 })
@@ -405,7 +405,7 @@ describe('expense deletion cleans up orphaned categories', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', catId))
     expect(cat).toBeNull()
   })
 
@@ -417,7 +417,7 @@ describe('expense deletion cleans up orphaned categories', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', catId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', catId))
     expect(cat).not.toBeNull()
   })
 
@@ -429,7 +429,7 @@ describe('expense deletion cleans up orphaned categories', () => {
 
     await asUser.mutation(api.expenses.remove, { id: expenseId })
 
-    const cat = await t.run(async (ctx) => ctx.db.get('categories', predefinedId))
+    const cat = await t.query(async (ctx) => ctx.db.get('categories', predefinedId))
     expect(cat).not.toBeNull()
   })
 })
