@@ -136,7 +136,19 @@ function ExpenseTable() {
   const queryArgs = { cursor: currentCursor, limit: pageSize }
   const { data: expensesPage } = useSuspenseQuery(convexQuery(api.expenses.list, queryArgs))
   const expenses = expensesPage?.expenses ?? []
-  const canGoNext = !expensesPage?.isDone
+
+  // Convex's .paginate() returns isDone: false for a full page even when
+  // no more items exist.  Prefetch the next cursor (1 item) so we can
+  // disable "Next" when the next page is actually empty.
+  const nextCursor = expensesPage?.continueCursor
+  const shouldPeekNext = !expensesPage?.isDone && !!nextCursor
+  const { data: nextPagePeek } = useQuery({
+    ...convexQuery(api.expenses.list, { cursor: nextCursor, limit: 1 }),
+    enabled: shouldPeekNext,
+  })
+  const canGoNext = shouldPeekNext
+    ? !nextPagePeek || nextPagePeek.expenses.length > 0
+    : !expensesPage?.isDone
   const canGoPrevious = cursors.length > 1
 
   const expensesQueryKey = convexQuery(api.expenses.list, queryArgs).queryKey
