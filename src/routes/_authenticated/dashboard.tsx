@@ -129,11 +129,6 @@ function ExpenseTable() {
   // pushes the server's continueCursor; navigating backward pops.
   const [cursors, setCursors] = useState<(string | null)[]>([null])
   const [isPending, startTransition] = useTransition()
-  // Set when a deletion empties the current page and we auto-navigate
-  // back. Prevents the Convex reactive subscription from temporarily
-  // re-enabling "Next" with a stale isDone before the mutation commits.
-  // Cleared after the post-mutation refetch resolves with real server state.
-  const [forceLastPage, setForceLastPage] = useState(false)
 
   const currentCursor = cursors[cursors.length - 1]
   const pageNumber = cursors.length
@@ -141,7 +136,7 @@ function ExpenseTable() {
   const queryArgs = { cursor: currentCursor, limit: pageSize }
   const { data: expensesPage } = useSuspenseQuery(convexQuery(api.expenses.list, queryArgs))
   const expenses = expensesPage?.expenses ?? []
-  const canGoNext = !forceLastPage && !expensesPage?.isDone
+  const canGoNext = !expensesPage?.isDone
   const canGoPrevious = cursors.length > 1
 
   const expensesQueryKey = convexQuery(api.expenses.list, queryArgs).queryKey
@@ -184,7 +179,6 @@ function ExpenseTable() {
           old ? { ...old, isDone: true } : old,
         )
 
-        setForceLastPage(true)
         setCursors((prev) => prev.slice(0, -1))
       }
 
@@ -200,7 +194,6 @@ function ExpenseTable() {
       if (context?.previousCursors) {
         setCursors(context.previousCursors)
       }
-      setForceLastPage(false)
       toast.error('Error deleting expense')
     },
     onSuccess: () => {
@@ -211,7 +204,6 @@ function ExpenseTable() {
         queryKey: convexQuery(api.expenses.list, {}).queryKey,
         exact: false,
       })
-      setForceLastPage(false)
     },
   })
 
