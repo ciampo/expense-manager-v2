@@ -6,11 +6,6 @@ afterEach(() => {
 })
 
 describe('parseAllowedEmails', () => {
-  it('returns empty array when ALLOWED_EMAILS is unset', () => {
-    vi.stubEnv('ALLOWED_EMAILS', '')
-    expect(parseAllowedEmails()).toEqual([])
-  })
-
   it('returns empty array when ALLOWED_EMAILS is empty string', () => {
     vi.stubEnv('ALLOWED_EMAILS', '')
     expect(parseAllowedEmails()).toEqual([])
