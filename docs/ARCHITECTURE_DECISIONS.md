@@ -167,9 +167,10 @@ access control for this use case.
 **Implementation:** A custom `createOrUpdateUser` callback in
 `convex/auth.ts` checks both controls before creating a new user.
 A `beforeSessionCreation` callback provides defense-in-depth — if an email
-is removed from the allowlist, existing sessions for that user are blocked
-on next sign-in. Error messages on the client remain generic to avoid
-revealing which emails are allowed.
+is removed from the allowlist, creation of any new sessions for that user
+is blocked on subsequent sign-in attempts, while already-issued sessions
+continue until they expire. Error messages on the client remain generic to
+avoid revealing which emails are allowed.
 
 **Trade-off:** No self-service invite flow — new users must be manually
 added to the env var. Acceptable for a personal app; at scale, replace
