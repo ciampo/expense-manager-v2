@@ -7,14 +7,22 @@ on:
 env:
   VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
 
-# All jobs that touch the shared Convex test backend (deploy, seed,
-# cleanup) MUST live inside this single workflow so they share one
-# concurrency-group entry per trigger. Previously E2E and Visual were
-# separate workflows in the same group, causing one to be cancelled on
-# every push (the pending-queue depth is 1).
+# Two-level concurrency:
+#
+# 1. Workflow-level (below): scoped by ref. A new push to the SAME
+#    branch cancels any in-progress run for that branch, so only the
+#    latest commit is tested. Different branches don't interfere.
+#
+# 2. Job-level (on each job): the shared `convex-test-deploy` group
+#    serializes all access to the Convex test backend across every
+#    branch. This prevents concurrent deploys/seeds/cleanups from
+#    corrupting each other's test data. `cancel-in-progress: false`
+#    ensures queued jobs wait rather than cancel — so a main run
+#    waiting behind a PR job will start as soon as the PR job finishes,
+#    and vice-versa.
 concurrency:
-  group: convex-test-deploy
-  cancel-in-progress: false
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -23,6 +31,9 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    concurrency:
+      group: convex-test-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -68,6 +79,9 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: convex-test-deploy
+      cancel-in-progress: false
     container:
       # Keep in sync with Playwright packages in package.json
       image: mcr.microsoft.com/playwright:v1.58.2-noble
