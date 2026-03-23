@@ -192,7 +192,7 @@ The app runs without `AUTH_RESEND_KEY`, but the forgot-password flow will not wo
 | `ALLOWED_EMAILS`       | No       | Comma-separated list of allowed email addresses or domain wildcards (e.g. `alice@example.com,*@mycompany.org`). When empty or unset, all emails are accepted (no filtering). |
 | `REGISTRATION_ENABLED` | No       | Set to `false` to instantly block all new sign-ups. Any other value (or unset) means registration is open (subject to the allowlist).                                        |
 
-`ALLOWED_EMAILS` entries are case-insensitive. Entries starting with `*@` match by domain suffix (e.g. `*@mycompany.org` allows `alice@mycompany.org`); all others are exact email matches.
+`ALLOWED_EMAILS` entries are case-insensitive. Entries starting with `*@` match the exact domain (e.g. `*@mycompany.org` allows `alice@mycompany.org` but not `alice@sub.mycompany.org`); all others are exact email matches.
 
 `REGISTRATION_ENABLED=false` acts as a hard kill switch — it blocks all new registrations regardless of the allowlist. Existing users can still sign in. To re-enable, set the variable to any other value or remove it.
 

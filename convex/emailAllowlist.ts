@@ -8,7 +8,7 @@ export function parseAllowedEmails(): string[] {
 /**
  * Check whether an email is permitted by the allowlist.
  * An empty allowlist means "allow all" (no filtering).
- * Entries starting with `*@` match by domain suffix; others are exact matches.
+ * Entries starting with `*@` match the exact domain (not subdomains); others are exact email matches.
  * All comparisons are case-insensitive.
  */
 export function isEmailAllowed(email: string | undefined, allowedEmails: string[]): boolean {
