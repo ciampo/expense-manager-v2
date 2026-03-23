@@ -286,10 +286,26 @@ The project includes GitHub Actions workflows for:
 - **Lint** (`lint.yml`): ESLint and Prettier checks on every push/PR
 - **Type Check** (`typecheck.yml`): TypeScript type checking on every push/PR
 - **Unit & Integration Tests** (`test-unit.yml`): Vitest unit and Convex backend integration tests on every push/PR
-- **Integration Tests** (`test-integration.yml`): Playwright E2E + visual regression tests on every push/PR (sequential jobs sharing the Convex test backend)
+- **Integration Tests** (`test-integration.yml`): Playwright E2E + visual regression tests on push to `main` and on PRs labeled `ci: integration` (sequential jobs sharing the Convex test backend via a spinlock mutex)
 - **Deploy** (`deploy.yml`): CI-gated production deploy — see [Production deploy pipeline](#production-deploy-pipeline) below
 - **Preview** (`preview.yml`): Deploy preview on every PR (automatically cleaned up when the PR is closed)
 - **Update Screenshots** (`update-screenshots.yml`): Manually triggered workflow to update and commit visual regression baselines
+
+#### Integration test backend lock
+
+The E2E and visual regression tests share a single Convex test backend that cannot handle concurrent deploys or data mutations. The `convex-test-lock` composite action (`.github/actions/convex-test-lock`) serializes access using a branch-ref spinlock (`mutex/convex-test-deploy`):
+
+- **Acquire**: atomic `updateRef(force: false)` — only one job can fast-forward from a given commit
+- **Release**: fast-forward to a `released:*` commit — no branch deletion needed
+- **Stale recovery**: locks held longer than 50 minutes are automatically released by the next waiting job
+
+PR integration tests are **opt-in**: add the `ci: integration` label to trigger them. This keeps the lock queue short and avoids runner costs on PRs that don't need pre-merge integration validation. Fork PRs are excluded (read-only token). All changes are integration-tested on merge to `main`.
+
+| Scenario                           | Recovery                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| Lock stuck (job crashed/timed out) | Automatic — any new integration run releases locks older than 50 min          |
+| Lock stuck and no runs pending     | Trigger any integration run (push to `main` or add `ci: integration` to a PR) |
+| Lock ref missing                   | Automatic — the first run bootstraps it via `createRef`                       |
 
 #### Production deploy pipeline
 

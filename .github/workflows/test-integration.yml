@@ -10,17 +10,19 @@ env:
 
 # Two-level concurrency:
 #
-# 1. Workflow-level (below): scoped by ref. A new push to the SAME
-#    branch cancels any in-progress run for that branch, so only the
-#    latest commit is tested. Different branches don't interfere.
-#    cancel-in-progress is OFF for main — every merge must complete its
-#    tests so the deploy gate can fire.
+# 1. Workflow-level (below): for PRs, scoped by ref — a new push to
+#    the same branch cancels any in-progress run. For pushes to main,
+#    each run gets a unique group (via run_id) so runs are never
+#    evicted. Native concurrency groups silently drop the oldest
+#    pending run when a third arrives — even with cancel-in-progress
+#    off — so a shared group would lose main runs under bursty merges.
 #
 # 2. Job-level: the convex-test-lock composite action implements a
-#    spinlock via git refs (branch mutex/convex-test-deploy). Unlike
-#    native concurrency groups (which cap at 1 pending and silently
-#    evict older waiters), the spinlock lets any number of jobs queue
-#    and guarantees none are cancelled while waiting. A stale-timeout
+#    spinlock via git refs (branch mutex/convex-test-deploy). The ref
+#    is never deleted — state is encoded in commit messages (lock:* =
+#    held, released:* = free) and updateRef(force: false) acts as an
+#    atomic compare-and-swap. Unlike native concurrency groups, this
+#    supports unlimited queue depth with no evictions. A stale-timeout
 #    auto-releases locks from crashed/timed-out jobs.
 #
 # PR jobs are opt-in: they only run when the "ci: integration" label
@@ -30,7 +32,7 @@ env:
 # runner minutes on PRs that don't need pre-merge integration
 # validation. All changes get integration-tested on merge to main.
 concurrency:
-  group: integration-${{ github.ref }}
+  group: ${{ github.event_name == 'pull_request' && format('integration-{0}', github.ref) || format('integration-{0}-{1}', github.ref, github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
