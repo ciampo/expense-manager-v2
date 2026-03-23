@@ -354,36 +354,34 @@ function ExpenseTable() {
             </Select>
           </Field>
 
-          {(canGoNext || canGoPrevious) && (
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm" aria-live="polite">
-                Page {pageNumber}
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => startTransition(() => setCursors((prev) => prev.slice(0, -1)))}
-                  disabled={!canGoPrevious}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const next = expensesPage?.continueCursor
-                    if (next) {
-                      startTransition(() => setCursors((prev) => [...prev, next]))
-                    }
-                  }}
-                  disabled={!canGoNext}
-                >
-                  Next
-                </Button>
-              </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm" aria-live="polite">
+              Page {pageNumber}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => startTransition(() => setCursors((prev) => prev.slice(0, -1)))}
+                disabled={!canGoPrevious}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const next = expensesPage?.continueCursor
+                  if (next) {
+                    startTransition(() => setCursors((prev) => [...prev, next]))
+                  }
+                }}
+                disabled={!canGoNext}
+              >
+                Next
+              </Button>
             </div>
-          )}
+          </div>
         </nav>
       )}
     </div>
