@@ -1,34 +1,28 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { isEmailAllowed, parseAllowedEmails } from './emailAllowlist'
 
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
+
 describe('parseAllowedEmails', () => {
-  const originalEnv = process.env
-
-  beforeEach(() => {
-    process.env = { ...originalEnv }
-  })
-
-  afterEach(() => {
-    process.env = originalEnv
-  })
-
   it('returns empty array when ALLOWED_EMAILS is unset', () => {
-    delete process.env.ALLOWED_EMAILS
+    vi.stubEnv('ALLOWED_EMAILS', '')
     expect(parseAllowedEmails()).toEqual([])
   })
 
   it('returns empty array when ALLOWED_EMAILS is empty string', () => {
-    process.env.ALLOWED_EMAILS = ''
+    vi.stubEnv('ALLOWED_EMAILS', '')
     expect(parseAllowedEmails()).toEqual([])
   })
 
   it('parses a single email', () => {
-    process.env.ALLOWED_EMAILS = 'alice@example.com'
+    vi.stubEnv('ALLOWED_EMAILS', 'alice@example.com')
     expect(parseAllowedEmails()).toEqual(['alice@example.com'])
   })
 
   it('parses multiple comma-separated emails', () => {
-    process.env.ALLOWED_EMAILS = 'alice@example.com,bob@example.com,*@mycompany.org'
+    vi.stubEnv('ALLOWED_EMAILS', 'alice@example.com,bob@example.com,*@mycompany.org')
     expect(parseAllowedEmails()).toEqual([
       'alice@example.com',
       'bob@example.com',
@@ -37,17 +31,17 @@ describe('parseAllowedEmails', () => {
   })
 
   it('trims whitespace around entries', () => {
-    process.env.ALLOWED_EMAILS = '  alice@example.com , bob@example.com  '
+    vi.stubEnv('ALLOWED_EMAILS', '  alice@example.com , bob@example.com  ')
     expect(parseAllowedEmails()).toEqual(['alice@example.com', 'bob@example.com'])
   })
 
   it('lowercases all entries', () => {
-    process.env.ALLOWED_EMAILS = 'Alice@Example.COM,*@MyCompany.ORG'
+    vi.stubEnv('ALLOWED_EMAILS', 'Alice@Example.COM,*@MyCompany.ORG')
     expect(parseAllowedEmails()).toEqual(['alice@example.com', '*@mycompany.org'])
   })
 
   it('filters out empty entries from trailing commas', () => {
-    process.env.ALLOWED_EMAILS = 'alice@example.com,,bob@example.com,'
+    vi.stubEnv('ALLOWED_EMAILS', 'alice@example.com,,bob@example.com,')
     expect(parseAllowedEmails()).toEqual(['alice@example.com', 'bob@example.com'])
   })
 })
@@ -93,6 +87,12 @@ describe('isEmailAllowed', () => {
   it('does not match partial domain names', () => {
     const allowed = ['*@company.org']
     expect(isEmailAllowed('alice@notcompany.org', allowed)).toBe(false)
+  })
+
+  it('does not match subdomains', () => {
+    const allowed = ['*@mycompany.org']
+    expect(isEmailAllowed('alice@sub.mycompany.org', allowed)).toBe(false)
+    expect(isEmailAllowed('alice@dept.sub.mycompany.org', allowed)).toBe(false)
   })
 
   it('handles mixed exact and wildcard entries', () => {
