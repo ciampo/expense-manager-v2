@@ -66,6 +66,47 @@ programmatically:
 
 ---
 
+## Test data cleanup strategy
+
+E2E and visual regression tests share a single Convex test backend. Each
+test creates its own user and data, and cleanup removes it afterward.
+The strategy has three layers to prevent stale data from leaking between
+runs:
+
+| Layer               | Where it runs | When it fires                         | What it guards against                     |
+| ------------------- | ------------- | ------------------------------------- | ------------------------------------------ |
+| **globalTeardown**  | Local and CI  | After all tests finish (pass or fail) | Normal test completion leaving data behind |
+| **Pre-run cleanup** | CI only       | Before seeding, at the start of a job | Cancelled CI runs where teardown never ran |
+| **Safety-net step** | CI only       | `if: always()` after tests            | Test crashes or unexpected failures        |
+
+### Why pre-run cleanup is CI-only
+
+In CI, the workflow-level `cancel-in-progress: true` can kill a runner
+mid-test. When that happens, neither `globalTeardown` nor the
+`if: always()` safety-net step executes — stale data stays on the shared
+backend. The pre-run cleanup step (`pnpm test:e2e:cleanup` before
+`pnpm test:e2e:seed`) ensures every CI job starts from a clean slate.
+
+This is **not** added to the `pnpm test:e2e` or `pnpm test:visual`
+scripts because:
+
+- It would break the CI seed→test ordering (cleanup would wipe
+  just-seeded data).
+- Locally, `globalTeardown` covers normal exits, and a developer can
+  run `pnpm test:e2e:cleanup` manually after an interrupted run.
+
+### Configuration
+
+Both Playwright configs reference the same teardown module:
+
+- `playwright.config.ts` → `globalTeardown: './e2e/global-teardown.ts'`
+- `playwright.visual.config.ts` → `globalTeardown: './e2e/global-teardown.ts'`
+
+The teardown loads `CONVEX_DEPLOY_KEY` from `.env.e2e` automatically, so
+local runs clean up without manual `export`.
+
+---
+
 ## What we intentionally skip
 
 Not all 0% unit coverage is a gap. These categories are deliberately
