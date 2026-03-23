@@ -175,3 +175,34 @@ avoid revealing which emails are allowed.
 **Trade-off:** No self-service invite flow — new users must be manually
 added to the env var. Acceptable for a personal app; at scale, replace
 with a DB-backed invite table with admin UI.
+
+---
+
+## 9. Application-level rate limiting via `@convex-dev/rate-limiter`
+
+Auth endpoints (sign-in, sign-up, password-reset) and file uploads are
+rate-limited using the `@convex-dev/rate-limiter` Convex component. Rate
+limits are keyed by email for auth flows and by userId for uploads.
+
+**Why:** Without rate limiting, auth endpoints are vulnerable to
+brute-force and credential-stuffing attacks. The password-reset flow sends
+emails via Resend, which has per-email costs. File uploads consume Convex
+storage. Rate limiting caps the blast radius of abuse.
+
+**Why email-keyed, not IP-keyed:** Convex mutations/queries don't have
+access to client IP addresses. Only HTTP actions receive IP info, but the
+auth flow is handled by `@convex-dev/auth` internally. Email-keyed limits
+still prevent per-account brute-force. IP-level protection is handled by
+Cloudflare Turnstile at the edge.
+
+**Password-reset rate limiting:** `@convex-dev/auth` sends the OTP email
+inside its `signIn` action before any mutation callback runs, so the
+password-reset rate limit is enforced via a separate
+`consumePasswordResetRateLimit` mutation that the client calls before
+initiating the reset. This is a defense-in-depth measure: the built-in
+`signIn.maxFailedAttempsPerHour` in `@convex-dev/auth` provides a
+secondary server-side cap on all auth action invocations.
+
+**At scale:** Add IP-based rate limiting by wrapping auth HTTP routes with
+a custom HTTP action that extracts the IP, or use Cloudflare WAF
+rate-limiting rules at the edge.

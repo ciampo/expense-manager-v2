@@ -7,6 +7,7 @@ import type { Id } from './_generated/dataModel'
 import { ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE } from './uploadLimits'
 import { validateFileMetadata } from './storage'
 import {
+  registerComponents,
   setupAuthenticatedUser,
   setupCategory,
   setupStorageFile,
@@ -265,11 +266,13 @@ describe('storage.confirmUpload', () => {
 describe('storage.generateUploadUrl', () => {
   it('rejects unauthenticated calls', async () => {
     const t = convexTest(schema, modules)
+    registerComponents(t)
     await expect(t.mutation(api.storage.generateUploadUrl, {})).rejects.toThrow('Not authenticated')
   })
 
   it('returns a URL for authenticated users', async () => {
     const t = convexTest(schema, modules)
+    registerComponents(t)
     const { asUser } = await setupAuthenticatedUser(t)
     const url = await asUser.mutation(api.storage.generateUploadUrl, {})
     expect(typeof url).toBe('string')

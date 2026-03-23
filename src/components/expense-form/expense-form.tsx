@@ -179,8 +179,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
         await confirmUploadAsync({ storageId })
         setAttachmentId(storageId)
         toast.success('File uploaded')
-      } catch {
-        toast.error('Error uploading file')
+      } catch (error) {
+        toast.error(
+          error instanceof Error && /too many/i.test(error.message)
+            ? 'Too many uploads. Please wait a moment and try again.'
+            : 'Error uploading file',
+        )
       } finally {
         setIsUploading(false)
       }

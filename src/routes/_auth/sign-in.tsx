@@ -58,7 +58,11 @@ function SignInPage() {
         // to /dashboard automatically.
       } catch (error) {
         console.error('Sign in error:', error)
-        setServerError('Invalid email or password')
+        setServerError(
+          error instanceof Error && /too many/i.test(error.message)
+            ? error.message
+            : 'Invalid email or password',
+        )
       }
     },
   })
