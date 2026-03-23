@@ -2,7 +2,7 @@ name: Deploy
 on:
   workflow_run:
     # Keep in sync with the `required` list in the gate job below.
-    workflows: [Lint, Type Check, Unit & Integration Tests, E2E Tests, Visual Regression Tests]
+    workflows: [Lint, Type Check, Unit & Integration Tests, Integration Tests]
     branches: [main]
     types: [completed]
 
@@ -30,8 +30,7 @@ jobs:
               'Lint',
               'Type Check',
               'Unit & Integration Tests',
-              'E2E Tests',
-              'Visual Regression Tests',
+              'Integration Tests',
             ];
 
             // Only deploy the commit currently at the tip of main.

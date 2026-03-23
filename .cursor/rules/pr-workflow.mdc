@@ -64,7 +64,7 @@ pnpm test:visual:docker
 
 **E2E** (run after pushing, via CI):
 
-E2E tests (`pnpm test:e2e`) require a deployed preview and seeded backend — they run in CI after the preview deploys. After pushing, monitor the CI "E2E Tests" check and investigate any failures from the CI logs (`gh run view <run-id> --log`). If e2e tests fail, check the Playwright report artifact uploaded by CI.
+E2E tests (`pnpm test:e2e`) require a deployed preview and seeded backend — they run in CI after the preview deploys. After pushing, monitor the CI "Integration Tests" check and investigate any failures from the CI logs (`gh run view <run-id> --log`). If e2e tests fail, check the Playwright report artifact uploaded by CI.
 
 ## Principles
 

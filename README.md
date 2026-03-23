@@ -203,7 +203,7 @@ For E2E test authoring conventions (locator strategy, selector patterns), see [`
 
 ### Visual Regression Tests
 
-Visual tests run in Docker to ensure consistent screenshots. In CI, the `test-visual.yml` and `update-screenshots.yml` workflows automatically deploy the Convex backend, run `seed:postDeploy` migrations, seed test data, and clean up afterward — matching the E2E pattern.
+Visual tests run in Docker to ensure consistent screenshots. In CI, the `test-integration.yml` and `update-screenshots.yml` workflows automatically deploy the Convex backend, run `seed:postDeploy` migrations, seed test data, and clean up afterward — matching the E2E pattern.
 
 ```bash
 # Run tests (in Docker for consistent screenshots)
@@ -221,11 +221,11 @@ pnpm test:visual:docker:update
 
 The project uses three **fully isolated** Convex environments. Each has its own database, auth keys, and backend functions — data never leaks between them:
 
-| Environment    | Convex Project         | Deployment  | Backend deployed by                             | Frontend connects via                        |
-| -------------- | ---------------------- | ----------- | ----------------------------------------------- | -------------------------------------------- |
-| **Local dev**  | `expense-manager`      | development | `npx convex dev` (auto-syncs on file save)      | `.env.local` → `VITE_CONVEX_URL`             |
-| **Production** | `expense-manager`      | production  | `deploy.yml` (on merge to `main`)               | GitHub secret `CONVEX_PROD_URL`              |
-| **Test (E2E)** | `expense-manager-test` | production  | `test-e2e.yml` (on every PR and push to `main`) | `.env.e2e` / GitHub secret `CONVEX_TEST_URL` |
+| Environment    | Convex Project         | Deployment  | Backend deployed by                                     | Frontend connects via                        |
+| -------------- | ---------------------- | ----------- | ------------------------------------------------------- | -------------------------------------------- |
+| **Local dev**  | `expense-manager`      | development | `npx convex dev` (auto-syncs on file save)              | `.env.local` → `VITE_CONVEX_URL`             |
+| **Production** | `expense-manager`      | production  | `deploy.yml` (on merge to `main`)                       | GitHub secret `CONVEX_PROD_URL`              |
+| **Test (E2E)** | `expense-manager-test` | production  | `test-integration.yml` (on every PR and push to `main`) | `.env.e2e` / GitHub secret `CONVEX_TEST_URL` |
 
 > **Why "production" for test?** Convex deploy keys only work with production deployments. The "production" label is Convex terminology for the non-interactive, CLI-accessible deployment — it doesn't mean live user-facing. The test project is a **completely separate Convex project** with its own database.
 
@@ -235,14 +235,13 @@ No CI workflow ever writes to an environment it shouldn't:
 
 | Workflow                 | Trigger                     | Convex environment touched             | What it does                                                                                                  |
 | ------------------------ | --------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `test-e2e.yml`           | PR, push to `main`          | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E tests, cleans up after                                                  |
-| `test-visual.yml`        | PR, push to `main`          | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs visual regression tests, cleans up                                          |
+| `test-integration.yml`   | PR, push to `main`          | **Test** project (deploy + seed + run) | Deploys backend, seeds data, runs E2E + visual regression tests sequentially, cleans up after each            |
 | `update-screenshots.yml` | Manual (workflow_dispatch)  | **Test** project (deploy + seed + run) | Deploys backend, seeds data, updates visual baselines, commits, cleans up                                     |
 | `preview.yml`            | PR open/sync/reopen/close   | **Dev** project (read-only via URL)    | Deploys frontend preview to CF Workers pointing to dev backend; cleans up on close                            |
 | `deploy.yml`             | CI green on `main` **only** | **Production** project (deploy)        | Gates on all CI passing, then deploys Convex backend + frontend to CF Workers and records a GitHub deployment |
 | Others                   | PR, push to `main`          | None                                   | Lint, typecheck, unit tests — no Convex interaction                                                           |
 
-**Key guarantee:** Only merges to `main` trigger production deployment, and only after all CI checks (lint, typecheck, unit, E2E, visual) pass for that commit. PRs are tested entirely against the isolated test project. Each successful deploy records a [GitHub deployment](https://docs.github.com/en/actions/deployment/about-deployments) for at-a-glance verification.
+**Key guarantee:** Only merges to `main` trigger production deployment, and only after all CI checks (lint, typecheck, unit, integration) pass for that commit. PRs are tested entirely against the isolated test project. Each successful deploy records a [GitHub deployment](https://docs.github.com/en/actions/deployment/about-deployments) for at-a-glance verification.
 
 #### Setting up auth keys
 
@@ -287,22 +286,21 @@ The project includes GitHub Actions workflows for:
 - **Lint** (`lint.yml`): ESLint and Prettier checks on every push/PR
 - **Type Check** (`typecheck.yml`): TypeScript type checking on every push/PR
 - **Unit & Integration Tests** (`test-unit.yml`): Vitest unit and Convex backend integration tests on every push/PR
-- **E2E Tests** (`test-e2e.yml`): Playwright E2E tests on every push/PR with test data seeding
-- **Visual Regression** (`test-visual.yml`): Playwright visual regression tests on every push/PR in Docker
+- **Integration Tests** (`test-integration.yml`): Playwright E2E + visual regression tests on every push/PR (sequential jobs sharing the Convex test backend)
 - **Deploy** (`deploy.yml`): CI-gated production deploy — see [Production deploy pipeline](#production-deploy-pipeline) below
 - **Preview** (`preview.yml`): Deploy preview on every PR (automatically cleaned up when the PR is closed)
 - **Update Screenshots** (`update-screenshots.yml`): Manually triggered workflow to update and commit visual regression baselines
 
 #### Production deploy pipeline
 
-Production deploys are gated on all five CI workflows passing for the same commit on `main`. The `deploy.yml` workflow uses `workflow_run` triggers (not `push`) so it only fires after a CI workflow completes:
+Production deploys are gated on all four CI workflows passing for the same commit on `main`. The `deploy.yml` workflow uses `workflow_run` triggers (not `push`) so it only fires after a CI workflow completes:
 
-1. A push to `main` triggers the 5 CI workflows (lint, typecheck, unit, E2E, visual)
+1. A push to `main` triggers the 4 CI workflows (lint, typecheck, unit, integration)
 2. Each CI completion fires the Deploy workflow. A **gate** job checks:
    - Is this the current `main` HEAD? (prevents stale re-runs from rolling back production)
-   - Have all 5 CI workflows succeeded for this SHA? (only `push`-triggered runs on `main` count)
+   - Have all 4 CI workflows succeeded for this SHA? (only `push`-triggered runs on `main` count)
 3. When all checks pass, the **deploy** job runs (serialized via a `deploy-production` concurrency group):
-   - A dedup check skips the deploy if this SHA was already deployed (prevents redundant deploys from the up-to-5 concurrent triggers)
+   - A dedup check skips the deploy if this SHA was already deployed (prevents redundant deploys from the up-to-4 concurrent triggers)
    - Creates a GitHub deployment record (`in_progress`)
    - Deploys Convex backend + runs migrations
    - Builds the frontend and deploys to Cloudflare Workers
@@ -355,7 +353,7 @@ Configure these GitHub Actions secrets:
 
 Schema backfills (e.g., populating a new field for existing records) are managed by idempotent migration functions in `convex/seed.ts`, orchestrated by `seed:postDeploy`:
 
-- **CI (automatic):** `deploy.yml`, `test-e2e.yml`, `test-visual.yml`, and `update-screenshots.yml` run `npx convex run seed:postDeploy --prod` after every `npx convex deploy`. No manual intervention needed.
+- **CI (automatic):** `deploy.yml`, `test-integration.yml`, and `update-screenshots.yml` run `npx convex run seed:postDeploy --prod` after every `npx convex deploy`. No manual intervention needed.
 - **Local dev (manual):** Run `pnpm migrate` after pulling changes that include schema migrations. This is included in `pnpm setup` for fresh setups.
 
 Migrations are idempotent and safe to run multiple times. Those that can short-circuit (e.g., merchants backfill) include an O(1) precondition check; others scan existing rows but only patch those still needing updates. To add a new migration, create a handler function in `convex/seed.ts` and call it from `postDeploy`.

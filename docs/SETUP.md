@@ -166,7 +166,7 @@ pnpm test:e2e:seed
 npx convex run seed:postDeploy --prod
 ```
 
-> **Note:** `pnpm migrate` runs `seed:postDeploy`, which executes all pending schema backfills (e.g., populating `normalizedName` for categories). It is idempotent — safe to run repeatedly. In CI, this runs automatically after every `npx convex deploy` (see `deploy.yml` and `test-e2e.yml`). Locally, run it after pulling changes that include schema migrations.
+> **Note:** `pnpm migrate` runs `seed:postDeploy`, which executes all pending schema backfills (e.g., populating `normalizedName` for categories). It is idempotent — safe to run repeatedly. In CI, this runs automatically after every `npx convex deploy` (see `deploy.yml` and `test-integration.yml`). Locally, run it after pulling changes that include schema migrations.
 
 > **Note:** Test data (including auth users created during E2E runs) is cleaned up automatically by Playwright's `globalTeardown` after each `pnpm test:e2e` run. You can also clean up manually with `pnpm test:e2e:cleanup` (requires `CONVEX_DEPLOY_KEY` to be set).
 

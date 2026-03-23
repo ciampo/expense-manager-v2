@@ -53,7 +53,7 @@ requires **real auth and backend state**:
 ### Visual regression tests (Playwright + Docker)
 
 > **Version coupling:** The Playwright Docker image tag in CI workflows
-> (`test-visual.yml`, `update-screenshots.yml`) and `docker-compose.test.yml`
+> (`test-integration.yml`, `update-screenshots.yml`) and `docker-compose.test.yml`
 > must match the Playwright package versions in `package.json`.
 
 Test here for **appearance correctness** that would be tedious to assert
