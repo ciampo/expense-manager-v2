@@ -78,7 +78,7 @@ function EmailStep({
   onSuccess: (email: string) => void
 }) {
   const [serverError, setServerError] = useState('')
-  const checkRateLimit = useMutation({
+  const consumeResetRateLimit = useMutation({
     mutationFn: useConvexMutation(api.rateLimits.consumePasswordResetRateLimit),
   })
 
@@ -89,7 +89,7 @@ function EmailStep({
       setServerError('')
 
       try {
-        await checkRateLimit.mutateAsync({ email: value.email })
+        await consumeResetRateLimit.mutateAsync({ email: value.email })
       } catch (error) {
         console.error('Password reset rate limit:', error)
         setServerError('Too many password reset attempts. Please try again later.')
