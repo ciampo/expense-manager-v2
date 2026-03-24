@@ -112,11 +112,13 @@ audit_env() {
 # If DEPLOY_KEY is empty, uses the default dev deployment.
 convex_env_names() {
   local key="${1:-}"
+  local output
   if [ -n "$key" ]; then
-    CONVEX_DEPLOY_KEY="$key" npx convex env list 2>/dev/null | cut -d= -f1 | sort -u
+    output=$(CONVEX_DEPLOY_KEY="$key" npx convex env list 2>/dev/null || true)
   else
-    npx convex env list 2>/dev/null | cut -d= -f1 | sort -u
+    output=$(npx convex env list 2>/dev/null || true)
   fi
+  printf '%s\n' "$output" | cut -d= -f1 | sort -u
 }
 
 # ---------------------------------------------------------------------------
