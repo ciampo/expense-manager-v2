@@ -23,4 +23,8 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - name: Verify Convex generated files are fresh
+        run: |
+          npx convex codegen
+          git diff --exit-code convex/_generated/
       - run: pnpm test:unit

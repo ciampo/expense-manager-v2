@@ -167,16 +167,23 @@ describe('documentation validation', () => {
     expect(undocumented).toEqual([])
   })
 
-  it('README `pnpm check` description specifies "unit tests" to match script behavior', () => {
+  it('README `pnpm check` description matches its actual sub-commands', () => {
     const pkg = JSON.parse(readFile('package.json'))
     const readme = readFile('README.md')
 
     const checkScript: string = pkg.scripts.check
+    expect(checkScript).toContain('lint')
+    expect(checkScript).toContain('format:check')
+    expect(checkScript).toContain('typecheck')
     expect(checkScript).toContain('test:unit')
 
     const checkRow = readme.match(/\|\s*`pnpm check`\s*\|\s*(.+?)\s*\|/)
     expect(checkRow).not.toBeNull()
-    expect(checkRow![1]).toContain('unit tests')
+    const desc = checkRow![1]
+    expect(desc).toContain('lint')
+    expect(desc).toContain('format')
+    expect(desc).toContain('typecheck')
+    expect(desc).toContain('tests')
   })
 
   it('README validation limits match shared constants', () => {
