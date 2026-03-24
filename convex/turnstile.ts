@@ -29,7 +29,22 @@ export async function verifyTurnstileToken(token: string | undefined): Promise<v
     }),
   })
 
-  const data = (await response.json()) as SiteverifyResponse
+  if (!response.ok) {
+    console.error('Turnstile siteverify HTTP error', {
+      status: response.status,
+      statusText: response.statusText,
+    })
+    throw new Error('Bot verification failed')
+  }
+
+  let data: SiteverifyResponse
+  try {
+    data = (await response.json()) as SiteverifyResponse
+  } catch (parseError) {
+    console.error('Turnstile siteverify response parse error', parseError)
+    throw new Error('Bot verification failed', { cause: parseError })
+  }
+
   if (!data.success) {
     throw new Error('Bot verification failed')
   }
