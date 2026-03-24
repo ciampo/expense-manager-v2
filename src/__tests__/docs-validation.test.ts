@@ -147,6 +147,38 @@ describe('documentation validation', () => {
     expect(readme).toContain(`${maxMB}MB`)
   })
 
+  it('README scripts table documents all package.json scripts (except lifecycle hooks)', () => {
+    const pkg = JSON.parse(readFile('package.json'))
+    const readme = readFile('README.md')
+
+    const lifecycleHooks = new Set(['prepare'])
+
+    const tableScriptPattern = /\|\s*`pnpm ([\w:.-]+)`\s*\|/g
+    const documentedScripts = new Set<string>()
+    let m: RegExpExecArray | null
+    while ((m = tableScriptPattern.exec(readme)) !== null) {
+      documentedScripts.add(m[1])
+    }
+
+    const undocumented = Object.keys(pkg.scripts).filter(
+      (s) => !documentedScripts.has(s) && !lifecycleHooks.has(s),
+    )
+
+    expect(undocumented).toEqual([])
+  })
+
+  it('README `pnpm check` description specifies "unit tests" to match script behavior', () => {
+    const pkg = JSON.parse(readFile('package.json'))
+    const readme = readFile('README.md')
+
+    const checkScript: string = pkg.scripts.check
+    expect(checkScript).toContain('test:unit')
+
+    const checkRow = readme.match(/\|\s*`pnpm check`\s*\|\s*(.+?)\s*\|/)
+    expect(checkRow).not.toBeNull()
+    expect(checkRow![1]).toContain('unit tests')
+  })
+
   it('README validation limits match shared constants', () => {
     const readme = readFile('README.md')
     expect(readme).toContain(`max ${MERCHANT_MAX_LENGTH} characters`)
