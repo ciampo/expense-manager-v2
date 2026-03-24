@@ -149,3 +149,29 @@ not free-text input.
 **Trade-off:** A merchant record may linger for up to 24 hours after it
 becomes orphaned via an update. This is acceptable — the daily cron
 provides the safety net.
+
+---
+
+## 8. Email allowlist and registration kill switch
+
+New sign-ups are restricted to emails listed in `ALLOWED_EMAILS` (Convex
+env var). An empty list means "allow all" to keep development frictionless.
+`REGISTRATION_ENABLED=false` acts as a hard kill switch that blocks all new
+registrations instantly without redeploying.
+
+**Why:** The app is publicly deployed and any email can sign up by default.
+Since this is a personal/small-team tool, unbounded sign-ups would amplify
+Convex and Resend costs. An allowlist is the simplest, most effective
+access control for this use case.
+
+**Implementation:** A custom `createOrUpdateUser` callback in
+`convex/auth.ts` checks both controls before creating a new user.
+A `beforeSessionCreation` callback provides defense-in-depth — if an email
+is removed from the allowlist, creation of any new sessions for that user
+is blocked on subsequent sign-in attempts, while already-issued sessions
+continue until they expire. Error messages on the client remain generic to
+avoid revealing which emails are allowed.
+
+**Trade-off:** No self-service invite flow — new users must be manually
+added to the env var. Acceptable for a personal app; at scale, replace
+with a DB-backed invite table with admin UI.
