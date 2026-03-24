@@ -257,7 +257,7 @@ else
   if [ -f .env.local ] && grep -q '^CONVEX_DEPLOYMENT=' .env.local 2>/dev/null; then
     DEV_VARS=$(convex_env_names "" 2>/dev/null || true)
     DEV_HAS_SECRET=$(echo "$DEV_VARS" | grep -cx "TURNSTILE_SECRET_KEY" || true)
-    LOCAL_HAS_SITE=$(grep -c '^VITE_TURNSTILE_SITE_KEY=' .env.local 2>/dev/null || true)
+    LOCAL_HAS_SITE=$(grep -c '^VITE_TURNSTILE_SITE_KEY=.\+' .env.local 2>/dev/null || true)
     if [ "$DEV_HAS_SECRET" -gt 0 ] && [ "$LOCAL_HAS_SITE" -eq 0 ]; then
       echo -e "  ${RED}MISMATCH${RESET}  Convex dev has TURNSTILE_SECRET_KEY but .env.local is missing VITE_TURNSTILE_SITE_KEY"
       echo -e "           Remove it from dev: npx convex env remove TURNSTILE_SECRET_KEY"
@@ -269,7 +269,7 @@ else
   if [ -n "${TEST_DEPLOY_KEY:-}" ]; then
     TEST_VARS=$(convex_env_names "$TEST_DEPLOY_KEY" 2>/dev/null || true)
     TEST_HAS_SECRET=$(echo "$TEST_VARS" | grep -cx "TURNSTILE_SECRET_KEY" || true)
-    E2E_HAS_SITE=$(grep -c '^VITE_TURNSTILE_SITE_KEY=' .env.e2e 2>/dev/null || true)
+    E2E_HAS_SITE=$(grep -c '^VITE_TURNSTILE_SITE_KEY=.\+' .env.e2e 2>/dev/null || true)
     if [ "$TEST_HAS_SECRET" -gt 0 ] && [ "$E2E_HAS_SITE" -eq 0 ]; then
       echo -e "  ${RED}MISMATCH${RESET}  Convex test has TURNSTILE_SECRET_KEY but .env.e2e is missing VITE_TURNSTILE_SITE_KEY"
       PAIRING_OK=false
@@ -282,14 +282,20 @@ else
   if [ -n "${PROD_DEPLOY_KEY:-}" ]; then
     PROD_VARS=$(convex_env_names "$PROD_DEPLOY_KEY" 2>/dev/null || true)
     PROD_HAS_SECRET=$(echo "$PROD_VARS" | grep -cx "TURNSTILE_SECRET_KEY" || true)
+    GH_CHECK_OK=false
     GH_HAS_SITE=0
     if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-      GH_HAS_SITE=$(gh secret list --json name -q '.[].name' 2>/dev/null | grep -cx "TURNSTILE_SITE_KEY" || true)
+      if GH_SECRET_NAMES=$(gh secret list --json name -q '.[].name' 2>/dev/null); then
+        GH_HAS_SITE=$(echo "$GH_SECRET_NAMES" | grep -cx "TURNSTILE_SITE_KEY" || true)
+        GH_CHECK_OK=true
+      fi
     fi
-    if [ "$PROD_HAS_SECRET" -gt 0 ] && [ "$GH_HAS_SITE" -eq 0 ]; then
+    if [ "$PROD_HAS_SECRET" -gt 0 ] && [ "$GH_CHECK_OK" = true ] && [ "$GH_HAS_SITE" -eq 0 ]; then
       echo -e "  ${RED}MISMATCH${RESET}  Convex prod has TURNSTILE_SECRET_KEY but GitHub is missing TURNSTILE_SITE_KEY secret"
       PAIRING_OK=false
-    elif [ "$PROD_HAS_SECRET" -eq 0 ] && [ "$GH_HAS_SITE" -gt 0 ]; then
+    elif [ "$PROD_HAS_SECRET" -gt 0 ] && [ "$GH_CHECK_OK" = false ]; then
+      echo -e "  ${YELLOW}WARNING${RESET}   Convex prod has TURNSTILE_SECRET_KEY but GitHub TURNSTILE_SITE_KEY could not be verified (gh CLI unavailable)"
+    elif [ "$PROD_HAS_SECRET" -eq 0 ] && [ "$GH_CHECK_OK" = true ] && [ "$GH_HAS_SITE" -gt 0 ]; then
       echo -e "  ${YELLOW}WARNING${RESET}   GitHub has TURNSTILE_SITE_KEY but Convex prod is missing TURNSTILE_SECRET_KEY"
     fi
   fi
