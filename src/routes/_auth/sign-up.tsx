@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { z } from 'zod'
 import { emailSchema, passwordSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { useTurnstile, isTurnstileError, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
 
 export const Route = createFileRoute('/_auth/sign-up')({
   component: SignUpPage,
@@ -38,6 +40,7 @@ const signUpSchema = z
 function SignUpPage() {
   const { signIn } = useAuthActions()
   const [serverError, setServerError] = useState('')
+  const turnstile = useTurnstile()
 
   const form = useForm({
     defaultValues: {
@@ -56,18 +59,24 @@ function SignUpPage() {
         formData.set('email', value.email)
         formData.set('password', value.password)
         formData.set('flow', 'signUp')
+        if (turnstile.token) {
+          formData.set('turnstileToken', turnstile.token)
+        }
 
         await signIn('password', formData)
         toast.success('Account created successfully')
       } catch (error) {
         console.error('Sign up error:', error)
-        const message =
-          error instanceof Error && /registration is not available/i.test(error.message)
+        const message = isTurnstileError(error)
+          ? 'Bot verification failed. Please complete the verification and try again.'
+          : error instanceof Error && /registration is not available/i.test(error.message)
             ? 'Registration is not available.'
             : error instanceof Error && /already exists/i.test(error.message)
               ? 'An account with this email already exists. Try signing in instead.'
               : 'Error during registration. Please try again.'
         setServerError(message)
+      } finally {
+        turnstile.reset()
       }
     },
   })
@@ -160,13 +169,26 @@ function SignUpPage() {
               )
             }}
           </form.Field>
+          {TURNSTILE_SITE_KEY && (
+            <Turnstile
+              ref={turnstile.ref}
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={turnstile.setToken}
+              onExpire={turnstile.clearToken}
+              onError={turnstile.clearToken}
+            />
+          )}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <FieldError
             errors={serverError ? [{ message: serverError }] : undefined}
             className="text-center"
           />
-          <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.state.isSubmitting || !turnstile.isReady}
+          >
             {form.state.isSubmitting ? 'Signing up...' : 'Sign Up'}
           </Button>
           <p className="text-muted-foreground text-center text-sm">

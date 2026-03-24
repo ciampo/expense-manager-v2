@@ -5,6 +5,7 @@ import { useConvexMutation } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { z } from 'zod'
 import { emailSchema, passwordSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { useTurnstile, isTurnstileError, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
 
 export const Route = createFileRoute('/_auth/forgot-password')({
   component: ForgotPasswordPage,
@@ -77,6 +79,7 @@ function EmailStep({
   signIn: ReturnType<typeof useAuthActions>['signIn']
   onSuccess: (email: string) => void
 }) {
+  const turnstile = useTurnstile()
   const [serverError, setServerError] = useState('')
   const consumeResetRateLimit = useMutation({
     mutationFn: useConvexMutation(api.rateLimits.consumePasswordResetRateLimit),
@@ -100,15 +103,24 @@ function EmailStep({
         const formData = new FormData()
         formData.set('email', value.email)
         formData.set('flow', 'reset')
+        if (turnstile.token) {
+          formData.set('turnstileToken', turnstile.token)
+        }
         await signIn('password', formData)
       } catch (error) {
-        // Silently swallow — never reveal whether the email exists
-        // to prevent account-enumeration attacks.
+        if (isTurnstileError(error)) {
+          setServerError('Bot verification failed. Please complete the verification and try again.')
+          return
+        }
+        // Silently swallow all other errors — never reveal whether
+        // the email exists to prevent account-enumeration attacks.
         console.error('Password reset request error:', error)
       } finally {
-        toast('If an account with that email exists, a verification code was sent.')
-        onSuccess(value.email)
+        turnstile.reset()
       }
+
+      toast('If an account with that email exists, a verification code was sent.')
+      onSuccess(value.email)
     },
   })
 
@@ -154,13 +166,26 @@ function EmailStep({
               )
             }}
           </form.Field>
+          {TURNSTILE_SITE_KEY && (
+            <Turnstile
+              ref={turnstile.ref}
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={turnstile.setToken}
+              onExpire={turnstile.clearToken}
+              onError={turnstile.clearToken}
+            />
+          )}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <FieldError
             errors={serverError ? [{ message: serverError }] : undefined}
             className="text-center"
           />
-          <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.state.isSubmitting || !turnstile.isReady}
+          >
             {form.state.isSubmitting ? 'Sending...' : 'Send verification code'}
           </Button>
           <Link

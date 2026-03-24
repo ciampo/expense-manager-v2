@@ -116,6 +116,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `pnpm format:check`              | Check code formatting                                      |
 | `pnpm typecheck`                 | Run TypeScript type checking (`tsc --noEmit`)              |
 | `pnpm check`                     | Run all CI checks locally (lint, format, typecheck, tests) |
+| `pnpm check:env`                 | Audit env vars across local files, GH Secrets, and Convex  |
 | `pnpm cf-typegen`                | Generate Cloudflare Worker types                           |
 
 ### Project Structure

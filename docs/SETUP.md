@@ -329,11 +329,12 @@ pnpm test:visual:docker
 - [ ] Categories seeded: `npx convex run seed:seedCategories` (or `pnpm test:e2e:seed` for test project)
 - [ ] Migrations applied: `pnpm migrate`
 - [ ] Wrangler authenticated: `pnpm dlx wrangler whoami`
+- [ ] Environment audit passes: `pnpm check:env`
 
 ### Before CI/CD
 
 - [ ] GitHub repository created
-- [ ] All 7 GitHub secrets added
+- [ ] All 8 GitHub secrets added (see [`docs/ENVIRONMENT_VARIABLES.md`](ENVIRONMENT_VARIABLES.md#github-actions-secrets))
 - [ ] Branch protection rules configured
 - [ ] Docker Desktop running
 
