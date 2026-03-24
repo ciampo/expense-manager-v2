@@ -16,7 +16,7 @@ This document lists all environment variables used in the Expense Manager projec
 | `CLOUDFLARE_ACCOUNT_ID`   | GitHub Secrets                       | Cloudflare account identifier                                 |
 | `TURNSTILE_SECRET_KEY`    | Convex Environment (prod + test)     | Cloudflare Turnstile secret key — must pair with site key     |
 | `E2E_CLEANUP_ALLOWED`     | Convex Environment                   | Guardrail — must be `true` for `seed:cleanup` to run          |
-| `SITE_URL`                | Convex Environment                   | Base site URL for auth (auto-set by `npx @convex-dev/auth`)   |
+| `SITE_URL`                | Convex Environment                   | Your app's URL for auth callback links (e.g. OTP emails)      |
 | `JWT_PRIVATE_KEY`         | Convex Environment                   | Private key for signing JWTs (auto-set by auth setup)         |
 | `JWKS`                    | Convex Environment                   | JSON Web Key Set for verifying JWTs (auto-set by auth setup)  |
 | `AUTH_RESEND_KEY`         | Convex Environment                   | Resend API key for password reset emails                      |
@@ -187,13 +187,18 @@ npx convex env set VARIABLE_NAME value
 
 ### Auth Variables (Auto-configured)
 
-| Variable          | Required | Description                                                                                         |
-| ----------------- | -------- | --------------------------------------------------------------------------------------------------- |
-| `SITE_URL`        | Yes      | Base site URL for auth callbacks (set by `npx @convex-dev/auth`; must match the site URL you enter) |
-| `JWT_PRIVATE_KEY` | Yes      | Private key for signing JWTs (set by `npx @convex-dev/auth`)                                        |
-| `JWKS`            | Yes      | JSON Web Key Set for verifying JWTs (set by `npx @convex-dev/auth`)                                 |
+| Variable          | Required | Description                                                                               |
+| ----------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `SITE_URL`        | Yes      | Your app's URL (e.g. `http://localhost:3000`), used for auth callback links in OTP emails |
+| `JWT_PRIVATE_KEY` | Yes      | Private key for signing JWTs (set by `npx @convex-dev/auth`)                              |
+| `JWKS`            | Yes      | JSON Web Key Set for verifying JWTs (set by `npx @convex-dev/auth`)                       |
 
-> **Note:** These are set automatically by running `npx @convex-dev/auth` (or `npx @convex-dev/auth --prod` for production). Do not edit them manually. Convex exposes `SITE_URL` to server code as `process.env.CONVEX_SITE_URL` (with the `CONVEX_` prefix); `convex/auth.config.ts` reads it via that prefixed name.
+> **Note:** These are set automatically by running `npx @convex-dev/auth` (or `npx @convex-dev/auth --prod` for production). Do not edit them manually.
+>
+> **`SITE_URL` vs `CONVEX_SITE_URL`:** These are different variables.
+> `SITE_URL` is a user-set env var — your app's URL (e.g. `http://localhost:3000` for dev, `https://yourapp.com` for prod), used by `@convex-dev/auth` to generate callback links in OTP emails.
+> `CONVEX_SITE_URL` is auto-provided by Convex — the deployment's HTTP actions endpoint (e.g. `https://brilliant-otter-473.convex.site`). It is available as `process.env.CONVEX_SITE_URL` in server code without being set manually.
+> `convex/auth.config.ts` reads `process.env.CONVEX_SITE_URL` (the Convex HTTP endpoint), not `SITE_URL`.
 
 ### Application Variables
 
