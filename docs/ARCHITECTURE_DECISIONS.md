@@ -200,7 +200,9 @@ Convex component that enforces additional per-account limits:
 - **Sign-up** (3/hour, fixed window, `createOrUpdateUser`): prevents mass
   account creation.
 - **Password reset** (3/hour, fixed window, client-side preflight
-  mutation): prevents OTP email spam via Resend.
+  mutation): reduces OTP email spam from the official UI. A custom client
+  can bypass this preflight — true server-side enforcement relies on
+  Layer 1's failed-attempt cap.
 - **File upload** (10/min, token bucket, `generateUploadUrl`): prevents
   storage abuse by authenticated users.
 
@@ -212,10 +214,11 @@ Cloudflare Turnstile at the edge.
 
 **Password-reset rate limiting:** `@convex-dev/auth` sends the OTP email
 inside its `signIn` action before any mutation callback runs, so the
-password-reset rate limit is enforced via a separate
-`consumePasswordResetRateLimit` mutation that the client calls before
-initiating the reset. This is a defense-in-depth measure alongside
-Layer 1's failed-attempt cap.
+password-reset rate limit is enforced via a client-side preflight
+mutation (`consumePasswordResetRateLimit`) that the official UI calls
+before initiating the reset. A custom client could bypass this check.
+True server-side enforcement of reset attempts relies on Layer 1's
+failed-attempt cap.
 
 **At scale:** Add IP-based rate limiting by wrapping auth HTTP routes with
 a custom HTTP action that extracts the IP, or use Cloudflare WAF

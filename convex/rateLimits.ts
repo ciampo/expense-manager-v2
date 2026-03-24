@@ -9,7 +9,7 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   signIn: { kind: 'token bucket', rate: 5, period: MINUTE },
   // Auth: prevent mass account creation
   signUp: { kind: 'fixed window', rate: 3, period: HOUR },
-  // Auth: prevent OTP email spam (Resend has per-email costs)
+  // Auth: client-side preflight to reduce OTP email spam from the official UI
   passwordReset: { kind: 'fixed window', rate: 3, period: HOUR },
   // Storage: prevent upload abuse
   fileUpload: { kind: 'token bucket', rate: 10, period: MINUTE },
@@ -18,14 +18,15 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
 /**
  * Consume a password-reset rate limit token for the given email.
  *
- * The password-reset flow in `@convex-dev/auth` sends the OTP email inside the
- * `signIn` action before any mutation callback we can intercept. To rate-limit
- * the email-sending step, the client calls this mutation *before* initiating
- * the reset. If the limit is exceeded, the mutation throws and the client
- * should not proceed with the reset request.
+ * `@convex-dev/auth` sends the OTP email inside its `signIn` action before any
+ * mutation callback we can intercept. Because of this, the rate limit here is
+ * enforced only as a client-side preflight: the first-party client calls this
+ * mutation *before* initiating the reset and aborts if it throws. A custom
+ * client could bypass this check by calling the `signIn` reset flow directly.
  *
- * This is a defense-in-depth measure: `@convex-dev/auth`'s built-in
- * `signIn.maxFailedAttempsPerHour` provides a secondary server-side cap.
+ * This is a defense-in-depth measure for the official UI. Server-side
+ * protection against repeated failed attempts is provided by
+ * `@convex-dev/auth`'s built-in `signIn.maxFailedAttempsPerHour`.
  */
 export const consumePasswordResetRateLimit = mutation({
   args: { email: v.string() },
