@@ -29,8 +29,9 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
 export const consumePasswordResetRateLimit = mutation({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
+    const normalizedEmail = email.trim().toLowerCase()
     const { ok, retryAfter } = await rateLimiter.limit(ctx, 'passwordReset', {
-      key: email,
+      key: normalizedEmail,
     })
     if (!ok) {
       const minutes = Math.ceil(retryAfter / 1000 / 60)

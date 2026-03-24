@@ -21,7 +21,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         const email = (profile as { email?: string }).email
         if (email) {
           const { ok, retryAfter } = await rateLimiter.limit(ctx, 'signUp', {
-            key: email,
+            key: normalizeEmail(email),
           })
           if (!ok) {
             throw new Error(
@@ -65,7 +65,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
       if (email) {
         const { ok, retryAfter } = await rateLimiter.limit(ctx, 'signIn', {
-          key: email,
+          key: normalizeEmail(email),
         })
         if (!ok) {
           throw new Error(
@@ -76,6 +76,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     },
   },
 })
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
 
 function formatRetryDelay(retryAfterMs: number): string {
   const seconds = Math.ceil(retryAfterMs / 1000)
