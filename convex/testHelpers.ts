@@ -1,17 +1,8 @@
-import { register as registerRateLimiter } from '@convex-dev/rate-limiter/test'
 import type { TestConvex } from 'convex-test'
 import type { Id } from './_generated/dataModel'
 import type schema from './schema'
 
 export type TestCtx = TestConvex<typeof schema>
-
-/**
- * Register Convex components required by the application.
- * Call after `convexTest()` and before any mutation that uses rate limiting.
- */
-export function registerComponents(t: TestCtx) {
-  registerRateLimiter(t)
-}
 
 /**
  * Create an authenticated test context.

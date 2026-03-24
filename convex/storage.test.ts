@@ -6,8 +6,8 @@ import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE } from './uploadLimits'
 import { validateFileMetadata } from './storage'
+import rateLimiterTesting from '@convex-dev/rate-limiter/test'
 import {
-  registerComponents,
   setupAuthenticatedUser,
   setupCategory,
   setupStorageFile,
@@ -15,6 +15,9 @@ import {
   insertExpense,
   type TestCtx,
 } from './testHelpers'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -266,16 +269,32 @@ describe('storage.confirmUpload', () => {
 describe('storage.generateUploadUrl', () => {
   it('rejects unauthenticated calls', async () => {
     const t = convexTest(schema, modules)
-    registerComponents(t)
+    registerRateLimiter(t)
     await expect(t.mutation(api.storage.generateUploadUrl, {})).rejects.toThrow('Not authenticated')
   })
 
   it('returns a URL for authenticated users', async () => {
     const t = convexTest(schema, modules)
-    registerComponents(t)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
     const url = await asUser.mutation(api.storage.generateUploadUrl, {})
     expect(typeof url).toBe('string')
+  })
+
+  it('rejects when file upload rate limit is exceeded', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { asUser } = await setupAuthenticatedUser(t)
+
+    // Token bucket: rate 10/min, capacity defaults to 10.
+    // Exhaust all tokens, then the next call should fail.
+    for (let i = 0; i < 10; i++) {
+      await asUser.mutation(api.storage.generateUploadUrl, {})
+    }
+
+    await expect(asUser.mutation(api.storage.generateUploadUrl, {})).rejects.toThrow(
+      /too many uploads/i,
+    )
   })
 })
 
