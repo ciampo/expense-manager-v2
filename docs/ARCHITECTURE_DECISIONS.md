@@ -271,6 +271,17 @@ still allows inline scripts (`'unsafe-inline'`), so it primarily provides
 monitoring and visibility into potential violations rather than hard
 blocking at this stage.
 
+**CSP violation reporting:** A same-origin `/__csp-report` endpoint
+receives violation reports (via `report-to` and legacy `report-uri`
+directives). The Worker logs reports with `console.log`, making them
+visible in Cloudflare's real-time logs (`wrangler tail`) with no
+external infrastructure required.
+
+**HSTS preload:** The `Strict-Transport-Security` header includes the
+`preload` directive, signaling eligibility for the
+[HSTS preload list](https://hstspreload.org). Submission is a separate
+manual step after verifying the header is served consistently.
+
 **Trade-off:** Maintaining a strict CSP requires ongoing work — any new
 third-party script or resource needs to be added to the policy. The
 `Content-Security-Policy-Report-Only` header is used during initial
