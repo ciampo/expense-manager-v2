@@ -1,1 +1,7 @@
+if npx convex codegen 2>/dev/null; then
+  git add convex/_generated/
+else
+  echo "⚠ Skipping Convex codegen (CONVEX_DEPLOYMENT not configured)"
+fi
+
 pnpm exec lint-staged
