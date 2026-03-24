@@ -183,7 +183,7 @@ describe('documentation validation', () => {
     expect(desc).toContain('lint')
     expect(desc).toContain('format')
     expect(desc).toContain('typecheck')
-    expect(desc).toContain('tests')
+    expect(desc).toContain('unit tests')
   })
 
   it('README validation limits match shared constants', () => {
