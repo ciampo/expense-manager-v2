@@ -46,12 +46,14 @@ CONVEX_DEPLOYMENT=dev:your-project  # Auto-populated by `npx convex dev`
 | `CONVEX_DEPLOYMENT`       | Auto     | Set automatically by `npx convex dev` -- do not edit manually                 |
 | `VITE_TURNSTILE_SITE_KEY` | No       | Cloudflare Turnstile site key — when unset, the widget is omitted (see below) |
 
-**How to get it:**
+**How to get `VITE_CONVEX_URL`:**
 
 1. Go to [Convex Dashboard](https://dashboard.convex.dev/)
 2. Select the `expense-manager` project
 3. Use the deployment switcher to select **Development**
 4. Copy the deployment URL
+
+For `VITE_TURNSTILE_SITE_KEY`, see [Setting Up Cloudflare Turnstile](#setting-up-cloudflare-turnstile) below.
 
 ---
 
