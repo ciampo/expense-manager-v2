@@ -2,6 +2,25 @@
 
 This document lists all environment variables used in the Expense Manager project and where they should be defined.
 
+## Naming Conventions
+
+Variable names follow the convention of their runtime:
+
+- **`VITE_*`** — Exposed to client-side code by Vite (e.g. `VITE_TURNSTILE_SITE_KEY`). Only variables with this prefix are available in the browser via `import.meta.env`.
+- **`CONVEX_*`** — Consumed by the Convex CLI (e.g. `CONVEX_DEPLOY_KEY`, `CONVEX_DEPLOYMENT`).
+- **No prefix** — Server-side only, set on the Convex dashboard (e.g. `TURNSTILE_SECRET_KEY`, `SITE_URL`).
+
+> **GitHub Secrets use different names** than the env vars they produce.
+> Secrets encode _which deployment_ they target (e.g. `CONVEX_PROD_URL`,
+> `CONVEX_TEST_DEPLOY_KEY`, `TURNSTILE_SITE_KEY`), and workflows map them
+> to the generic names tools expect (e.g. `VITE_CONVEX_URL`,
+> `CONVEX_DEPLOY_KEY`, `VITE_TURNSTILE_SITE_KEY`). See the
+> [CI/CD section](#cicd-environment-variables) for the full mapping.
+>
+> **Common pitfall:** The GH Secret is `TURNSTILE_SITE_KEY` (no `VITE_`
+> prefix), but locally and in CI the env var must be
+> `VITE_TURNSTILE_SITE_KEY` — Vite ignores variables without the prefix.
+
 ---
 
 ## Overview
@@ -94,16 +113,16 @@ These secrets are configured in your GitHub repository settings.
 
 ### Required Secrets
 
-| Secret Name              | Description                                                           | Source               |
-| ------------------------ | --------------------------------------------------------------------- | -------------------- |
-| `CLOUDFLARE_API_TOKEN`   | API token for Cloudflare Workers deployment                           | Cloudflare Dashboard |
-| `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account identifier                                    | Cloudflare Dashboard |
-| `TURNSTILE_SITE_KEY`     | Cloudflare Turnstile site key for auth form bot protection            | Cloudflare Dashboard |
-| `CONVEX_PROD_URL`        | `expense-manager` → **production** deployment URL                     | Convex Dashboard     |
-| `CONVEX_PROD_DEPLOY_KEY` | `expense-manager` → **production** deploy key (for CI backend deploy) | Convex Dashboard     |
-| `CONVEX_DEV_URL`         | `expense-manager` → **development** deployment URL (for PR previews)  | Convex Dashboard     |
-| `CONVEX_TEST_URL`        | `expense-manager-test` → **production** deployment URL                | Convex Dashboard     |
-| `CONVEX_TEST_DEPLOY_KEY` | `expense-manager-test` → **production** deploy key                    | Convex Dashboard     |
+| Secret Name              | Maps to in workflows      | Description                                                           | Source               |
+| ------------------------ | ------------------------- | --------------------------------------------------------------------- | -------------------- |
+| `CLOUDFLARE_API_TOKEN`   | _(action input)_          | API token for Cloudflare Workers deployment                           | Cloudflare Dashboard |
+| `CLOUDFLARE_ACCOUNT_ID`  | _(action input)_          | Cloudflare account identifier                                         | Cloudflare Dashboard |
+| `TURNSTILE_SITE_KEY`     | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key for auth form bot protection            | Cloudflare Dashboard |
+| `CONVEX_PROD_URL`        | `VITE_CONVEX_URL`         | `expense-manager` → **production** deployment URL                     | Convex Dashboard     |
+| `CONVEX_PROD_DEPLOY_KEY` | `CONVEX_DEPLOY_KEY`       | `expense-manager` → **production** deploy key (for CI backend deploy) | Convex Dashboard     |
+| `CONVEX_DEV_URL`         | `VITE_CONVEX_URL`         | `expense-manager` → **development** deployment URL (for PR previews)  | Convex Dashboard     |
+| `CONVEX_TEST_URL`        | `VITE_CONVEX_URL`         | `expense-manager-test` → **production** deployment URL                | Convex Dashboard     |
+| `CONVEX_TEST_DEPLOY_KEY` | `CONVEX_DEPLOY_KEY`       | `expense-manager-test` → **production** deploy key                    | Convex Dashboard     |
 
 ### How to Get Each Value
 
