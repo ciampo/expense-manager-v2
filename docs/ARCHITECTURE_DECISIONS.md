@@ -184,24 +184,30 @@ Auth endpoints (sign-in, sign-up, password-reset) and file uploads are
 rate-limited using the `@convex-dev/rate-limiter` Convex component. Rate
 limits are keyed by email for auth flows and by userId for uploads.
 
-**Why:** Without rate limiting, auth endpoints are vulnerable to
-brute-force and credential-stuffing attacks. The password-reset flow sends
-emails via Resend, which has per-email costs. File uploads consume Convex
-storage. Rate limiting caps the blast radius of abuse.
+**Why:** Without rate limiting, auth endpoints and uploads are vulnerable
+to automated abuse such as credential-stuffing with valid passwords,
+account enumeration via high-volume sign-up / reset attempts, and
+excessive file uploads. The sign-in limiter runs in
+`beforeSessionCreation`, so it primarily throttles successful session
+creation rather than failed-password attempts. Protection against
+repeated failed sign-ins is provided separately by
+`@convex-dev/auth` (via `signIn.maxFailedAttempsPerHour`).
+The password-reset flow sends emails via Resend, which has per-email
+costs, and file uploads consume Convex storage, so rate limiting caps the
+blast radius of abuse on those paths.
 
 **Why email-keyed, not IP-keyed:** Convex mutations/queries don't have
 access to client IP addresses. Only HTTP actions receive IP info, but the
 auth flow is handled by `@convex-dev/auth` internally. Email-keyed limits
-still prevent per-account brute-force. IP-level protection is handled by
+still prevent per-account abuse. IP-level protection is handled by
 Cloudflare Turnstile at the edge.
 
 **Password-reset rate limiting:** `@convex-dev/auth` sends the OTP email
 inside its `signIn` action before any mutation callback runs, so the
 password-reset rate limit is enforced via a separate
 `consumePasswordResetRateLimit` mutation that the client calls before
-initiating the reset. This is a defense-in-depth measure: the built-in
-`signIn.maxFailedAttempsPerHour` in `@convex-dev/auth` provides a
-secondary server-side cap on all auth action invocations.
+initiating the reset. This is a defense-in-depth measure alongside the
+built-in `signIn.maxFailedAttempsPerHour` cap on auth action invocations.
 
 **At scale:** Add IP-based rate limiting by wrapping auth HTTP routes with
 a custom HTTP action that extracts the IP, or use Cloudflare WAF
