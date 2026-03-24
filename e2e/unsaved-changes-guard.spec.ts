@@ -1,70 +1,119 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
+
+async function createExpenseAndNavigateToEdit(page: Page) {
+  await page.goto('/expenses/new')
+  await page.getByRole('button', { name: /create expense/i }).waitFor()
+
+  await page.getByRole('combobox', { name: /merchant/i }).click()
+  await page.getByPlaceholder(/search or create/i).fill('Guard Test')
+  await page.getByRole('option', { name: '+ Use "Guard Test"', exact: true }).click()
+  await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
+
+  await page.getByRole('combobox', { name: /category/i }).click()
+  await page.getByRole('option').first().click()
+
+  await page.getByLabel(/amount/i).fill('10')
+  await page.getByRole('button', { name: /create expense/i }).click()
+  await page.waitForURL('**/dashboard', { timeout: 15_000 })
+
+  await page.getByRole('link', { name: /edit/i }).first().click()
+  await page.waitForURL(/\/expenses\//)
+  await page.getByRole('button', { name: /save changes/i }).waitFor()
+}
 
 test.describe('Unsaved changes navigation guard', () => {
   test.setTimeout(60_000)
 
-  test.beforeEach(async ({ page }) => {
-    await signUpTestUser(page)
-    await page.goto('/expenses/new')
-    await page.getByRole('button', { name: /create expense/i }).waitFor()
+  test.describe('create form', () => {
+    test.beforeEach(async ({ page }) => {
+      await signUpTestUser(page)
+      await page.goto('/expenses/new')
+      await page.getByRole('button', { name: /create expense/i }).waitFor()
+    })
+
+    test('does not show dialog when navigating away from a clean form', async ({ page }) => {
+      await page.getByRole('link', { name: /dashboard/i }).click()
+      await page.waitForURL('**/dashboard')
+
+      await expect(page.getByRole('alertdialog')).not.toBeVisible()
+    })
+
+    test('shows dialog when navigating away from a dirty form', async ({ page }) => {
+      await page.getByLabel(/amount/i).fill('10')
+      await expect(page.getByLabel(/amount/i)).toHaveValue('10')
+
+      await page.getByRole('link', { name: /dashboard/i }).click()
+
+      const dialog = page.getByRole('alertdialog')
+      await expect(dialog).toBeVisible()
+      await expect(dialog.getByRole('heading', { name: /unsaved changes/i })).toBeVisible()
+    })
+
+    test('"Stay on page" keeps the user on the form', async ({ page }) => {
+      await page.getByLabel(/amount/i).fill('10')
+
+      await page.getByRole('link', { name: /dashboard/i }).click()
+
+      const dialog = page.getByRole('alertdialog')
+      await dialog.getByRole('button', { name: /stay on page/i }).click()
+
+      await expect(dialog).not.toBeVisible()
+      expect(page.url()).toContain('/expenses/new')
+      await expect(page.getByLabel(/amount/i)).toHaveValue('10')
+    })
+
+    test('"Leave page" navigates away and discards changes', async ({ page }) => {
+      await page.getByLabel(/amount/i).fill('10')
+
+      await page.getByRole('link', { name: /dashboard/i }).click()
+
+      const dialog = page.getByRole('alertdialog')
+      await dialog.getByRole('button', { name: /leave page/i }).click()
+
+      await page.waitForURL('**/dashboard')
+    })
+
+    test('Cancel button triggers guard on a dirty form', async ({ page }) => {
+      await page.getByLabel(/amount/i).fill('10')
+
+      await page.getByRole('button', { name: /^cancel$/i }).click()
+
+      const dialog = page.getByRole('alertdialog')
+      await expect(dialog).toBeVisible()
+    })
+
+    test('Cancel button navigates directly when form is clean', async ({ page }) => {
+      await page.getByRole('button', { name: /^cancel$/i }).click()
+
+      await page.waitForURL('**/dashboard')
+      await expect(page.getByRole('alertdialog')).not.toBeVisible()
+    })
   })
 
-  test('does not show dialog when navigating away from a clean form', async ({ page }) => {
-    await page.getByRole('link', { name: /dashboard/i }).click()
-    await page.waitForURL('**/dashboard')
+  test.describe('edit form', () => {
+    test.beforeEach(async ({ page }) => {
+      await signUpTestUser(page)
+      await createExpenseAndNavigateToEdit(page)
+    })
 
-    await expect(page.getByRole('alertdialog')).not.toBeVisible()
-  })
+    test('shows dialog when navigating away from a dirty edit form', async ({ page }) => {
+      const amountInput = page.getByLabel(/amount/i)
+      await amountInput.clear()
+      await amountInput.fill('99')
 
-  test('shows dialog when navigating away from a dirty form', async ({ page }) => {
-    await page.getByLabel(/amount/i).fill('10')
-    await expect(page.getByLabel(/amount/i)).toHaveValue('10')
+      await page.getByRole('link', { name: /dashboard/i }).click()
 
-    await page.getByRole('link', { name: /dashboard/i }).click()
+      const dialog = page.getByRole('alertdialog')
+      await expect(dialog).toBeVisible()
+      await expect(dialog.getByRole('heading', { name: /unsaved changes/i })).toBeVisible()
+    })
 
-    const dialog = page.getByRole('alertdialog')
-    await expect(dialog).toBeVisible()
-    await expect(dialog.getByRole('heading', { name: /unsaved changes/i })).toBeVisible()
-  })
+    test('does not show dialog when navigating away from a clean edit form', async ({ page }) => {
+      await page.getByRole('link', { name: /dashboard/i }).click()
+      await page.waitForURL('**/dashboard')
 
-  test('"Stay on page" keeps the user on the form', async ({ page }) => {
-    await page.getByLabel(/amount/i).fill('10')
-
-    await page.getByRole('link', { name: /dashboard/i }).click()
-
-    const dialog = page.getByRole('alertdialog')
-    await dialog.getByRole('button', { name: /stay on page/i }).click()
-
-    await expect(dialog).not.toBeVisible()
-    expect(page.url()).toContain('/expenses/new')
-    await expect(page.getByLabel(/amount/i)).toHaveValue('10')
-  })
-
-  test('"Leave page" navigates away and discards changes', async ({ page }) => {
-    await page.getByLabel(/amount/i).fill('10')
-
-    await page.getByRole('link', { name: /dashboard/i }).click()
-
-    const dialog = page.getByRole('alertdialog')
-    await dialog.getByRole('button', { name: /leave page/i }).click()
-
-    await page.waitForURL('**/dashboard')
-  })
-
-  test('Cancel button triggers guard on a dirty form', async ({ page }) => {
-    await page.getByLabel(/amount/i).fill('10')
-
-    await page.getByRole('button', { name: /^cancel$/i }).click()
-
-    const dialog = page.getByRole('alertdialog')
-    await expect(dialog).toBeVisible()
-  })
-
-  test('Cancel button navigates directly when form is clean', async ({ page }) => {
-    await page.getByRole('button', { name: /^cancel$/i }).click()
-
-    await page.waitForURL('**/dashboard')
-    await expect(page.getByRole('alertdialog')).not.toBeVisible()
+      await expect(page.getByRole('alertdialog')).not.toBeVisible()
+    })
   })
 })

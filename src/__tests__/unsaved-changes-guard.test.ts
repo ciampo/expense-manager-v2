@@ -11,6 +11,7 @@ vi.mock('@tanstack/react-router', () => ({
   useBlocker: vi.fn(() => mockBlocker),
 }))
 
+import type { UseBlockerOpts } from '@tanstack/react-router'
 import { useBlocker } from '@tanstack/react-router'
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
 
@@ -21,7 +22,8 @@ describe('useUnsavedChangesGuard', () => {
 
   function capturedShouldBlockFn() {
     const calls = vi.mocked(useBlocker).mock.calls
-    return calls[calls.length - 1][0].shouldBlockFn!
+    const opts = calls[calls.length - 1]![0] as unknown as UseBlockerOpts
+    return opts.shouldBlockFn as unknown as () => boolean
   }
 
   it('passes shouldBlockFn, enableBeforeUnload, and withResolver to useBlocker', () => {
