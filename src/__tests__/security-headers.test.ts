@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SECURITY_HEADERS, addSecurityHeaders } from '@/lib/security-headers'
+import { SECURITY_HEADERS, CSP_REPORT_PATH, addSecurityHeaders } from '@/lib/security-headers'
 
 describe('SECURITY_HEADERS', () => {
   it('defines all expected header names', () => {
@@ -9,6 +9,7 @@ describe('SECURITY_HEADERS', () => {
     expect(names).toContain('X-Frame-Options')
     expect(names).toContain('Referrer-Policy')
     expect(names).toContain('Permissions-Policy')
+    expect(names).toContain('Reporting-Endpoints')
     expect(names).toContain('Content-Security-Policy-Report-Only')
   })
 
@@ -27,6 +28,20 @@ describe('SECURITY_HEADERS', () => {
   it('includes frame-ancestors for clickjacking protection', () => {
     const csp = SECURITY_HEADERS['Content-Security-Policy-Report-Only']
     expect(csp).toContain("frame-ancestors 'none'")
+  })
+
+  it('includes report-to and report-uri directives', () => {
+    const csp = SECURITY_HEADERS['Content-Security-Policy-Report-Only']
+    expect(csp).toContain('report-to csp-endpoint')
+    expect(csp).toContain(`report-uri ${CSP_REPORT_PATH}`)
+  })
+
+  it('configures Reporting-Endpoints header pointing to CSP_REPORT_PATH', () => {
+    expect(SECURITY_HEADERS['Reporting-Endpoints']).toBe(`csp-endpoint="${CSP_REPORT_PATH}"`)
+  })
+
+  it('includes preload in HSTS header', () => {
+    expect(SECURITY_HEADERS['Strict-Transport-Security']).toContain('preload')
   })
 })
 

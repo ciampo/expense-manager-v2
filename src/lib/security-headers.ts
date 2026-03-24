@@ -1,9 +1,12 @@
+export const CSP_REPORT_PATH = '/__csp-report'
+
 export const SECURITY_HEADERS: Record<string, string> = {
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Reporting-Endpoints': `csp-endpoint="${CSP_REPORT_PATH}"`,
   // Report-Only during initial rollout — switch to Content-Security-Policy
   // once monitoring confirms no false positives.
   'Content-Security-Policy-Report-Only': [
@@ -18,6 +21,8 @@ export const SECURITY_HEADERS: Record<string, string> = {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
+    'report-to csp-endpoint',
+    `report-uri ${CSP_REPORT_PATH}`,
   ].join('; '),
 }
 
