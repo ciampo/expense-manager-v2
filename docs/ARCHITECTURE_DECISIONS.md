@@ -254,3 +254,39 @@ unset — if only the server key is set, auth flows fail because no widget
 produces a token. For local development, leave both unset (do not set
 `TURNSTILE_SECRET_KEY` on the dev Convex deployment) so no Turnstile
 keys are required for local work.
+
+---
+
+## 11. Security headers via Cloudflare Worker
+
+Standard security headers (HSTS, X-Content-Type-Options, X-Frame-Options,
+Referrer-Policy, Permissions-Policy, CSP) are added to all Worker
+responses via a custom server entry point (`src/server.ts`).
+
+**Why:** Defense-in-depth. While React's JSX escaping prevents most XSS,
+security headers provide additional layers (clickjacking protection, MIME
+sniffing prevention, referrer control). A Content Security Policy (CSP) is
+currently deployed in Report-Only mode with a permissive `script-src` that
+still allows inline scripts (`'unsafe-inline'`), so it primarily provides
+monitoring and visibility into potential violations rather than hard
+blocking at this stage.
+
+**CSP violation reporting:** A same-origin `/__csp-report` endpoint
+receives violation reports (via `report-to` and legacy `report-uri`
+directives). The Worker logs reports with `console.log`, making them
+visible in Cloudflare's real-time logs (`wrangler tail`) with no
+external infrastructure required.
+
+**HSTS preload:** The `Strict-Transport-Security` header includes the
+`preload` directive, signaling eligibility for the
+[HSTS preload list](https://hstspreload.org). Submission is a separate
+manual step after verifying the header is served consistently.
+
+**Trade-off:** Maintaining a strict CSP requires ongoing work — any new
+third-party script or resource needs to be added to the policy. The
+`Content-Security-Policy-Report-Only` header is used during initial
+rollout to catch violations without breaking functionality. Once
+monitoring confirms no false positives and inline script usage has been
+removed (allowing `'unsafe-inline'` to be dropped), the policy can be
+tightened and switched to the enforcing `Content-Security-Policy` header
+to materially mitigate XSS.
