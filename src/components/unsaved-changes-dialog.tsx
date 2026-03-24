@@ -32,7 +32,7 @@ export function UnsavedChangesDialog({ open, onStay, onLeave }: UnsavedChangesDi
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onStay}>Stay on page</AlertDialogCancel>
+          <AlertDialogCancel>Stay on page</AlertDialogCancel>
           <AlertDialogAction onClick={onLeave}>Leave page</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
