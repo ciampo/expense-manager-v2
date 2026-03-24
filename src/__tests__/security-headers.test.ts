@@ -73,6 +73,15 @@ describe('buildCspHeader', () => {
     expect(csp).toContain('report-to csp-endpoint')
     expect(csp).toContain(`report-uri ${CSP_REPORT_PATH}`)
   })
+
+  it.each(['', ' ', 'not!base64', 'has spaces', '<script>'])(
+    'throws on invalid nonce %j',
+    (bad) => {
+      expect(() => buildCspHeader(bad)).toThrow(
+        'buildCspHeader: nonce must be a non-empty base64 string',
+      )
+    },
+  )
 })
 
 describe('addSecurityHeaders', () => {

@@ -23,6 +23,10 @@ export const SECURITY_HEADERS: Record<string, string> = {
  * styles (`style` attribute) cannot use nonces and are low-risk.
  */
 export function buildCspHeader(nonce: string): string {
+  if (!nonce || !/^[A-Za-z0-9+/]+=*$/.test(nonce)) {
+    throw new Error('buildCspHeader: nonce must be a non-empty base64 string')
+  }
+
   return [
     "default-src 'self'",
     `script-src 'strict-dynamic' 'nonce-${nonce}' 'self' https://challenges.cloudflare.com`,
