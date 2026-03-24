@@ -265,12 +265,17 @@ responses via a custom server entry point (`src/server.ts`).
 
 **Why:** Defense-in-depth. While React's JSX escaping prevents most XSS,
 security headers provide additional layers (clickjacking protection, MIME
-sniffing prevention, referrer control). CSP restricts script sources to
-mitigate any future XSS vectors.
+sniffing prevention, referrer control). A Content Security Policy (CSP) is
+currently deployed in Report-Only mode with a permissive `script-src` that
+still allows inline scripts (`'unsafe-inline'`), so it primarily provides
+monitoring and visibility into potential violations rather than hard
+blocking at this stage.
 
-**Trade-off:** CSP requires maintenance — any new third-party script or
-resource needs to be added to the policy. The
+**Trade-off:** Maintaining a strict CSP requires ongoing work — any new
+third-party script or resource needs to be added to the policy. The
 `Content-Security-Policy-Report-Only` header is used during initial
 rollout to catch violations without breaking functionality. Once
-monitoring confirms no false positives, switch to the enforcing
-`Content-Security-Policy` header.
+monitoring confirms no false positives and inline script usage has been
+removed (allowing `'unsafe-inline'` to be dropped), the policy can be
+tightened and switched to the enforcing `Content-Security-Policy` header
+to materially mitigate XSS.
