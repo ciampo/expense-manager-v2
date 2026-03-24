@@ -11,8 +11,21 @@ import { verifyTurnstileToken } from './turnstile'
 // uses ConvexCredentials internally, which stores the real authorize in an
 // `options` property (internal to @convex-dev/auth).
 const passwordProvider = Password({ reset: ResendOTPPasswordReset })
-const providerOptions = (passwordProvider as unknown as Record<string, unknown>).options as {
-  authorize: (params: Record<string, Value | undefined>, ctx: unknown) => Promise<unknown>
+const providerAny = passwordProvider as unknown as Record<string, unknown>
+if (!providerAny.options || typeof providerAny.options !== 'object') {
+  throw new Error(
+    'Turnstile integration: Password provider does not expose `options`. ' +
+      '@convex-dev/auth internals may have changed — update the Turnstile wrapper.',
+  )
+}
+const providerOptions = providerAny.options as {
+  authorize?: (params: Record<string, Value | undefined>, ctx: unknown) => Promise<unknown>
+}
+if (typeof providerOptions.authorize !== 'function') {
+  throw new Error(
+    'Turnstile integration: `options.authorize` is not a function. ' +
+      '@convex-dev/auth internals may have changed — update the Turnstile wrapper.',
+  )
 }
 const originalAuthorize = providerOptions.authorize
 providerOptions.authorize = async (params, ctx) => {
