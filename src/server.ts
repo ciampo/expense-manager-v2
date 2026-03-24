@@ -16,6 +16,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "font-src 'self'",
     "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com",
     'frame-src https://challenges.cloudflare.com',
+    "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
