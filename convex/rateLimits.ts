@@ -36,11 +36,23 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
  * protection against repeated failed attempts is provided by
  * `@convex-dev/auth`'s built-in `signIn.maxFailedAttempsPerHour`.
  */
+const MAX_EMAIL_LENGTH = 320 // RFC 5321
+const BASIC_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export const consumePasswordResetRateLimit = mutation({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
+    const normalized = normalizeEmail(email)
+    if (
+      normalized.length === 0 ||
+      normalized.length > MAX_EMAIL_LENGTH ||
+      !BASIC_EMAIL_RE.test(normalized)
+    ) {
+      return
+    }
+
     const { ok, retryAfter } = await rateLimiter.limit(ctx, 'passwordReset', {
-      key: normalizeEmail(email),
+      key: normalized,
     })
     if (!ok) {
       throw new Error(

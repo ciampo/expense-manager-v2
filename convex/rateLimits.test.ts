@@ -72,6 +72,18 @@ describe('consumePasswordResetRateLimit', () => {
     ).rejects.toThrow(/too many password reset attempts/i)
   })
 
+  it('silently ignores invalid email formats without consuming a token', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+
+    const invalidEmails = ['', 'not-an-email', 'a'.repeat(321) + '@x.com', '@missing-local.com']
+    for (const email of invalidEmails) {
+      await expect(
+        t.mutation(api.rateLimits.consumePasswordResetRateLimit, { email }),
+      ).resolves.not.toThrow()
+    }
+  })
+
   it('tracks different emails independently', async () => {
     const t = convexTest(schema, modules)
     registerRateLimiter(t)
