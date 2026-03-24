@@ -2,6 +2,14 @@ import { RateLimiter, MINUTE, HOUR } from '@convex-dev/rate-limiter'
 import { v } from 'convex/values'
 import { components } from './_generated/api'
 import { mutation } from './_generated/server'
+import { normalizeEmail } from './emailAllowlist'
+
+export function formatRetryDelay(retryAfterMs: number): string {
+  const seconds = Math.ceil(retryAfterMs / 1000)
+  if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''}`
+  const minutes = Math.ceil(seconds / 60)
+  return `${minutes} minute${minutes !== 1 ? 's' : ''}`
+}
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
   // Complements @convex-dev/auth's built-in maxFailedAttempsPerHour (failed-password brute-force).
@@ -31,14 +39,12 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
 export const consumePasswordResetRateLimit = mutation({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
-    const normalizedEmail = email.trim().toLowerCase()
     const { ok, retryAfter } = await rateLimiter.limit(ctx, 'passwordReset', {
-      key: normalizedEmail,
+      key: normalizeEmail(email),
     })
     if (!ok) {
-      const minutes = Math.ceil(retryAfter / 1000 / 60)
       throw new Error(
-        `Too many password reset attempts. Please try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
+        `Too many password reset attempts. Please try again in ${formatRetryDelay(retryAfter)}.`,
       )
     }
   },

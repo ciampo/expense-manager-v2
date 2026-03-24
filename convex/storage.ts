@@ -4,7 +4,7 @@ import { internalMutation, mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 import { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from './uploadLimits'
-import { rateLimiter } from './rateLimits'
+import { formatRetryDelay, rateLimiter } from './rateLimits'
 
 const ORPHAN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const CLEANUP_BATCH_SIZE = 100
@@ -109,8 +109,7 @@ export const generateUploadUrl = mutation({
       key: userId,
     })
     if (!ok) {
-      const seconds = Math.ceil(retryAfter / 1000)
-      throw new Error(`Too many uploads. Please try again in ${seconds} seconds.`)
+      throw new Error(`Too many uploads. Please try again in ${formatRetryDelay(retryAfter)}.`)
     }
 
     return await ctx.storage.generateUploadUrl()

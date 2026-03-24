@@ -1,8 +1,8 @@
 import { convexAuth } from '@convex-dev/auth/server'
 import { Password } from '@convex-dev/auth/providers/Password'
 import { ResendOTPPasswordReset } from './ResendOTPPasswordReset'
-import { isEmailAllowed, parseAllowedEmails } from './emailAllowlist'
-import { rateLimiter } from './rateLimits'
+import { isEmailAllowed, normalizeEmail, parseAllowedEmails } from './emailAllowlist'
+import { formatRetryDelay, rateLimiter } from './rateLimits'
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Password({ reset: ResendOTPPasswordReset })],
@@ -21,10 +21,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           throw new Error('Registration is not available')
         }
 
-        const email = (profile as { email?: string }).email
-        if (email) {
+        if (profile.email) {
           const { ok } = await rateLimiter.limit(ctx, 'signUp', {
-            key: normalizeEmail(email),
+            key: normalizeEmail(profile.email),
           })
           if (!ok) {
             throw new Error('Registration is not available')
@@ -77,14 +76,3 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     },
   },
 })
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase()
-}
-
-function formatRetryDelay(retryAfterMs: number): string {
-  const seconds = Math.ceil(retryAfterMs / 1000)
-  if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''}`
-  const minutes = Math.ceil(seconds / 60)
-  return `${minutes} minute${minutes !== 1 ? 's' : ''}`
-}

@@ -218,7 +218,10 @@ password-reset rate limit is enforced via a client-side preflight
 mutation (`consumePasswordResetRateLimit`) that the official UI calls
 before initiating the reset. A custom client could bypass this check.
 True server-side enforcement of reset attempts relies on Layer 1's
-failed-attempt cap.
+failed-attempt cap. Note: because the preflight mutation is
+unauthenticated, an attacker could invoke it with a victim's email to
+exhaust their 3/hour budget — the official UI would then show "too many
+attempts" even though the actual reset flow (via `signIn`) still works.
 
 **At scale:** Add IP-based rate limiting by wrapping auth HTTP routes with
 a custom HTTP action that extracts the IP, or use Cloudflare WAF

@@ -1,3 +1,7 @@
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
 export function parseAllowedEmails(): string[] {
   return (process.env.ALLOWED_EMAILS ?? '')
     .split(',')
