@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { useTurnstile, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
+import { useTurnstile, isTurnstileError, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
 
 export const Route = createFileRoute('/_auth/forgot-password')({
   component: ForgotPasswordPage,
@@ -108,14 +108,19 @@ function EmailStep({
         }
         await signIn('password', formData)
       } catch (error) {
-        // Silently swallow — never reveal whether the email exists
-        // to prevent account-enumeration attacks.
+        if (isTurnstileError(error)) {
+          setServerError('Bot verification failed. Please complete the verification and try again.')
+          return
+        }
+        // Silently swallow all other errors — never reveal whether
+        // the email exists to prevent account-enumeration attacks.
         console.error('Password reset request error:', error)
       } finally {
         turnstile.reset()
-        toast('If an account with that email exists, a verification code was sent.')
-        onSuccess(value.email)
       }
+
+      toast('If an account with that email exists, a verification code was sent.')
+      onSuccess(value.email)
     },
   })
 

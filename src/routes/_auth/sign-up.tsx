@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { useTurnstile, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
+import { useTurnstile, isTurnstileError, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
 
 export const Route = createFileRoute('/_auth/sign-up')({
   component: SignUpPage,
@@ -67,8 +67,9 @@ function SignUpPage() {
         toast.success('Account created successfully')
       } catch (error) {
         console.error('Sign up error:', error)
-        const message =
-          error instanceof Error && /registration is not available/i.test(error.message)
+        const message = isTurnstileError(error)
+          ? 'Bot verification failed. Please complete the verification and try again.'
+          : error instanceof Error && /registration is not available/i.test(error.message)
             ? 'Registration is not available.'
             : error instanceof Error && /already exists/i.test(error.message)
               ? 'An account with this email already exists. Try signing in instead.'

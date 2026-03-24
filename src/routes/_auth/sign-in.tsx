@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { useTurnstile, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
+import { useTurnstile, isTurnstileError, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
 
 export const Route = createFileRoute('/_auth/sign-in')({
   component: SignInPage,
@@ -65,9 +65,11 @@ function SignInPage() {
       } catch (error) {
         console.error('Sign in error:', error)
         setServerError(
-          error instanceof Error && /too many/i.test(error.message)
-            ? error.message
-            : 'Invalid email or password',
+          isTurnstileError(error)
+            ? 'Bot verification failed. Please complete the verification and try again.'
+            : error instanceof Error && /too many/i.test(error.message)
+              ? error.message
+              : 'Invalid email or password',
         )
       } finally {
         turnstile.reset()
