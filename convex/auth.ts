@@ -23,13 +23,11 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
         const email = (profile as { email?: string }).email
         if (email) {
-          const { ok, retryAfter } = await rateLimiter.limit(ctx, 'signUp', {
+          const { ok } = await rateLimiter.limit(ctx, 'signUp', {
             key: normalizeEmail(email),
           })
           if (!ok) {
-            throw new Error(
-              `Too many sign-up attempts. Please try again in ${formatRetryDelay(retryAfter)}.`,
-            )
+            throw new Error('Registration is not available')
           }
         }
       }
