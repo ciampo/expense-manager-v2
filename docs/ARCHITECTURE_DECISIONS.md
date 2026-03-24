@@ -178,23 +178,31 @@ with a DB-backed invite table with admin UI.
 
 ---
 
-## 9. Application-level rate limiting via `@convex-dev/rate-limiter`
+## 9. Application-level rate limiting
 
-Auth endpoints (sign-in, sign-up, password-reset) and file uploads are
-rate-limited using the `@convex-dev/rate-limiter` Convex component. Rate
-limits are keyed by email for auth flows and by userId for uploads.
+Auth endpoints and file uploads are rate-limited through two
+complementary layers:
 
-**Why:** Without rate limiting, auth endpoints and uploads are vulnerable
-to automated abuse such as credential-stuffing with valid passwords,
-account enumeration via high-volume sign-up / reset attempts, and
-excessive file uploads. The sign-in limiter runs in
-`beforeSessionCreation`, so it primarily throttles successful session
-creation rather than failed-password attempts. Protection against
-repeated failed sign-ins is provided separately by
-`@convex-dev/auth` (via `signIn.maxFailedAttempsPerHour`).
-The password-reset flow sends emails via Resend, which has per-email
-costs, and file uploads consume Convex storage, so rate limiting caps the
-blast radius of abuse on those paths.
+**Layer 1 — `@convex-dev/auth` built-in failed-attempt limiter.** The
+library tracks failed credential attempts (wrong password, wrong OTP) and
+blocks further attempts after the configured threshold. We explicitly set
+`signIn.maxFailedAttempsPerHour: 10` in `convexAuth()` — this is the
+primary defense against brute-force password guessing from
+unauthenticated users. On successful auth the counter resets.
+
+**Layer 2 — `@convex-dev/rate-limiter` application-level limits.** A
+Convex component that enforces additional per-account limits:
+
+- **Sign-in** (5/min, token bucket, `beforeSessionCreation`): caps
+  successful session creation. This fires only after credentials are
+  accepted, so it guards against credential-stuffing with valid/leaked
+  passwords — not failed-password brute-force (which Layer 1 handles).
+- **Sign-up** (3/hour, fixed window, `createOrUpdateUser`): prevents mass
+  account creation.
+- **Password reset** (3/hour, fixed window, client-side preflight
+  mutation): prevents OTP email spam via Resend.
+- **File upload** (10/min, token bucket, `generateUploadUrl`): prevents
+  storage abuse by authenticated users.
 
 **Why email-keyed, not IP-keyed:** Convex mutations/queries don't have
 access to client IP addresses. Only HTTP actions receive IP info, but the
@@ -206,8 +214,8 @@ Cloudflare Turnstile at the edge.
 inside its `signIn` action before any mutation callback runs, so the
 password-reset rate limit is enforced via a separate
 `consumePasswordResetRateLimit` mutation that the client calls before
-initiating the reset. This is a defense-in-depth measure alongside the
-built-in `signIn.maxFailedAttempsPerHour` cap on auth action invocations.
+initiating the reset. This is a defense-in-depth measure alongside
+Layer 1's failed-attempt cap.
 
 **At scale:** Add IP-based rate limiting by wrapping auth HTTP routes with
 a custom HTTP action that extracts the IP, or use Cloudflare WAF

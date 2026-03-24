@@ -4,8 +4,8 @@ import { components } from './_generated/api'
 import { mutation } from './_generated/server'
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
-  // Auth: cap session creation per account (credential-stuffing with valid creds).
-  // Failed-password brute-force is handled by @convex-dev/auth's maxFailedAttempsPerHour.
+  // Complements @convex-dev/auth's built-in maxFailedAttempsPerHour (failed-password brute-force).
+  // This limiter caps successful session creation per account (credential-stuffing with valid creds).
   signIn: { kind: 'token bucket', rate: 5, period: MINUTE },
   // Auth: prevent mass account creation
   signUp: { kind: 'fixed window', rate: 3, period: HOUR },

@@ -6,6 +6,9 @@ import { rateLimiter } from './rateLimits'
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Password({ reset: ResendOTPPasswordReset })],
+  signIn: {
+    maxFailedAttempsPerHour: 10,
+  },
   callbacks: {
     async createOrUpdateUser(ctx, { existingUserId, profile }) {
       if (!existingUserId) {
