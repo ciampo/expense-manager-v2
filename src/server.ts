@@ -10,12 +10,12 @@ const SECURITY_HEADERS: Record<string, string> = {
   // once monitoring confirms no false positives.
   'Content-Security-Policy-Report-Only': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://*.convex.cloud",
     "font-src 'self'",
-    "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud",
-    "frame-src 'none'",
+    "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com",
+    'frame-src https://challenges.cloudflare.com',
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
