@@ -6,36 +6,39 @@ import { isEmailAllowed, normalizeEmail, parseAllowedEmails } from './emailAllow
 import { formatRetryDelay, rateLimiter } from './rateLimits'
 import { verifyTurnstileToken } from './turnstile'
 
-// Wrap the Password provider's authorize function to validate Cloudflare
-// Turnstile tokens before processing any auth request. The Password provider
-// uses ConvexCredentials internally, which stores the real authorize in an
-// `options` property (internal to @convex-dev/auth).
+// When Turnstile is configured, wrap the Password provider's authorize to
+// validate tokens before processing auth requests. The wrapping accesses an
+// internal `options.authorize` property of @convex-dev/auth — by gating on
+// TURNSTILE_SECRET_KEY we avoid touching provider internals when Turnstile
+// is disabled (local dev).
 const passwordProvider = Password({ reset: ResendOTPPasswordReset })
-const providerAny = passwordProvider as unknown as Record<string, unknown>
-if (!providerAny.options || typeof providerAny.options !== 'object') {
-  throw new Error(
-    'Turnstile integration: Password provider does not expose `options`. ' +
-      '@convex-dev/auth internals may have changed — update the Turnstile wrapper.',
-  )
-}
-const providerOptions = providerAny.options as {
-  authorize?: (params: Record<string, Value | undefined>, ctx: unknown) => Promise<unknown>
-}
-if (typeof providerOptions.authorize !== 'function') {
-  throw new Error(
-    'Turnstile integration: `options.authorize` is not a function. ' +
-      '@convex-dev/auth internals may have changed — update the Turnstile wrapper.',
-  )
-}
-const originalAuthorize = providerOptions.authorize
-providerOptions.authorize = async (params, ctx) => {
-  const isResetVerification = params.code !== undefined && params.newPassword !== undefined
-  if (!isResetVerification) {
-    const turnstileToken =
-      typeof params.turnstileToken === 'string' ? params.turnstileToken : undefined
-    await verifyTurnstileToken(turnstileToken)
+if (process.env.TURNSTILE_SECRET_KEY) {
+  const providerAny = passwordProvider as unknown as Record<string, unknown>
+  if (!providerAny.options || typeof providerAny.options !== 'object') {
+    throw new Error(
+      'Turnstile integration: Password provider does not expose `options`. ' +
+        '@convex-dev/auth internals may have changed — update the Turnstile wrapper.',
+    )
   }
-  return originalAuthorize(params, ctx)
+  const providerOptions = providerAny.options as {
+    authorize?: (params: Record<string, Value | undefined>, ctx: unknown) => Promise<unknown>
+  }
+  if (typeof providerOptions.authorize !== 'function') {
+    throw new Error(
+      'Turnstile integration: `options.authorize` is not a function. ' +
+        '@convex-dev/auth internals may have changed — update the Turnstile wrapper.',
+    )
+  }
+  const originalAuthorize = providerOptions.authorize
+  providerOptions.authorize = async (params, ctx) => {
+    const isResetVerification = params.code !== undefined && params.newPassword !== undefined
+    if (!isResetVerification) {
+      const turnstileToken =
+        typeof params.turnstileToken === 'string' ? params.turnstileToken : undefined
+      await verifyTurnstileToken(turnstileToken)
+    }
+    return originalAuthorize(params, ctx)
+  }
 }
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
