@@ -16,7 +16,7 @@ This document lists all environment variables used in the Expense Manager projec
 | `CLOUDFLARE_ACCOUNT_ID`   | GitHub Secrets                       | Cloudflare account identifier                                 |
 | `TURNSTILE_SECRET_KEY`    | Convex Environment                   | Cloudflare Turnstile secret key for server-side verification  |
 | `E2E_CLEANUP_ALLOWED`     | Convex Environment                   | Guardrail — must be `true` for `seed:cleanup` to run          |
-| `CONVEX_SITE_URL`         | Convex Environment                   | Base site URL for auth (auto-set by `npx @convex-dev/auth`)   |
+| `SITE_URL`                | Convex Environment                   | Base site URL for auth (auto-set by `npx @convex-dev/auth`)   |
 | `JWT_PRIVATE_KEY`         | Convex Environment                   | Private key for signing JWTs (auto-set by auth setup)         |
 | `JWKS`                    | Convex Environment                   | JSON Web Key Set for verifying JWTs (auto-set by auth setup)  |
 | `AUTH_RESEND_KEY`         | Convex Environment                   | Resend API key for password reset emails                      |
@@ -189,11 +189,11 @@ npx convex env set VARIABLE_NAME value
 
 | Variable          | Required | Description                                                                                         |
 | ----------------- | -------- | --------------------------------------------------------------------------------------------------- |
-| `CONVEX_SITE_URL` | Yes      | Base site URL for auth callbacks (set by `npx @convex-dev/auth`; must match the site URL you enter) |
+| `SITE_URL`        | Yes      | Base site URL for auth callbacks (set by `npx @convex-dev/auth`; must match the site URL you enter) |
 | `JWT_PRIVATE_KEY` | Yes      | Private key for signing JWTs (set by `npx @convex-dev/auth`)                                        |
 | `JWKS`            | Yes      | JSON Web Key Set for verifying JWTs (set by `npx @convex-dev/auth`)                                 |
 
-> **Note:** These are set automatically by running `npx @convex-dev/auth` (or `npx @convex-dev/auth --prod` for production). Do not edit them manually. `CONVEX_SITE_URL` is read by `convex/auth.config.ts` to configure the auth provider domain.
+> **Note:** These are set automatically by running `npx @convex-dev/auth` (or `npx @convex-dev/auth --prod` for production). Do not edit them manually. Convex exposes `SITE_URL` to server code as `process.env.CONVEX_SITE_URL` (with the `CONVEX_` prefix); `convex/auth.config.ts` reads it via that prefixed name.
 
 ### Application Variables
 
