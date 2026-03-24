@@ -460,7 +460,7 @@ CONVEX_TEST_DEPLOY_KEY     # For E2E tests
 pnpm check:env
 
 # Also check the production Convex deployment (key from GH Secrets)
-CONVEX_PROD_DEPLOY_KEY=prod:... pnpm check:env
+CONVEX_PROD_DEPLOY_KEY='prod:...' pnpm check:env
 
 # Only check local env files (no network calls)
 pnpm check:env --skip-remote
@@ -500,7 +500,7 @@ pnpm check:env
 ### Options
 
 - **`--skip-remote`** — Only check local env files (`.env.local`, `.env.e2e`). Useful offline or in CI where remote credentials aren't available.
-- **`CONVEX_PROD_DEPLOY_KEY=prod:... pnpm check:env`** — Also audit the production Convex deployment. The production deploy key is normally only in GitHub Secrets; pass it as an env var to include that check.
+- **`CONVEX_PROD_DEPLOY_KEY='prod:...' pnpm check:env`** — Also audit the production Convex deployment. The production deploy key is normally only in GitHub Secrets; pass it as an env var to include that check. **Quote the value** — deploy keys contain `|` which the shell interprets as a pipe.
 
 ### Graceful degradation
 

@@ -5,7 +5,7 @@
 # Usage:
 #   pnpm check:env                          # check everything reachable
 #   pnpm check:env --skip-remote            # only check local env files
-#   CONVEX_PROD_DEPLOY_KEY=prod:... pnpm check:env   # also check prod Convex
+#   CONVEX_PROD_DEPLOY_KEY='prod:...' pnpm check:env  # also check prod Convex
 
 set -euo pipefail
 
