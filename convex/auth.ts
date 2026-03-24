@@ -1,6 +1,6 @@
 import { convexAuth } from '@convex-dev/auth/server'
 import { Password } from '@convex-dev/auth/providers/Password'
-import { Value } from 'convex/values'
+import type { Value } from 'convex/values'
 import { ResendOTPPasswordReset } from './ResendOTPPasswordReset'
 import { isEmailAllowed, normalizeEmail, parseAllowedEmails } from './emailAllowlist'
 import { formatRetryDelay, rateLimiter } from './rateLimits'
