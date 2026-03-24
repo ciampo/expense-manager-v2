@@ -289,7 +289,7 @@ npx convex env set TURNSTILE_SECRET_KEY "0x..."
 - **GitHub Actions:** Add a `TURNSTILE_SITE_KEY` repository secret (Settings → Secrets → Actions)
 - **E2E tests:** Use Cloudflare's always-pass test key (`1x00000000000000000000AA`) in `.env.e2e` and set the always-pass secret key (`1x0000000000000000000000000000000AA`) on the Convex test deployment
 
-> **Graceful degradation:** When either key is unset, Turnstile is fully skipped — the widget doesn't render and the server skips validation. This keeps local development frictionless.
+> **Graceful degradation:** Server-side validation runs only when `TURNSTILE_SECRET_KEY` is set on the Convex deployment; the client widget renders only when `VITE_TURNSTILE_SITE_KEY` is set. For each environment, either configure both keys or leave both unset. If `TURNSTILE_SECRET_KEY` is set but the site key is not, the widget won't render but the server will still require a token and auth flows will fail. In local development you can skip Turnstile entirely by leaving `TURNSTILE_SECRET_KEY` unset on the Convex dev deployment.
 
 ---
 

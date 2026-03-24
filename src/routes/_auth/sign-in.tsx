@@ -164,7 +164,11 @@ function SignInPage() {
             errors={serverError ? [{ message: serverError }] : undefined}
             className="text-center"
           />
-          <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.state.isSubmitting || !turnstile.isReady}
+          >
             {form.state.isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>
           <p className="text-muted-foreground text-center text-sm">

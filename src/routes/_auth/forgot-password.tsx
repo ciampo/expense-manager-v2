@@ -181,7 +181,11 @@ function EmailStep({
             errors={serverError ? [{ message: serverError }] : undefined}
             className="text-center"
           />
-          <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.state.isSubmitting || !turnstile.isReady}
+          >
             {form.state.isSubmitting ? 'Sending...' : 'Send verification code'}
           </Button>
           <Link

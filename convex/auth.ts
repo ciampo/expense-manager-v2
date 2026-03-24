@@ -16,7 +16,10 @@ const providerOptions = (passwordProvider as unknown as Record<string, unknown>)
 }
 const originalAuthorize = providerOptions.authorize
 providerOptions.authorize = async (params, ctx) => {
-  await verifyTurnstileToken(params.turnstileToken as string | undefined)
+  const isResetVerification = params.code !== undefined && params.newPassword !== undefined
+  if (!isResetVerification) {
+    await verifyTurnstileToken(params.turnstileToken as string | undefined)
+  }
   return originalAuthorize(params, ctx)
 }
 

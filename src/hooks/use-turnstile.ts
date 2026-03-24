@@ -8,7 +8,7 @@ export function isTurnstileError(error: unknown): boolean {
 }
 
 export function useTurnstile() {
-  const ref = useRef<TurnstileInstance>(null)
+  const ref = useRef<TurnstileInstance | null>(null)
   const [token, setToken] = useState<string | null>(null)
 
   const reset = useCallback(() => {
@@ -18,5 +18,7 @@ export function useTurnstile() {
 
   const clearToken = useCallback(() => setToken(null), [])
 
-  return { ref, token, setToken, reset, clearToken }
+  const isReady = !TURNSTILE_SITE_KEY || token !== null
+
+  return { ref, token, setToken, reset, clearToken, isReady }
 }
