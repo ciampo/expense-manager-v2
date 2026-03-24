@@ -246,6 +246,60 @@ else
     fi
   fi
 
+  # -------------------------------------------------------------------------
+  # 7. Turnstile key pairing cross-check
+  # -------------------------------------------------------------------------
+  header "Turnstile key pairing"
+
+  PAIRING_OK=true
+
+  # Dev: TURNSTILE_SECRET_KEY on Convex dev ↔ VITE_TURNSTILE_SITE_KEY in .env.local
+  if [ -f .env.local ] && grep -q '^CONVEX_DEPLOYMENT=' .env.local 2>/dev/null; then
+    DEV_VARS=$(convex_env_names "" 2>/dev/null || true)
+    DEV_HAS_SECRET=$(echo "$DEV_VARS" | grep -cx "TURNSTILE_SECRET_KEY" || true)
+    LOCAL_HAS_SITE=$(grep -c '^VITE_TURNSTILE_SITE_KEY=' .env.local 2>/dev/null || true)
+    if [ "$DEV_HAS_SECRET" -gt 0 ] && [ "$LOCAL_HAS_SITE" -eq 0 ]; then
+      echo -e "  ${RED}MISMATCH${RESET}  Convex dev has TURNSTILE_SECRET_KEY but .env.local is missing VITE_TURNSTILE_SITE_KEY"
+      echo -e "           Remove it from dev: npx convex env remove TURNSTILE_SECRET_KEY"
+      PAIRING_OK=false
+    fi
+  fi
+
+  # Test: TURNSTILE_SECRET_KEY on Convex test ↔ VITE_TURNSTILE_SITE_KEY in .env.e2e
+  if [ -n "${TEST_DEPLOY_KEY:-}" ]; then
+    TEST_VARS=$(convex_env_names "$TEST_DEPLOY_KEY" 2>/dev/null || true)
+    TEST_HAS_SECRET=$(echo "$TEST_VARS" | grep -cx "TURNSTILE_SECRET_KEY" || true)
+    E2E_HAS_SITE=$(grep -c '^VITE_TURNSTILE_SITE_KEY=' .env.e2e 2>/dev/null || true)
+    if [ "$TEST_HAS_SECRET" -gt 0 ] && [ "$E2E_HAS_SITE" -eq 0 ]; then
+      echo -e "  ${RED}MISMATCH${RESET}  Convex test has TURNSTILE_SECRET_KEY but .env.e2e is missing VITE_TURNSTILE_SITE_KEY"
+      PAIRING_OK=false
+    elif [ "$TEST_HAS_SECRET" -eq 0 ] && [ "$E2E_HAS_SITE" -gt 0 ]; then
+      echo -e "  ${YELLOW}WARNING${RESET}   .env.e2e has VITE_TURNSTILE_SITE_KEY but Convex test is missing TURNSTILE_SECRET_KEY"
+    fi
+  fi
+
+  # Prod: TURNSTILE_SECRET_KEY on Convex prod ↔ TURNSTILE_SITE_KEY in GH Secrets
+  if [ -n "${PROD_DEPLOY_KEY:-}" ]; then
+    PROD_VARS=$(convex_env_names "$PROD_DEPLOY_KEY" 2>/dev/null || true)
+    PROD_HAS_SECRET=$(echo "$PROD_VARS" | grep -cx "TURNSTILE_SECRET_KEY" || true)
+    GH_HAS_SITE=0
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+      GH_HAS_SITE=$(gh secret list --json name -q '.[].name' 2>/dev/null | grep -cx "TURNSTILE_SITE_KEY" || true)
+    fi
+    if [ "$PROD_HAS_SECRET" -gt 0 ] && [ "$GH_HAS_SITE" -eq 0 ]; then
+      echo -e "  ${RED}MISMATCH${RESET}  Convex prod has TURNSTILE_SECRET_KEY but GitHub is missing TURNSTILE_SITE_KEY secret"
+      PAIRING_OK=false
+    elif [ "$PROD_HAS_SECRET" -eq 0 ] && [ "$GH_HAS_SITE" -gt 0 ]; then
+      echo -e "  ${YELLOW}WARNING${RESET}   GitHub has TURNSTILE_SITE_KEY but Convex prod is missing TURNSTILE_SECRET_KEY"
+    fi
+  fi
+
+  if [ "$PAIRING_OK" = false ]; then
+    ERRORS=$((ERRORS + 1))
+  elif [ "$PAIRING_OK" = true ]; then
+    echo -e "  ${GREEN}OK${RESET} — Turnstile keys are consistently paired across checked environments"
+  fi
+
 fi # end remote checks
 
 # ---------------------------------------------------------------------------

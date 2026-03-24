@@ -247,6 +247,10 @@ before the auth flow runs. This accesses the provider's internal
 `options.authorize` — an implementation detail, but it avoids
 reimplementing the entire Password provider logic.
 
-**Graceful degradation:** When env vars are unset (local dev), the widget
-is omitted client-side and server-side validation is skipped. This avoids
-requiring every developer to create Turnstile keys for local work.
+**Graceful degradation:** Server-side validation is gated by
+`TURNSTILE_SECRET_KEY`; the client widget is gated by
+`VITE_TURNSTILE_SITE_KEY`. Both keys must be set together or both left
+unset — if only the server key is set, auth flows fail because no widget
+produces a token. For local development, leave both unset (do not set
+`TURNSTILE_SECRET_KEY` on the dev Convex deployment) so no Turnstile
+keys are required for local work.

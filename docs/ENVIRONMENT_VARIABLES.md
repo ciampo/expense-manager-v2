@@ -14,7 +14,7 @@ This document lists all environment variables used in the Expense Manager projec
 | `CONVEX_DEPLOY_KEY`       | `.env.e2e`, GitHub Secrets           | Deploy/run functions on Convex projects (test and production) |
 | `CLOUDFLARE_API_TOKEN`    | GitHub Secrets                       | Deploy to Cloudflare Workers                                  |
 | `CLOUDFLARE_ACCOUNT_ID`   | GitHub Secrets                       | Cloudflare account identifier                                 |
-| `TURNSTILE_SECRET_KEY`    | Convex Environment                   | Cloudflare Turnstile secret key for server-side verification  |
+| `TURNSTILE_SECRET_KEY`    | Convex Environment (prod + test)     | Cloudflare Turnstile secret key — must pair with site key     |
 | `E2E_CLEANUP_ALLOWED`     | Convex Environment                   | Guardrail — must be `true` for `seed:cleanup` to run          |
 | `SITE_URL`                | Convex Environment                   | Base site URL for auth (auto-set by `npx @convex-dev/auth`)   |
 | `JWT_PRIVATE_KEY`         | Convex Environment                   | Private key for signing JWTs (auto-set by auth setup)         |
@@ -197,12 +197,12 @@ npx convex env set VARIABLE_NAME value
 
 ### Application Variables
 
-| Variable               | Required for              | Description                                                                                                                              |
-| ---------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `TURNSTILE_SECRET_KEY` | Bot protection (optional) | Cloudflare Turnstile secret key — when unset, server-side Turnstile validation is skipped                                                |
-| `E2E_CLEANUP_ALLOWED`  | E2E test deployment       | Must be `true` on test deployments — prevents destructive `seed:cleanup` from running against production                                 |
-| `AUTH_RESEND_KEY`      | Password reset (optional) | Resend API key for password reset emails                                                                                                 |
-| `AUTH_RESEND_FROM`     | Production (optional)     | Sender address for password reset emails (e.g., `App <noreply@yourdomain.com>`). Falls back to `Expense Manager <onboarding@resend.dev>` |
+| Variable               | Required for              | Description                                                                                                                                         |
+| ---------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TURNSTILE_SECRET_KEY` | Prod + test only          | Cloudflare Turnstile secret key — must be paired with the client site key; do not set on dev without also setting `VITE_TURNSTILE_SITE_KEY` locally |
+| `E2E_CLEANUP_ALLOWED`  | E2E test deployment       | Must be `true` on test deployments — prevents destructive `seed:cleanup` from running against production                                            |
+| `AUTH_RESEND_KEY`      | Password reset (optional) | Resend API key for password reset emails                                                                                                            |
+| `AUTH_RESEND_FROM`     | Production (optional)     | Sender address for password reset emails (e.g., `App <noreply@yourdomain.com>`). Falls back to `Expense Manager <onboarding@resend.dev>`            |
 
 `E2E_CLEANUP_ALLOWED` is a safety guardrail: the `seed:cleanup` mutation refuses to run unless this variable is `true` on the targeted Convex deployment. Set it only on the `expense-manager-test` project — **never** on production. It is set automatically by `pnpm setup:e2e` and by the CI workflows.
 
@@ -276,12 +276,11 @@ Turnstile provides bot protection on auth forms (sign-in, sign-up, forgot-passwo
 #### 2. Set the Secret Key on Convex Deployments
 
 ```bash
-# Production
+# Production (required for bot protection)
 CONVEX_DEPLOY_KEY=<prod-deploy-key> npx convex env set TURNSTILE_SECRET_KEY "0x..."
-
-# Development (optional)
-npx convex env set TURNSTILE_SECRET_KEY "0x..."
 ```
+
+> **Do not set `TURNSTILE_SECRET_KEY` on the development deployment** unless you also set `VITE_TURNSTILE_SITE_KEY` in `.env.local`. If the server key is set without the site key, auth flows will fail because the server requires a token that no widget produces. Leave both unset on dev for frictionless local development.
 
 #### 3. Set the Site Key
 
@@ -506,7 +505,11 @@ The script skips any environment it can't reach and prints a `SKIPPED` warning:
 - `gh` CLI not installed or not authenticated
 - Missing deploy key for Convex test or production
 
+### Turnstile key pairing cross-check
+
+The script also verifies that Turnstile keys are consistently paired: if a Convex deployment has `TURNSTILE_SECRET_KEY`, the corresponding client environment must also have the site key, and vice versa. A mismatch is reported as an error (server key without site key causes auth failures).
+
 ### Exit code
 
 - `0` — all checked environments pass
-- `1` — at least one environment has missing required vars or unexpected vars
+- `1` — at least one environment has missing required vars, unexpected vars, or key pairing mismatches
