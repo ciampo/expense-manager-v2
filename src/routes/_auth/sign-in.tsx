@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { z } from 'zod'
 import { emailSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { useTurnstile, TURNSTILE_SITE_KEY } from '@/hooks/use-turnstile'
 
 export const Route = createFileRoute('/_auth/sign-in')({
   component: SignInPage,
@@ -32,6 +34,7 @@ const signInSchema = z.object({
 function SignInPage() {
   const { signIn } = useAuthActions()
   const [serverError, setServerError] = useState('')
+  const turnstile = useTurnstile()
 
   const form = useForm({
     defaultValues: {
@@ -49,6 +52,9 @@ function SignInPage() {
         formData.set('email', value.email)
         formData.set('password', value.password)
         formData.set('flow', 'signIn')
+        if (turnstile.token) {
+          formData.set('turnstileToken', turnstile.token)
+        }
 
         await signIn('password', formData)
         toast.success('Signed in successfully')
@@ -63,6 +69,8 @@ function SignInPage() {
             ? error.message
             : 'Invalid email or password',
         )
+      } finally {
+        turnstile.reset()
       }
     },
   })
@@ -139,6 +147,15 @@ function SignInPage() {
               )
             }}
           </form.Field>
+          {TURNSTILE_SITE_KEY && (
+            <Turnstile
+              ref={turnstile.ref}
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={turnstile.setToken}
+              onExpire={turnstile.clearToken}
+              onError={turnstile.clearToken}
+            />
+          )}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <FieldError

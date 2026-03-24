@@ -1,11 +1,27 @@
 import { convexAuth } from '@convex-dev/auth/server'
 import { Password } from '@convex-dev/auth/providers/Password'
+import { Value } from 'convex/values'
 import { ResendOTPPasswordReset } from './ResendOTPPasswordReset'
 import { isEmailAllowed, normalizeEmail, parseAllowedEmails } from './emailAllowlist'
 import { formatRetryDelay, rateLimiter } from './rateLimits'
+import { verifyTurnstileToken } from './turnstile'
+
+// Wrap the Password provider's authorize function to validate Cloudflare
+// Turnstile tokens before processing any auth request. The Password provider
+// uses ConvexCredentials internally, which stores the real authorize in an
+// `options` property (internal to @convex-dev/auth).
+const passwordProvider = Password({ reset: ResendOTPPasswordReset })
+const providerOptions = (passwordProvider as unknown as Record<string, unknown>).options as {
+  authorize: (params: Record<string, Value | undefined>, ctx: unknown) => Promise<unknown>
+}
+const originalAuthorize = providerOptions.authorize
+providerOptions.authorize = async (params, ctx) => {
+  await verifyTurnstileToken(params.turnstileToken as string | undefined)
+  return originalAuthorize(params, ctx)
+}
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [Password({ reset: ResendOTPPasswordReset })],
+  providers: [passwordProvider],
   signIn: {
     maxFailedAttempsPerHour: 10,
   },

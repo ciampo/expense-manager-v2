@@ -4,6 +4,8 @@ on:
 
 env:
   VITE_CONVEX_URL: ${{ secrets.CONVEX_TEST_URL }}
+  # Cloudflare Turnstile always-pass test key — renders the widget without blocking test automation
+  VITE_TURNSTILE_SITE_KEY: '1x00000000000000000000AA'
   AUTHOR_NAME: 'github-actions[bot]'
   AUTHOR_EMAIL: '41898282+github-actions[bot]@users.noreply.github.com'
   COMMIT_MESSAGE: |

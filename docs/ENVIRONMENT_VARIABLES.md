@@ -6,21 +6,23 @@ This document lists all environment variables used in the Expense Manager projec
 
 ## Overview
 
-| Variable                | Location                   | Purpose                                                       |
-| ----------------------- | -------------------------- | ------------------------------------------------------------- |
-| `VITE_CONVEX_URL`       | `.env.local`, `.env.e2e`   | Convex backend URL                                            |
-| `CONVEX_DEPLOYMENT`     | `.env.local`               | Auto-set by `npx convex dev` — do not edit manually           |
-| `CONVEX_DEPLOY_KEY`     | `.env.e2e`, GitHub Secrets | Deploy/run functions on Convex projects (test and production) |
-| `CLOUDFLARE_API_TOKEN`  | GitHub Secrets             | Deploy to Cloudflare Workers                                  |
-| `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets             | Cloudflare account identifier                                 |
-| `E2E_CLEANUP_ALLOWED`   | Convex Environment         | Guardrail — must be `true` for `seed:cleanup` to run          |
-| `CONVEX_SITE_URL`       | Convex Environment         | Base site URL for auth (auto-set by `npx @convex-dev/auth`)   |
-| `JWT_PRIVATE_KEY`       | Convex Environment         | Private key for signing JWTs (auto-set by auth setup)         |
-| `JWKS`                  | Convex Environment         | JSON Web Key Set for verifying JWTs (auto-set by auth setup)  |
-| `AUTH_RESEND_KEY`       | Convex Environment         | Resend API key for password reset emails                      |
-| `AUTH_RESEND_FROM`      | Convex Environment         | Sender address for password reset emails (optional)           |
-| `ALLOWED_EMAILS`        | Convex Environment         | Comma-separated allowlist of emails/domain wildcards          |
-| `REGISTRATION_ENABLED`  | Convex Environment         | Set to `false` to block all new sign-ups                      |
+| Variable                  | Location                             | Purpose                                                       |
+| ------------------------- | ------------------------------------ | ------------------------------------------------------------- |
+| `VITE_CONVEX_URL`         | `.env.local`, `.env.e2e`             | Convex backend URL                                            |
+| `VITE_TURNSTILE_SITE_KEY` | `.env.local`, `.env.e2e`, GH Secrets | Cloudflare Turnstile site key for auth form bot protection    |
+| `CONVEX_DEPLOYMENT`       | `.env.local`                         | Auto-set by `npx convex dev` — do not edit manually           |
+| `CONVEX_DEPLOY_KEY`       | `.env.e2e`, GitHub Secrets           | Deploy/run functions on Convex projects (test and production) |
+| `CLOUDFLARE_API_TOKEN`    | GitHub Secrets                       | Deploy to Cloudflare Workers                                  |
+| `CLOUDFLARE_ACCOUNT_ID`   | GitHub Secrets                       | Cloudflare account identifier                                 |
+| `TURNSTILE_SECRET_KEY`    | Convex Environment                   | Cloudflare Turnstile secret key for server-side verification  |
+| `E2E_CLEANUP_ALLOWED`     | Convex Environment                   | Guardrail — must be `true` for `seed:cleanup` to run          |
+| `CONVEX_SITE_URL`         | Convex Environment                   | Base site URL for auth (auto-set by `npx @convex-dev/auth`)   |
+| `JWT_PRIVATE_KEY`         | Convex Environment                   | Private key for signing JWTs (auto-set by auth setup)         |
+| `JWKS`                    | Convex Environment                   | JSON Web Key Set for verifying JWTs (auto-set by auth setup)  |
+| `AUTH_RESEND_KEY`         | Convex Environment                   | Resend API key for password reset emails                      |
+| `AUTH_RESEND_FROM`        | Convex Environment                   | Sender address for password reset emails (optional)           |
+| `ALLOWED_EMAILS`          | Convex Environment                   | Comma-separated allowlist of emails/domain wildcards          |
+| `REGISTRATION_ENABLED`    | Convex Environment                   | Set to `false` to block all new sign-ups                      |
 
 ---
 
@@ -33,12 +35,16 @@ Used during local development. Points to the **development deployment** of the `
 ```env
 VITE_CONVEX_URL=https://your-dev-project.convex.cloud
 CONVEX_DEPLOYMENT=dev:your-project  # Auto-populated by `npx convex dev`
+
+# Optional — Cloudflare Turnstile bot protection (omit for local dev)
+# VITE_TURNSTILE_SITE_KEY=0x...
 ```
 
-| Variable            | Required | Description                                                   |
-| ------------------- | -------- | ------------------------------------------------------------- |
-| `VITE_CONVEX_URL`   | Yes      | `expense-manager` project → **development** deployment URL    |
-| `CONVEX_DEPLOYMENT` | Auto     | Set automatically by `npx convex dev` -- do not edit manually |
+| Variable                  | Required | Description                                                                   |
+| ------------------------- | -------- | ----------------------------------------------------------------------------- |
+| `VITE_CONVEX_URL`         | Yes      | `expense-manager` project → **development** deployment URL                    |
+| `CONVEX_DEPLOYMENT`       | Auto     | Set automatically by `npx convex dev` -- do not edit manually                 |
+| `VITE_TURNSTILE_SITE_KEY` | No       | Cloudflare Turnstile site key — when unset, the widget is omitted (see below) |
 
 **How to get it:**
 
@@ -56,6 +62,10 @@ Used when running E2E tests (loaded via `--mode e2e`). Both values target the **
 ```env
 VITE_CONVEX_URL=https://your-test-project.convex.cloud
 CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
+
+# Cloudflare Turnstile always-pass test key — avoids blocking test automation
+# See: https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 ```
 
 | Variable            | Required | Description                                                                                             |
@@ -86,6 +96,7 @@ These secrets are configured in your GitHub repository settings.
 | ------------------------ | --------------------------------------------------------------------- | -------------------- |
 | `CLOUDFLARE_API_TOKEN`   | API token for Cloudflare Workers deployment                           | Cloudflare Dashboard |
 | `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account identifier                                    | Cloudflare Dashboard |
+| `TURNSTILE_SITE_KEY`     | Cloudflare Turnstile site key for auth form bot protection            | Cloudflare Dashboard |
 | `CONVEX_PROD_URL`        | `expense-manager` → **production** deployment URL                     | Convex Dashboard     |
 | `CONVEX_PROD_DEPLOY_KEY` | `expense-manager` → **production** deploy key (for CI backend deploy) | Convex Dashboard     |
 | `CONVEX_DEV_URL`         | `expense-manager` → **development** deployment URL (for PR previews)  | Convex Dashboard     |
@@ -106,6 +117,16 @@ These secrets are configured in your GitHub repository settings.
 1. Go to Cloudflare Dashboard
 2. Workers & Pages (left sidebar)
 3. Copy "Account ID" from right sidebar
+
+#### `TURNSTILE_SITE_KEY`
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. Turnstile (left sidebar) → Add Widget
+3. Enter a name (e.g., "Expense Manager") and add your domain(s)
+4. Widget Mode: **Managed** (invisible for most users, challenges only when suspicious)
+5. Click "Create" and copy the **Site Key**
+
+> The matching **Secret Key** must be set as `TURNSTILE_SECRET_KEY` in the Convex environment (see below).
 
 #### `CONVEX_PROD_URL`
 
@@ -174,11 +195,12 @@ npx convex env set VARIABLE_NAME value
 
 ### Application Variables
 
-| Variable              | Required for              | Description                                                                                                                              |
-| --------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `E2E_CLEANUP_ALLOWED` | E2E test deployment       | Must be `true` on test deployments — prevents destructive `seed:cleanup` from running against production                                 |
-| `AUTH_RESEND_KEY`     | Password reset (optional) | Resend API key for password reset emails                                                                                                 |
-| `AUTH_RESEND_FROM`    | Production (optional)     | Sender address for password reset emails (e.g., `App <noreply@yourdomain.com>`). Falls back to `Expense Manager <onboarding@resend.dev>` |
+| Variable               | Required for              | Description                                                                                                                              |
+| ---------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `TURNSTILE_SECRET_KEY` | Bot protection (optional) | Cloudflare Turnstile secret key — when unset, server-side Turnstile validation is skipped                                                |
+| `E2E_CLEANUP_ALLOWED`  | E2E test deployment       | Must be `true` on test deployments — prevents destructive `seed:cleanup` from running against production                                 |
+| `AUTH_RESEND_KEY`      | Password reset (optional) | Resend API key for password reset emails                                                                                                 |
+| `AUTH_RESEND_FROM`     | Production (optional)     | Sender address for password reset emails (e.g., `App <noreply@yourdomain.com>`). Falls back to `Expense Manager <onboarding@resend.dev>` |
 
 `E2E_CLEANUP_ALLOWED` is a safety guardrail: the `seed:cleanup` mutation refuses to run unless this variable is `true` on the targeted Convex deployment. Set it only on the `expense-manager-test` project — **never** on production. It is set automatically by `pnpm setup:e2e` and by the CI workflows.
 
@@ -237,6 +259,36 @@ CONVEX_DEPLOY_KEY=<prod-deploy-key> npx convex env set AUTH_RESEND_FROM 'Your Ap
 
 > **Note:** Set `AUTH_RESEND_KEY` in every Convex deployment where password reset should work (development, production, test projects). `AUTH_RESEND_FROM` is only needed in production — during development the default `onboarding@resend.dev` sandbox sender is used. See [SETUP.md](./SETUP.md#18-configure-email-provider-password-reset) for details.
 
+### Setting Up Cloudflare Turnstile
+
+Turnstile provides bot protection on auth forms (sign-in, sign-up, forgot-password). It requires two keys: a **site key** (client-side) and a **secret key** (server-side).
+
+#### 1. Create a Turnstile Widget
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) → Turnstile (left sidebar)
+2. Click "Add widget"
+3. Enter a name (e.g., "Expense Manager") and add your domain(s)
+4. Widget Mode: **Managed** (invisible for most users, challenges only when suspicious)
+5. Click "Create" and copy both the **Site Key** and **Secret Key**
+
+#### 2. Set the Secret Key on Convex Deployments
+
+```bash
+# Production
+CONVEX_DEPLOY_KEY=<prod-deploy-key> npx convex env set TURNSTILE_SECRET_KEY "0x..."
+
+# Development (optional)
+npx convex env set TURNSTILE_SECRET_KEY "0x..."
+```
+
+#### 3. Set the Site Key
+
+- **Local:** Add `VITE_TURNSTILE_SITE_KEY=0x...` to `.env.local`
+- **GitHub Actions:** Add a `TURNSTILE_SITE_KEY` repository secret (Settings → Secrets → Actions)
+- **E2E tests:** Use Cloudflare's always-pass test key (`1x00000000000000000000AA`) in `.env.e2e` and set the always-pass secret key (`1x0000000000000000000000000000000AA`) on the Convex test deployment
+
+> **Graceful degradation:** When either key is unset, Turnstile is fully skipped — the widget doesn't render and the server skips validation. This keeps local development frictionless.
+
 ---
 
 ## CI/CD Environment Variables
@@ -252,26 +304,32 @@ These are automatically set by GitHub Actions or defined in workflow files.
 
 ### Set as Environment Variables in Workflows
 
-| Variable            | Workflow File            | Value                                   |
-| ------------------- | ------------------------ | --------------------------------------- |
-| `VITE_CONVEX_URL`   | `deploy.yml`             | `${{ secrets.CONVEX_PROD_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `deploy.yml`             | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}` |
-| `VITE_CONVEX_URL`   | `preview.yml`            | `${{ secrets.CONVEX_DEV_URL }}`         |
-| `VITE_CONVEX_URL`   | `test-integration.yml`   | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `test-integration.yml`   | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
-| `VITE_CONVEX_URL`   | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_URL }}`        |
-| `CONVEX_DEPLOY_KEY` | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}` |
+| Variable                  | Workflow File            | Value                                         |
+| ------------------------- | ------------------------ | --------------------------------------------- |
+| `VITE_CONVEX_URL`         | `deploy.yml`             | `${{ secrets.CONVEX_PROD_URL }}`              |
+| `VITE_TURNSTILE_SITE_KEY` | `deploy.yml`             | `${{ secrets.TURNSTILE_SITE_KEY }}`           |
+| `CONVEX_DEPLOY_KEY`       | `deploy.yml`             | `${{ secrets.CONVEX_PROD_DEPLOY_KEY }}`       |
+| `VITE_CONVEX_URL`         | `preview.yml`            | `${{ secrets.CONVEX_DEV_URL }}`               |
+| `VITE_TURNSTILE_SITE_KEY` | `preview.yml`            | `${{ secrets.TURNSTILE_SITE_KEY }}`           |
+| `VITE_CONVEX_URL`         | `test-integration.yml`   | `${{ secrets.CONVEX_TEST_URL }}`              |
+| `VITE_TURNSTILE_SITE_KEY` | `test-integration.yml`   | `1x00000000000000000000AA` (always-pass test) |
+| `CONVEX_DEPLOY_KEY`       | `test-integration.yml`   | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}`       |
+| `VITE_CONVEX_URL`         | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_URL }}`              |
+| `VITE_TURNSTILE_SITE_KEY` | `update-screenshots.yml` | `1x00000000000000000000AA` (always-pass test) |
+| `CONVEX_DEPLOY_KEY`       | `update-screenshots.yml` | `${{ secrets.CONVEX_TEST_DEPLOY_KEY }}`       |
 
 ### Secrets Passed as Action Inputs
 
 These GitHub Secrets are passed directly as inputs to third-party actions (not exported as environment variables in the job):
 
-| Secret                  | Workflow File | Passed As         | Action                          |
-| ----------------------- | ------------- | ----------------- | ------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | `deploy.yml`  | `apiToken` input  | `cloudflare/wrangler-action@v3` |
-| `CLOUDFLARE_ACCOUNT_ID` | `deploy.yml`  | `accountId` input | `cloudflare/wrangler-action@v3` |
-| `CLOUDFLARE_API_TOKEN`  | `preview.yml` | `apiToken` input  | `cloudflare/wrangler-action@v3` |
-| `CLOUDFLARE_ACCOUNT_ID` | `preview.yml` | `accountId` input | `cloudflare/wrangler-action@v3` |
+| Secret                  | Workflow File | Passed As                     | Action / Step                   |
+| ----------------------- | ------------- | ----------------------------- | ------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | `deploy.yml`  | `apiToken` input              | `cloudflare/wrangler-action@v3` |
+| `CLOUDFLARE_ACCOUNT_ID` | `deploy.yml`  | `accountId` input             | `cloudflare/wrangler-action@v3` |
+| `TURNSTILE_SITE_KEY`    | `deploy.yml`  | `VITE_TURNSTILE_SITE_KEY` env | `pnpm build`                    |
+| `CLOUDFLARE_API_TOKEN`  | `preview.yml` | `apiToken` input              | `cloudflare/wrangler-action@v3` |
+| `CLOUDFLARE_ACCOUNT_ID` | `preview.yml` | `accountId` input             | `cloudflare/wrangler-action@v3` |
+| `TURNSTILE_SITE_KEY`    | `preview.yml` | `VITE_TURNSTILE_SITE_KEY` env | `pnpm build`                    |
 
 ---
 
@@ -291,6 +349,12 @@ VITE_CONVEX_URL=https://your-project.convex.cloud
 # Convex deployment identifier (auto-populated by `npx convex dev`)
 CONVEX_DEPLOYMENT=dev:your-project
 
+# === Cloudflare Turnstile (optional) ===
+
+# Site key for Cloudflare Turnstile bot protection on auth forms.
+# When unset, the widget is omitted and server-side validation is skipped.
+# VITE_TURNSTILE_SITE_KEY=0x...
+
 # === Production Deployment (optional, for manual deploys) ===
 
 # Production deploy key for Convex backend deployment
@@ -309,6 +373,10 @@ VITE_CONVEX_URL=https://your-test-project.convex.cloud
 # Production deploy key for the test Convex project
 # Get from: Convex Dashboard → test project → Settings → Deploy Keys
 CONVEX_DEPLOY_KEY=prod:your-test-project-deploy-key
+
+# Cloudflare Turnstile always-pass test key — avoids blocking test automation
+# See: https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 ```
 
 ---
@@ -371,6 +439,7 @@ pnpm test:e2e
 # Required GitHub Secrets
 CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
+TURNSTILE_SITE_KEY         # Cloudflare Turnstile site key for auth forms
 CONVEX_PROD_URL            # For production deployments (deploy.yml)
 CONVEX_PROD_DEPLOY_KEY     # For Convex backend deploy (deploy.yml)
 CONVEX_DEV_URL             # For PR preview deployments (preview.yml)

@@ -37,6 +37,7 @@ jobs:
       - run: pnpm build
         env:
           VITE_CONVEX_URL: ${{ secrets.CONVEX_DEV_URL }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
       - name: Deploy to Cloudflare
         id: deploy
         uses: cloudflare/wrangler-action@v3

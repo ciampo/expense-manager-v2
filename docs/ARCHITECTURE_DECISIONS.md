@@ -226,3 +226,27 @@ attempts" even though the actual reset flow (via `signIn`) still works.
 **At scale:** Add IP-based rate limiting by wrapping auth HTTP routes with
 a custom HTTP action that extracts the IP, or use Cloudflare WAF
 rate-limiting rules at the edge.
+
+---
+
+## 10. Cloudflare Turnstile for bot protection on auth forms
+
+All public-facing auth forms (sign-in, sign-up, forgot-password) include
+a Cloudflare Turnstile widget. Tokens are validated server-side via the
+siteverify API before processing the auth request.
+
+**Why Turnstile over reCAPTCHA/hCaptcha:** The app is already on
+Cloudflare. Turnstile is free, privacy-focused (no tracking cookies),
+invisible to most users, and does not require a Google account. It
+provides IP-level bot detection that complements email-keyed rate
+limiting.
+
+**Server-side integration:** The `@convex-dev/auth` Password provider's
+internal `authorize` function is wrapped to validate the Turnstile token
+before the auth flow runs. This accesses the provider's internal
+`options.authorize` — an implementation detail, but it avoids
+reimplementing the entire Password provider logic.
+
+**Graceful degradation:** When env vars are unset (local dev), the widget
+is omitted client-side and server-side validation is skipped. This avoids
+requiring every developer to create Turnstile keys for local work.

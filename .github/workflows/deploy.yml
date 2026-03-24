@@ -191,6 +191,7 @@ jobs:
         if: steps.dedup.outputs.skip != 'true'
         env:
           VITE_CONVEX_URL: ${{ secrets.CONVEX_PROD_URL }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
       - name: Deploy to Cloudflare
         if: steps.dedup.outputs.skip != 'true'
         id: cf-deploy
