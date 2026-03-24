@@ -2,6 +2,7 @@
 // so the react-refresh fast-refresh warning does not apply.
 /* eslint-disable react-refresh/only-export-components */
 import { createRouter } from '@tanstack/react-router'
+import { getGlobalStartContext } from '@tanstack/react-start'
 import { QueryClient } from '@tanstack/react-query'
 import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
@@ -90,6 +91,8 @@ function initRouter() {
 
   const authStore = createAuthStore()
 
+  const nonce = getGlobalStartContext()?.nonce
+
   const router = routerWithQueryClient(
     createRouter({
       routeTree,
@@ -97,6 +100,7 @@ function initRouter() {
       defaultViewTransition: true,
       context: { queryClient, authStore },
       scrollRestoration: true,
+      ssr: { nonce },
       Wrap: ({ children }) => (
         <ConvexAuthProvider client={convexQueryClient.convexClient}>
           <AuthBridge authStore={authStore} />

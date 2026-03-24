@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { SECURITY_HEADERS, CSP_REPORT_PATH, addSecurityHeaders } from '@/lib/security-headers'
+import {
+  SECURITY_HEADERS,
+  CSP_REPORT_PATH,
+  buildCspHeader,
+  addSecurityHeaders,
+} from '@/lib/security-headers'
+
+const TEST_NONCE = 'dGVzdC1ub25jZQ=='
 
 describe('SECURITY_HEADERS', () => {
   it('defines all expected header names', () => {
@@ -10,30 +17,12 @@ describe('SECURITY_HEADERS', () => {
     expect(names).toContain('Referrer-Policy')
     expect(names).toContain('Permissions-Policy')
     expect(names).toContain('Reporting-Endpoints')
-    expect(names).toContain('Content-Security-Policy-Report-Only')
   })
 
-  it('includes Convex origins in connect-src', () => {
-    const csp = SECURITY_HEADERS['Content-Security-Policy-Report-Only']
-    expect(csp).toContain('https://*.convex.cloud')
-    expect(csp).toContain('wss://*.convex.cloud')
-  })
-
-  it('includes Turnstile origin in script-src and frame-src', () => {
-    const csp = SECURITY_HEADERS['Content-Security-Policy-Report-Only']
-    expect(csp).toMatch(/script-src[^;]*https:\/\/challenges\.cloudflare\.com/)
-    expect(csp).toMatch(/frame-src[^;]*https:\/\/challenges\.cloudflare\.com/)
-  })
-
-  it('includes frame-ancestors for clickjacking protection', () => {
-    const csp = SECURITY_HEADERS['Content-Security-Policy-Report-Only']
-    expect(csp).toContain("frame-ancestors 'none'")
-  })
-
-  it('includes report-to and report-uri directives', () => {
-    const csp = SECURITY_HEADERS['Content-Security-Policy-Report-Only']
-    expect(csp).toContain('report-to csp-endpoint')
-    expect(csp).toContain(`report-uri ${CSP_REPORT_PATH}`)
+  it('does not include CSP in static headers (set per-request via middleware)', () => {
+    const names = Object.keys(SECURITY_HEADERS)
+    expect(names).not.toContain('Content-Security-Policy')
+    expect(names).not.toContain('Content-Security-Policy-Report-Only')
   })
 
   it('configures Reporting-Endpoints header pointing to CSP_REPORT_PATH', () => {
@@ -42,6 +31,47 @@ describe('SECURITY_HEADERS', () => {
 
   it('includes preload in HSTS header', () => {
     expect(SECURITY_HEADERS['Strict-Transport-Security']).toContain('preload')
+  })
+})
+
+describe('buildCspHeader', () => {
+  it('embeds the nonce in script-src', () => {
+    const csp = buildCspHeader(TEST_NONCE)
+    expect(csp).toContain(`'nonce-${TEST_NONCE}'`)
+  })
+
+  it('uses strict-dynamic for script-src', () => {
+    const csp = buildCspHeader(TEST_NONCE)
+    expect(csp).toMatch(/script-src[^;]*'strict-dynamic'/)
+  })
+
+  it('does not include unsafe-inline in script-src', () => {
+    const csp = buildCspHeader(TEST_NONCE)
+    const scriptSrc = csp.split(';').find((d) => d.trim().startsWith('script-src'))
+    expect(scriptSrc).not.toContain('unsafe-inline')
+  })
+
+  it('includes Convex origins in connect-src', () => {
+    const csp = buildCspHeader(TEST_NONCE)
+    expect(csp).toContain('https://*.convex.cloud')
+    expect(csp).toContain('wss://*.convex.cloud')
+  })
+
+  it('includes Turnstile origin in script-src and frame-src', () => {
+    const csp = buildCspHeader(TEST_NONCE)
+    expect(csp).toMatch(/script-src[^;]*https:\/\/challenges\.cloudflare\.com/)
+    expect(csp).toMatch(/frame-src[^;]*https:\/\/challenges\.cloudflare\.com/)
+  })
+
+  it('includes frame-ancestors for clickjacking protection', () => {
+    const csp = buildCspHeader(TEST_NONCE)
+    expect(csp).toContain("frame-ancestors 'none'")
+  })
+
+  it('includes report-to and report-uri directives', () => {
+    const csp = buildCspHeader(TEST_NONCE)
+    expect(csp).toContain('report-to csp-endpoint')
+    expect(csp).toContain(`report-uri ${CSP_REPORT_PATH}`)
   })
 })
 
@@ -87,5 +117,15 @@ describe('addSecurityHeaders', () => {
     const secured = addSecurityHeaders(original)
 
     expect(secured.headers.get('X-Frame-Options')).toBe('DENY')
+  })
+
+  it('does not set or remove a Content-Security-Policy header', () => {
+    const withCsp = new Response(null, {
+      headers: { 'Content-Security-Policy': 'existing-policy' },
+    })
+
+    const secured = addSecurityHeaders(withCsp)
+
+    expect(secured.headers.get('Content-Security-Policy')).toBe('existing-policy')
   })
 })

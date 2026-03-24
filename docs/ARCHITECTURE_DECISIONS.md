@@ -260,22 +260,33 @@ keys are required for local work.
 ## 11. Security headers via Cloudflare Worker
 
 Standard security headers (HSTS, X-Content-Type-Options, X-Frame-Options,
-Referrer-Policy, Permissions-Policy, CSP) are added to all Worker
-responses via a custom server entry point (`src/server.ts`).
+Referrer-Policy, Permissions-Policy) are added to all Worker responses via
+a custom server entry point (`src/server.ts`).
+
+The Content Security Policy (CSP) is set separately via TanStack Start
+global middleware (`src/start.ts`), which generates a cryptographic nonce
+per request and passes it to the router's `ssr.nonce` option. TanStack
+Start automatically injects the nonce into all inline `<script>` and
+`<style>` tags during SSR, allowing the CSP to use a strict nonce-based
+policy instead of `'unsafe-inline'`.
 
 **Why:** Defense-in-depth. While React's JSX escaping prevents most XSS,
 security headers provide additional layers (clickjacking protection, MIME
-sniffing prevention, referrer control). A Content Security Policy (CSP) is
-currently deployed in Report-Only mode with a permissive `script-src` that
-still allows inline scripts (`'unsafe-inline'`), so it primarily provides
-monitoring and visibility into potential violations rather than hard
-blocking at this stage.
+sniffing prevention, referrer control). The CSP is deployed in **enforcing
+mode** (`Content-Security-Policy`) with `'strict-dynamic'` and a
+per-request nonce in `script-src`, which materially mitigates XSS by
+ensuring only server-stamped scripts execute. The `'unsafe-inline'`
+directive has been removed from `script-src` (it was only needed during the
+initial Report-Only monitoring period before nonce support was wired in).
+`style-src` retains `'unsafe-inline'` because component-level inline
+`style` attributes cannot use nonces and pose minimal risk.
 
 **CSP violation reporting:** A same-origin `/__csp-report` endpoint
 receives violation reports (via `report-to` and legacy `report-uri`
 directives). The Worker logs reports with `console.log`, making them
 visible in Cloudflare's real-time logs (`wrangler tail`) with no
-external infrastructure required.
+external infrastructure required. Reporting remains active under
+enforcement to surface any unexpected violations.
 
 **HSTS preload:** The `Strict-Transport-Security` header includes the
 `preload` directive, signaling eligibility for the
@@ -283,10 +294,8 @@ external infrastructure required.
 manual step after verifying the header is served consistently.
 
 **Trade-off:** Maintaining a strict CSP requires ongoing work — any new
-third-party script or resource needs to be added to the policy. The
-`Content-Security-Policy-Report-Only` header is used during initial
-rollout to catch violations without breaking functionality. Once
-monitoring confirms no false positives and inline script usage has been
-removed (allowing `'unsafe-inline'` to be dropped), the policy can be
-tightened and switched to the enforcing `Content-Security-Policy` header
-to materially mitigate XSS.
+third-party script or resource needs to be explicitly trusted (or loaded
+dynamically by a nonced script, which `'strict-dynamic'` allows). The
+nonce must be generated per request, which prevents full-page caching or
+prerendering. This is acceptable for this app since every page load is
+user-specific (authenticated) anyway.

@@ -7,11 +7,25 @@ export const SECURITY_HEADERS: Record<string, string> = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Reporting-Endpoints': `csp-endpoint="${CSP_REPORT_PATH}"`,
-  // Report-Only during initial rollout — switch to Content-Security-Policy
-  // once monitoring confirms no false positives.
-  'Content-Security-Policy-Report-Only': [
+}
+
+/**
+ * Build an enforcing CSP header value. Uses a per-request nonce so that
+ * TanStack Start's inline hydration scripts are allowed while
+ * `'unsafe-inline'` is no longer needed for `script-src`.
+ *
+ * `'strict-dynamic'` lets nonced scripts load additional scripts (e.g.
+ * Cloudflare Turnstile) without explicit host allowlists. The host
+ * sources (`https://challenges.cloudflare.com`, `'self'`) are kept as
+ * fallbacks for browsers that don't support `'strict-dynamic'`.
+ *
+ * `style-src` keeps `'unsafe-inline'` because component-level inline
+ * styles (`style` attribute) cannot use nonces and are low-risk.
+ */
+export function buildCspHeader(nonce: string): string {
+  return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+    `script-src 'strict-dynamic' 'nonce-${nonce}' 'self' https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://*.convex.cloud",
     "font-src 'self'",
@@ -23,7 +37,7 @@ export const SECURITY_HEADERS: Record<string, string> = {
     "form-action 'self'",
     'report-to csp-endpoint',
     `report-uri ${CSP_REPORT_PATH}`,
-  ].join('; '),
+  ].join('; ')
 }
 
 export function addSecurityHeaders(response: Response): Response {
