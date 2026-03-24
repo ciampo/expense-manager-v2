@@ -33,6 +33,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:unit",
+    "check:env": "bash scripts/check-env.sh",
     "setup": "bash scripts/setup.sh",
     "setup:e2e": "bash scripts/setup-e2e.sh",
     "prepare": "husky"

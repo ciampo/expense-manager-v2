@@ -449,6 +449,19 @@ CONVEX_TEST_URL            # For E2E tests
 CONVEX_TEST_DEPLOY_KEY     # For E2E tests
 ```
 
+### Audit All Environments
+
+```bash
+# Check local files + GitHub Secrets + all reachable Convex deployments
+pnpm check:env
+
+# Also check the production Convex deployment (key from GH Secrets)
+CONVEX_PROD_DEPLOY_KEY=prod:... pnpm check:env
+
+# Only check local env files (no network calls)
+pnpm check:env --skip-remote
+```
+
 ### Convex Email (Optional)
 
 ```bash
@@ -458,3 +471,42 @@ npx convex env set AUTH_RESEND_KEY re_xxxxx
 # Production only — verified domain sender
 npx convex env set AUTH_RESEND_FROM 'Your App <noreply@yourdomain.com>'
 ```
+
+---
+
+## Auditing Environment Variables
+
+Run `pnpm check:env` to verify that every environment has exactly the expected variables — no missing required vars, no unexpected leftovers.
+
+```bash
+pnpm check:env
+```
+
+### What it checks
+
+| Environment    | How                              | Required                                                                  | Optional                                                                                                |
+| -------------- | -------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `.env.local`   | File parse                       | `VITE_CONVEX_URL`, `CONVEX_DEPLOYMENT`                                    | `VITE_TURNSTILE_SITE_KEY`, `CONVEX_DEPLOY_KEY`                                                          |
+| `.env.e2e`     | File parse                       | `VITE_CONVEX_URL`, `CONVEX_DEPLOY_KEY`, `VITE_TURNSTILE_SITE_KEY`         | —                                                                                                       |
+| GitHub Secrets | `gh secret list`                 | All 8 secrets listed in [GitHub Actions Secrets](#github-actions-secrets) | —                                                                                                       |
+| Convex dev     | `npx convex env list`            | `SITE_URL`, `JWT_PRIVATE_KEY`, `JWKS`                                     | `AUTH_RESEND_KEY`, `AUTH_RESEND_FROM`, `TURNSTILE_SECRET_KEY`, `ALLOWED_EMAILS`, `REGISTRATION_ENABLED` |
+| Convex test    | Deploy key from `.env.e2e`       | Same as dev + `E2E_CLEANUP_ALLOWED`                                       | Same as dev minus `AUTH_RESEND_FROM`                                                                    |
+| Convex prod    | `CONVEX_PROD_DEPLOY_KEY` env var | Same as dev                                                               | Same as dev                                                                                             |
+
+### Options
+
+- **`--skip-remote`** — Only check local env files (`.env.local`, `.env.e2e`). Useful offline or in CI where remote credentials aren't available.
+- **`CONVEX_PROD_DEPLOY_KEY=prod:... pnpm check:env`** — Also audit the production Convex deployment. The production deploy key is normally only in GitHub Secrets; pass it as an env var to include that check.
+
+### Graceful degradation
+
+The script skips any environment it can't reach and prints a `SKIPPED` warning:
+
+- Missing `.env.local` or `.env.e2e` file
+- `gh` CLI not installed or not authenticated
+- Missing deploy key for Convex test or production
+
+### Exit code
+
+- `0` — all checked environments pass
+- `1` — at least one environment has missing required vars or unexpected vars
