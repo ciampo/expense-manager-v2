@@ -62,9 +62,11 @@ function SignUpPage() {
       } catch (error) {
         console.error('Sign up error:', error)
         const message =
-          error instanceof Error && /already exists/i.test(error.message)
-            ? 'An account with this email already exists. Try signing in instead.'
-            : 'Error during registration. Please try again.'
+          error instanceof Error && /registration is not available/i.test(error.message)
+            ? 'Registration is not available.'
+            : error instanceof Error && /already exists/i.test(error.message)
+              ? 'An account with this email already exists. Try signing in instead.'
+              : 'Error during registration. Please try again.'
         setServerError(message)
       }
     },

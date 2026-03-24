@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
+import { useMutation } from '@tanstack/react-query'
+import { useConvexMutation } from '@convex-dev/react-query'
+import { api } from '../../../convex/_generated/api'
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
@@ -74,10 +77,25 @@ function EmailStep({
   signIn: ReturnType<typeof useAuthActions>['signIn']
   onSuccess: (email: string) => void
 }) {
+  const [serverError, setServerError] = useState('')
+  const consumeResetRateLimit = useMutation({
+    mutationFn: useConvexMutation(api.rateLimits.consumePasswordResetRateLimit),
+  })
+
   const form = useForm({
     defaultValues: { email: '' },
     validators: { onSubmit: requestCodeSchema },
     onSubmit: async ({ value }) => {
+      setServerError('')
+
+      try {
+        await consumeResetRateLimit.mutateAsync({ email: value.email })
+      } catch (error) {
+        console.error('Password reset rate limit:', error)
+        setServerError('Too many password reset attempts. Please try again later.')
+        return
+      }
+
       try {
         const formData = new FormData()
         formData.set('email', value.email)
@@ -138,6 +156,10 @@ function EmailStep({
           </form.Field>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
+          <FieldError
+            errors={serverError ? [{ message: serverError }] : undefined}
+            className="text-center"
+          />
           <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
             {form.state.isSubmitting ? 'Sending...' : 'Send verification code'}
           </Button>
@@ -186,9 +208,11 @@ function CodeStep({
       } catch (error) {
         console.error('Password reset error:', error)
         const message =
-          error instanceof Error && /expired|invalid/i.test(error.message)
-            ? 'Code is invalid or expired. Please request a new one.'
-            : 'Error resetting password. Please try again.'
+          error instanceof Error && /too many/i.test(error.message)
+            ? error.message
+            : error instanceof Error && /expired|invalid/i.test(error.message)
+              ? 'Code is invalid or expired. Please request a new one.'
+              : 'Error resetting password. Please try again.'
         setServerError(message)
       }
     },

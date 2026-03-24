@@ -1,10 +1,14 @@
 import { convexAuth } from '@convex-dev/auth/server'
 import { Password } from '@convex-dev/auth/providers/Password'
 import { ResendOTPPasswordReset } from './ResendOTPPasswordReset'
-import { isEmailAllowed, parseAllowedEmails } from './emailAllowlist'
+import { isEmailAllowed, normalizeEmail, parseAllowedEmails } from './emailAllowlist'
+import { formatRetryDelay, rateLimiter } from './rateLimits'
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Password({ reset: ResendOTPPasswordReset })],
+  signIn: {
+    maxFailedAttempsPerHour: 10,
+  },
   callbacks: {
     async createOrUpdateUser(ctx, { existingUserId, profile }) {
       if (!existingUserId) {
@@ -15,6 +19,15 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         const allowed = parseAllowedEmails()
         if (!isEmailAllowed(profile.email, allowed)) {
           throw new Error('Registration is not available')
+        }
+
+        if (profile.email) {
+          const { ok } = await rateLimiter.limit(ctx, 'signUp', {
+            key: normalizeEmail(profile.email),
+          })
+          if (!ok) {
+            throw new Error('Registration is not available')
+          }
         }
       }
 
@@ -48,6 +61,17 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const email = typeof user.email === 'string' ? user.email : undefined
       if (!isEmailAllowed(email, allowed)) {
         throw new Error('Access denied')
+      }
+
+      if (email) {
+        const { ok, retryAfter } = await rateLimiter.limit(ctx, 'signIn', {
+          key: normalizeEmail(email),
+        })
+        if (!ok) {
+          throw new Error(
+            `Too many sign-in attempts. Please try again in ${formatRetryDelay(retryAfter)}.`,
+          )
+        }
       }
     },
   },

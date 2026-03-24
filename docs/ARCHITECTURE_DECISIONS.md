@@ -175,3 +175,54 @@ avoid revealing which emails are allowed.
 **Trade-off:** No self-service invite flow — new users must be manually
 added to the env var. Acceptable for a personal app; at scale, replace
 with a DB-backed invite table with admin UI.
+
+---
+
+## 9. Application-level rate limiting
+
+Auth endpoints and file uploads are rate-limited through two
+complementary layers:
+
+**Layer 1 — `@convex-dev/auth` built-in failed-attempt limiter.** The
+library tracks failed credential attempts (wrong password, wrong OTP) and
+blocks further attempts after the configured threshold. We explicitly set
+`signIn.maxFailedAttempsPerHour: 10` in `convexAuth()` — this is the
+primary defense against brute-force password guessing from
+unauthenticated users. On successful auth the counter resets.
+
+**Layer 2 — `@convex-dev/rate-limiter` application-level limits.** A
+Convex component that enforces additional per-account limits:
+
+- **Sign-in** (5/min, token bucket, `beforeSessionCreation`): caps
+  successful session creation. This fires only after credentials are
+  accepted, so it guards against credential-stuffing with valid/leaked
+  passwords — not failed-password brute-force (which Layer 1 handles).
+- **Sign-up** (3/hour, fixed window, `createOrUpdateUser`): prevents mass
+  account creation.
+- **Password reset** (3/hour, fixed window, client-side preflight
+  mutation): reduces OTP email spam from the official UI. A custom client
+  can bypass this preflight — true server-side enforcement relies on
+  Layer 1's failed-attempt cap.
+- **File upload** (10/min, token bucket, `generateUploadUrl`): prevents
+  storage abuse by authenticated users.
+
+**Why email-keyed, not IP-keyed:** Convex mutations/queries don't have
+access to client IP addresses. Only HTTP actions receive IP info, but the
+auth flow is handled by `@convex-dev/auth` internally. Email-keyed limits
+still prevent per-account abuse. IP-level protection is handled by
+Cloudflare Turnstile at the edge.
+
+**Password-reset rate limiting:** `@convex-dev/auth` sends the OTP email
+inside its `signIn` action before any mutation callback runs, so the
+password-reset rate limit is enforced via a client-side preflight
+mutation (`consumePasswordResetRateLimit`) that the official UI calls
+before initiating the reset. A custom client could bypass this check.
+True server-side enforcement of reset attempts relies on Layer 1's
+failed-attempt cap. Note: because the preflight mutation is
+unauthenticated, an attacker could invoke it with a victim's email to
+exhaust their 3/hour budget — the official UI would then show "too many
+attempts" even though the actual reset flow (via `signIn`) still works.
+
+**At scale:** Add IP-based rate limiting by wrapping auth HTTP routes with
+a custom HTTP action that extracts the IP, or use Cloudflare WAF
+rate-limiting rules at the edge.
