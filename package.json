@@ -31,6 +31,8 @@
     "test:visual:update": "playwright test --config playwright.visual.config.ts --update-snapshots",
     "test:visual:docker": "docker compose -f docker-compose.test.yml run --rm visual-tests pnpm run test:visual",
     "test:visual:docker:update": "docker compose -f docker-compose.test.yml run --rm visual-tests pnpm run test:visual:update",
+    "test:visual:docker:full": "bash scripts/test-visual-local.sh",
+    "test:visual:docker:full:update": "bash scripts/test-visual-local.sh --update-snapshots",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
