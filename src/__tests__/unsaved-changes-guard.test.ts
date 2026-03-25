@@ -11,7 +11,6 @@ vi.mock('@tanstack/react-router', () => ({
   useBlocker: vi.fn(() => mockBlocker),
 }))
 
-import type { UseBlockerOpts } from '@tanstack/react-router'
 import { useBlocker } from '@tanstack/react-router'
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
 
@@ -20,65 +19,57 @@ describe('useUnsavedChangesGuard', () => {
     vi.clearAllMocks()
   })
 
-  function capturedShouldBlockFn() {
-    const calls = vi.mocked(useBlocker).mock.calls
-    const opts = calls[calls.length - 1]![0] as unknown as UseBlockerOpts
-    return opts.shouldBlockFn as unknown as () => boolean
-  }
-
-  it('passes shouldBlockFn, enableBeforeUnload, and withResolver to useBlocker', () => {
-    const skipRef = { current: false }
-    renderHook(() => useUnsavedChangesGuard(true, skipRef))
+  it('passes shouldBlockFn, enableBeforeUnload, withResolver, and disabled to useBlocker', () => {
+    renderHook(() => useUnsavedChangesGuard(true))
 
     expect(useBlocker).toHaveBeenCalledWith(
       expect.objectContaining({
         shouldBlockFn: expect.any(Function),
         enableBeforeUnload: true,
         withResolver: true,
+        disabled: false,
       }),
     )
   })
 
-  it('shouldBlockFn returns false when isDirty is false', () => {
-    const skipRef = { current: false }
-    renderHook(() => useUnsavedChangesGuard(false, skipRef))
+  it('disables the blocker when isDirty is false', () => {
+    renderHook(() => useUnsavedChangesGuard(false))
 
-    expect(capturedShouldBlockFn()()).toBe(false)
+    expect(vi.mocked(useBlocker)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ disabled: true }),
+    )
   })
 
-  it('shouldBlockFn returns true when isDirty is true', () => {
-    const skipRef = { current: false }
-    renderHook(() => useUnsavedChangesGuard(true, skipRef))
+  it('enables the blocker when isDirty is true', () => {
+    renderHook(() => useUnsavedChangesGuard(true))
 
-    expect(capturedShouldBlockFn()()).toBe(true)
+    expect(vi.mocked(useBlocker)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ disabled: false }),
+    )
   })
 
-  it('shouldBlockFn returns false and resets skipRef when skipRef is true', () => {
-    const skipRef = { current: true }
-    renderHook(() => useUnsavedChangesGuard(true, skipRef))
-
-    expect(capturedShouldBlockFn()()).toBe(false)
-    expect(skipRef.current).toBe(false)
-  })
-
-  it('shouldBlockFn reflects updated isDirty after re-render', () => {
-    const skipRef = { current: false }
-    const { rerender } = renderHook(({ dirty }) => useUnsavedChangesGuard(dirty, skipRef), {
+  it('toggles disabled when isDirty changes', () => {
+    const { rerender } = renderHook(({ dirty }) => useUnsavedChangesGuard(dirty), {
       initialProps: { dirty: false },
     })
 
-    expect(capturedShouldBlockFn()()).toBe(false)
+    expect(vi.mocked(useBlocker)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ disabled: true }),
+    )
 
     rerender({ dirty: true })
-    expect(capturedShouldBlockFn()()).toBe(true)
+    expect(vi.mocked(useBlocker)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ disabled: false }),
+    )
 
     rerender({ dirty: false })
-    expect(capturedShouldBlockFn()()).toBe(false)
+    expect(vi.mocked(useBlocker)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ disabled: true }),
+    )
   })
 
   it('sets enableBeforeUnload based on isDirty state value', () => {
-    const skipRef = { current: false }
-    const { rerender } = renderHook(({ dirty }) => useUnsavedChangesGuard(dirty, skipRef), {
+    const { rerender } = renderHook(({ dirty }) => useUnsavedChangesGuard(dirty), {
       initialProps: { dirty: false },
     })
 
@@ -93,8 +84,7 @@ describe('useUnsavedChangesGuard', () => {
   })
 
   it('returns the blocker object from useBlocker', () => {
-    const skipRef = { current: false }
-    const { result } = renderHook(() => useUnsavedChangesGuard(false, skipRef))
+    const { result } = renderHook(() => useUnsavedChangesGuard(false))
 
     expect(result.current).toBe(mockBlocker)
   })

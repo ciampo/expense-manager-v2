@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type ChangeEvent } from 'react'
+import { useState, useCallback, useRef, useEffect, type ChangeEvent } from 'react'
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -68,12 +68,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [showDeleteExpense, setShowDeleteExpense] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const skipBlockRef = useRef(false)
+  const [isNavigatingAway, setIsNavigatingAway] = useState(false)
 
   const navigateAway = useCallback(() => {
-    skipBlockRef.current = true
-    navigate({ to: '/dashboard' })
-  }, [navigate])
+    setIsNavigatingAway(true)
+  }, [])
 
   const createExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.create),
@@ -158,9 +157,15 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   })
 
   const isFormDirty = useStore(form.store, (s) => !s.isDefaultValue)
-  const isDirty = isFormDirty || attachmentId !== initialAttachmentId
+  const isDirty = !isNavigatingAway && (isFormDirty || attachmentId !== initialAttachmentId)
 
-  const blocker = useUnsavedChangesGuard(isDirty, skipBlockRef)
+  const blocker = useUnsavedChangesGuard(isDirty)
+
+  useEffect(() => {
+    if (isNavigatingAway) {
+      navigate({ to: '/dashboard' })
+    }
+  }, [isNavigatingAway, navigate])
 
   const handleFileChange = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
