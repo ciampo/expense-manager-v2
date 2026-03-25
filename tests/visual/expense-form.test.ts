@@ -67,7 +67,7 @@ test.describe('Visual Regression - Expense Form', () => {
 
   test('new expense form — unsaved changes dialog', async ({ page }) => {
     await page.getByLabel(/amount/i).fill('42')
-    await page.getByRole('link', { name: /dashboard/i }).click()
+    await page.getByRole('button', { name: /^cancel$/i }).click()
 
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toBeVisible()
