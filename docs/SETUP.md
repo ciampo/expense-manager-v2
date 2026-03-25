@@ -313,8 +313,17 @@ Click "New repository secret" for each:
 The first visual test run will pull the Playwright Docker image (~1GB):
 
 ```bash
+# Full pipeline (recommended) — deploys Convex, seeds data, runs tests, cleans up
+pnpm test:visual:docker:full
+
+# Emergency bypass when gh checks are unavailable
+pnpm test:visual:docker:full -- --force
+
+# Quick run (if Convex backend is already set up from a prior run or CI)
 pnpm test:visual:docker
 ```
+
+The `:full` variant runs `scripts/test-visual-local.sh`, which requires a working `gh` CLI lock check before mutating the shared Convex test backend and aborts if the lock status cannot be verified or a conflict is detected. It also guarantees test data cleanup on any exit (success, error, or Ctrl-C). Run `pnpm test:visual:docker:full -- --help` for all options, including `--force` (bypasses safety checks — use only when you are certain no tests are running in parallel locally, on other machines, or in CI).
 
 ---
 
@@ -353,8 +362,8 @@ pnpm check
 # Run E2E tests (requires .env.e2e with valid values)
 pnpm test:e2e
 
-# Run visual tests (requires Docker)
-pnpm test:visual:docker
+# Run visual tests (requires Docker + Convex test backend)
+pnpm test:visual:docker:full
 ```
 
 ---
@@ -371,11 +380,13 @@ Run `pnpm dlx wrangler login` to re-authenticate.
 
 ### Visual tests fail with different screenshots
 
-Ensure you're running tests in Docker for consistent results:
+Ensure you're running tests in Docker with the full pipeline for consistent results:
 
 ```bash
-pnpm test:visual:docker
+pnpm test:visual:docker:full
 ```
+
+Both desktop and mobile-chromium tests should pass locally when run via Docker. If mobile tests fail with TLS/HTTPS errors, check that the CSP `upgrade-insecure-requests` directive is not being sent on HTTP origins (it is automatically omitted when serving over `http://`).
 
 ### E2E tests fail in CI
 

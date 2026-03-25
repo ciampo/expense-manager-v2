@@ -1,5 +1,15 @@
 export const CSP_REPORT_PATH = '/__csp-report'
 
+const NONCE_BYTES = 16
+const NONCE_BASE64_MIN_CHARS = Math.ceil((NONCE_BYTES * 4) / 3) // 22 for 16 bytes
+
+/** Generate a 128-bit cryptographic nonce encoded as base64. */
+export function generateNonce(): string {
+  const bytes = new Uint8Array(NONCE_BYTES)
+  crypto.getRandomValues(bytes)
+  return btoa(String.fromCharCode(...bytes))
+}
+
 export const SECURITY_HEADERS: Record<string, string> = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
   'X-Content-Type-Options': 'nosniff',
@@ -7,11 +17,34 @@ export const SECURITY_HEADERS: Record<string, string> = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Reporting-Endpoints': `csp-endpoint="${CSP_REPORT_PATH}"`,
-  // Report-Only during initial rollout — switch to Content-Security-Policy
-  // once monitoring confirms no false positives.
-  'Content-Security-Policy-Report-Only': [
+}
+
+/**
+ * Build an enforcing CSP header value. Uses a per-request nonce so that
+ * TanStack Start's inline hydration scripts are allowed while
+ * `'unsafe-inline'` is no longer needed for `script-src`.
+ *
+ * `'strict-dynamic'` lets nonced scripts load additional scripts (e.g.
+ * Cloudflare Turnstile) without explicit host allowlists. The host
+ * sources (`https://challenges.cloudflare.com`, `'self'`) are kept as
+ * fallbacks for browsers that don't support `'strict-dynamic'`.
+ *
+ * `style-src` keeps `'unsafe-inline'` because component-level inline
+ * styles (`style` attribute) — e.g. Sonner toast theme overrides,
+ * conditional opacity — cannot use nonces and are low-risk (no
+ * user-controlled values).
+ */
+export function buildCspHeader(
+  nonce: string,
+  options?: { upgradeInsecureRequests?: boolean },
+): string {
+  if (!nonce || !new RegExp(`^[A-Za-z0-9+/]{${NONCE_BASE64_MIN_CHARS},}=*$`).test(nonce)) {
+    throw new Error('buildCspHeader: nonce must be a base64 string of at least 128 bits')
+  }
+
+  const directives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+    `script-src 'strict-dynamic' 'nonce-${nonce}' 'self' https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://*.convex.cloud",
     "font-src 'self'",
@@ -21,9 +54,20 @@ export const SECURITY_HEADERS: Record<string, string> = {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    'report-to csp-endpoint',
-    `report-uri ${CSP_REPORT_PATH}`,
-  ].join('; '),
+  ]
+
+  // Only upgrade insecure requests when serving over HTTPS. On HTTP origins
+  // (localhost, dev, visual tests) this directive causes Chromium with mobile
+  // device emulation to rewrite http:// sub-resource URLs to https://, breaking
+  // CSS/JS/font loading since no TLS server exists.
+  if (options?.upgradeInsecureRequests !== false) {
+    directives.push('upgrade-insecure-requests')
+  }
+
+  // Requires the Reporting-Endpoints header set separately in SECURITY_HEADERS
+  directives.push('report-to csp-endpoint', `report-uri ${CSP_REPORT_PATH}`)
+
+  return directives.join('; ')
 }
 
 export function addSecurityHeaders(response: Response): Response {
