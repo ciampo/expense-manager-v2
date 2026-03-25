@@ -19,6 +19,10 @@ export function UnsavedChangesDialog({ open, onStay, onLeave }: UnsavedChangesDi
   return (
     <AlertDialog
       open={open}
+      // onOpenChange fires when the dialog closes for any reason (Escape,
+      // overlay click, Stay button, or after Leave triggers navigation).
+      // The caller guards onStay with a blocker-status check so the call
+      // is a no-op once proceed() has already been invoked.
       onOpenChange={(isOpen) => {
         if (!isOpen) onStay()
       }}
