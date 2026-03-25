@@ -35,6 +35,15 @@ describe('UnsavedChangesDialog', () => {
     expect(onStay).toHaveBeenCalled()
   })
 
+  it('calls onStay when dismissed via Escape key', () => {
+    const onStay = vi.fn()
+    render(<UnsavedChangesDialog open={true} onStay={onStay} onLeave={vi.fn()} />)
+
+    fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' })
+
+    expect(onStay).toHaveBeenCalled()
+  })
+
   it('renders both action buttons', () => {
     render(<UnsavedChangesDialog open={true} onStay={vi.fn()} onLeave={vi.fn()} />)
 
