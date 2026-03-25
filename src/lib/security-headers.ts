@@ -1,5 +1,12 @@
 export const CSP_REPORT_PATH = '/__csp-report'
 
+/** Generate a 128-bit cryptographic nonce encoded as base64. */
+export function generateNonce(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return btoa(String.fromCharCode(...bytes))
+}
+
 export const SECURITY_HEADERS: Record<string, string> = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
   'X-Content-Type-Options': 'nosniff',

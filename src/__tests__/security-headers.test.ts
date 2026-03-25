@@ -2,11 +2,34 @@ import { describe, it, expect } from 'vitest'
 import {
   SECURITY_HEADERS,
   CSP_REPORT_PATH,
+  generateNonce,
   buildCspHeader,
   addSecurityHeaders,
 } from '@/lib/security-headers'
 
 const TEST_NONCE = 'dGVzdC1ub25jZQ=='
+
+describe('generateNonce', () => {
+  it('returns a base64-encoded string', () => {
+    const nonce = generateNonce()
+    expect(nonce).toMatch(/^[A-Za-z0-9+/]+=*$/)
+  })
+
+  it('produces 128-bit (16-byte) nonces', () => {
+    const nonce = generateNonce()
+    const decoded = atob(nonce)
+    expect(decoded).toHaveLength(16)
+  })
+
+  it('generates unique values across calls', () => {
+    const nonces = new Set(Array.from({ length: 20 }, () => generateNonce()))
+    expect(nonces.size).toBe(20)
+  })
+
+  it('is accepted by buildCspHeader without throwing', () => {
+    expect(() => buildCspHeader(generateNonce())).not.toThrow()
+  })
+})
 
 describe('SECURITY_HEADERS', () => {
   it('defines all expected header names', () => {
