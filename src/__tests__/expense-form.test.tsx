@@ -158,8 +158,8 @@ vi.mock('@tanstack/react-router', () => ({
     current: undefined,
     next: undefined,
     action: undefined,
-    proceed: undefined,
-    reset: undefined,
+    proceed: vi.fn(),
+    reset: vi.fn(),
   }),
 }))
 
