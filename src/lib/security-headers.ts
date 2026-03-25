@@ -27,7 +27,9 @@ export const SECURITY_HEADERS: Record<string, string> = {
  * fallbacks for browsers that don't support `'strict-dynamic'`.
  *
  * `style-src` keeps `'unsafe-inline'` because component-level inline
- * styles (`style` attribute) cannot use nonces and are low-risk.
+ * styles (`style` attribute) — e.g. Sonner toast theme overrides,
+ * conditional opacity — cannot use nonces and are low-risk (no
+ * user-controlled values).
  */
 export function buildCspHeader(nonce: string): string {
   if (!nonce || !/^[A-Za-z0-9+/]{22,}=*$/.test(nonce)) {

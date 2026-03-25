@@ -266,9 +266,9 @@ a custom server entry point (`src/server.ts`).
 The Content Security Policy (CSP) is set separately via TanStack Start
 global middleware (`src/start.ts`), which generates a cryptographic nonce
 per request and passes it to the router's `ssr.nonce` option. TanStack
-Start automatically injects the nonce into all inline `<script>` and
-`<style>` tags during SSR, allowing the CSP to use a strict nonce-based
-policy instead of `'unsafe-inline'`.
+Start automatically injects the nonce into all inline `<script>` tags
+during SSR, allowing `script-src` to use a strict nonce-based policy
+instead of `'unsafe-inline'`.
 
 **Why:** Defense-in-depth. While React's JSX escaping prevents most XSS,
 security headers provide additional layers (clickjacking protection, MIME
@@ -279,7 +279,9 @@ ensuring only server-stamped scripts execute. The `'unsafe-inline'`
 directive has been removed from `script-src` (it was only needed during the
 initial Report-Only monitoring period before nonce support was wired in).
 `style-src` retains `'unsafe-inline'` because component-level inline
-`style` attributes cannot use nonces and pose minimal risk.
+`style` attributes (used by the toast notification system and
+conditional UI styles) cannot use nonces and pose minimal risk — none
+of the values are user-controlled.
 
 **CSP violation reporting:** A same-origin `/__csp-report` endpoint
 receives violation reports (via `report-to` and legacy `report-uri`
