@@ -34,12 +34,15 @@ export const SECURITY_HEADERS: Record<string, string> = {
  * conditional opacity — cannot use nonces and are low-risk (no
  * user-controlled values).
  */
-export function buildCspHeader(nonce: string): string {
+export function buildCspHeader(
+  nonce: string,
+  options?: { upgradeInsecureRequests?: boolean },
+): string {
   if (!nonce || !new RegExp(`^[A-Za-z0-9+/]{${NONCE_BASE64_MIN_CHARS},}=*$`).test(nonce)) {
     throw new Error('buildCspHeader: nonce must be a base64 string of at least 128 bits')
   }
 
-  return [
+  const directives = [
     "default-src 'self'",
     `script-src 'strict-dynamic' 'nonce-${nonce}' 'self' https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
@@ -51,11 +54,20 @@ export function buildCspHeader(nonce: string): string {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    'upgrade-insecure-requests',
-    // Requires the Reporting-Endpoints header set separately in SECURITY_HEADERS
-    'report-to csp-endpoint',
-    `report-uri ${CSP_REPORT_PATH}`,
-  ].join('; ')
+  ]
+
+  // Only upgrade insecure requests when serving over HTTPS. On HTTP origins
+  // (localhost, dev, visual tests) this directive causes Chromium with mobile
+  // device emulation to rewrite http:// sub-resource URLs to https://, breaking
+  // CSS/JS/font loading since no TLS server exists.
+  if (options?.upgradeInsecureRequests !== false) {
+    directives.push('upgrade-insecure-requests')
+  }
+
+  // Requires the Reporting-Endpoints header set separately in SECURITY_HEADERS
+  directives.push('report-to csp-endpoint', `report-uri ${CSP_REPORT_PATH}`)
+
+  return directives.join('; ')
 }
 
 export function addSecurityHeaders(response: Response): Response {

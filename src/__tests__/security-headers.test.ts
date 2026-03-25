@@ -91,9 +91,19 @@ describe('buildCspHeader', () => {
     expect(csp).toContain("frame-ancestors 'none'")
   })
 
-  it('includes upgrade-insecure-requests', () => {
+  it('includes upgrade-insecure-requests by default', () => {
     const csp = buildCspHeader(TEST_NONCE)
     expect(csp).toContain('upgrade-insecure-requests')
+  })
+
+  it('includes upgrade-insecure-requests when explicitly enabled', () => {
+    const csp = buildCspHeader(TEST_NONCE, { upgradeInsecureRequests: true })
+    expect(csp).toContain('upgrade-insecure-requests')
+  })
+
+  it('omits upgrade-insecure-requests when disabled', () => {
+    const csp = buildCspHeader(TEST_NONCE, { upgradeInsecureRequests: false })
+    expect(csp).not.toContain('upgrade-insecure-requests')
   })
 
   it('includes report-to and report-uri directives', () => {

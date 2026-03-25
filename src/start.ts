@@ -8,8 +8,12 @@ const cspMiddleware = createMiddleware().server(({ next, request }) => {
   }
 
   const nonce = generateNonce()
+  const isSecureOrigin = new URL(request.url).protocol === 'https:'
 
-  setResponseHeader('Content-Security-Policy', buildCspHeader(nonce))
+  setResponseHeader(
+    'Content-Security-Policy',
+    buildCspHeader(nonce, { upgradeInsecureRequests: isSecureOrigin }),
+  )
 
   return next({ context: { nonce } })
 })

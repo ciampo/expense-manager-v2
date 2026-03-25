@@ -383,7 +383,7 @@ Ensure you're running tests in Docker with the full pipeline for consistent resu
 pnpm test:visual:docker:full
 ```
 
-If only mobile-chromium tests fail locally but desktop passes, this may be a Docker-on-Apple-Silicon limitation. CI (native x86_64 Linux) is the authoritative environment for visual tests. Use the `update-screenshots.yml` workflow to regenerate baselines when needed.
+Both desktop and mobile-chromium tests should pass locally when run via Docker. If mobile tests fail with TLS/HTTPS errors, check that the CSP `upgrade-insecure-requests` directive is not being sent on HTTP origins (it is automatically omitted when serving over `http://`).
 
 ### E2E tests fail in CI
 

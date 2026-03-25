@@ -294,9 +294,12 @@ enforcement to surface any unexpected violations.
 `preload` directive, signaling eligibility for the
 [HSTS preload list](https://hstspreload.org). Submission is a separate
 manual step after verifying the header is served consistently. The CSP
-also includes `upgrade-insecure-requests`, which instructs browsers to
-rewrite HTTP sub-resource URLs to HTTPS — closing a gap for first-time
-visitors who haven't yet received the HSTS header.
+also includes `upgrade-insecure-requests` on HTTPS origins, which instructs
+browsers to rewrite HTTP sub-resource URLs to HTTPS — closing a gap for
+first-time visitors who haven't yet received the HSTS header. The directive
+is omitted on HTTP origins (localhost, dev servers) because Chromium's mobile
+device emulation enforces the upgrade even for localhost, breaking CSS/JS
+loading when no TLS server is present.
 
 **Trade-off:** Maintaining a strict CSP requires ongoing work — any new
 third-party script or resource needs to be explicitly trusted (or loaded
