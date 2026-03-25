@@ -2,8 +2,7 @@ import { useState, useCallback, useRef, type ChangeEvent } from 'react'
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useForm } from '@tanstack/react-form'
-import { useStore } from '@tanstack/react-store'
+import { useForm, useStore } from '@tanstack/react-form'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
@@ -158,17 +157,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     },
   })
 
-  const isFormDirty = useStore(form.store, (s) => {
-    const v = s.values
-    return (
-      v.date !== defaultFormValues.date ||
-      v.merchant !== defaultFormValues.merchant ||
-      v.amount !== defaultFormValues.amount ||
-      v.categoryId !== defaultFormValues.categoryId ||
-      v.newCategoryName !== defaultFormValues.newCategoryName ||
-      v.comment !== defaultFormValues.comment
-    )
-  })
+  const isFormDirty = useStore(form.store, (s) => !s.isDefaultValue)
   const isDirty = isFormDirty || attachmentId !== initialAttachmentId
 
   const blocker = useUnsavedChangesGuard(isDirty, skipBlockRef)
