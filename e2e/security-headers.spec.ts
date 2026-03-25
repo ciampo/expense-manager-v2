@@ -58,6 +58,13 @@ test.describe('Security Headers', () => {
     expect(headers['permissions-policy']).toBeTruthy()
   })
 
+  test('should not include a CSP header on non-GET responses', async ({ request }) => {
+    const response = await request.post('/', { data: '' })
+    const csp = response.headers()['content-security-policy']
+
+    expect(csp).toBeUndefined()
+  })
+
   test('should not have console CSP violation errors on the landing page', async ({ page }) => {
     const violations: string[] = []
     page.on('console', (msg) => {
