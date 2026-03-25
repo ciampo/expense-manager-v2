@@ -316,11 +316,14 @@ The first visual test run will pull the Playwright Docker image (~1GB):
 # Full pipeline (recommended) — deploys Convex, seeds data, runs tests, cleans up
 pnpm test:visual:docker:full
 
+# Emergency bypass when gh checks are unavailable
+pnpm test:visual:docker:full -- --force
+
 # Quick run (if Convex backend is already set up from a prior run or CI)
 pnpm test:visual:docker
 ```
 
-The `:full` variant runs `scripts/test-visual-local.sh`, which checks for active CI runs on the shared Convex test backend and aborts if a conflict is detected. It also guarantees test data cleanup on any exit (success, error, or Ctrl-C).
+The `:full` variant runs `scripts/test-visual-local.sh`, which requires a working `gh` CLI lock check before mutating the shared Convex test backend and aborts if the lock status cannot be verified or a conflict is detected. It also guarantees test data cleanup on any exit (success, error, or Ctrl-C). Run `pnpm test:visual:docker:full -- --help` for all options, including `--force` (bypasses safety checks — use only when you are certain no tests are running in parallel locally, on other machines, or in CI).
 
 ---
 

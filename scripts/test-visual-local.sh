@@ -7,16 +7,83 @@ set -euo pipefail
 #        seed fresh data → run visual tests in Docker → cleanup on exit.
 #
 # Usage:
-#   bash scripts/test-visual-local.sh                   # run tests
-#   bash scripts/test-visual-local.sh --update-snapshots # regenerate baselines
+#   bash scripts/test-visual-local.sh [options] [-- playwright-args...]
+#
+# Options:
+#   --help               Show this help message and exit
+#   --force              Bypass gh CLI / CI lock checks (DANGEROUS — see below)
+#   --update-snapshots   Regenerate visual regression baselines
+#
+# Any arguments after "--" are forwarded to the Playwright test runner.
 #
 # Prerequisites:
 #   - .env.e2e with CONVEX_DEPLOY_KEY set (run `pnpm setup:e2e` first)
 #   - Docker Desktop running
-#   - gh CLI authenticated (for CI lock check)
+#   - gh CLI installed and authenticated (for CI lock check)
+#
+# The script checks the shared Convex test backend mutex before deploying.
+# If gh is missing, unauthenticated, or the API check fails, the script
+# aborts to prevent accidental data corruption. Pass --force ONLY when you
+# are CERTAIN no other test run is using the backend — locally, on other
+# machines, or in CI.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+
+show_help() {
+  cat <<'HELPTEXT'
+Usage: bash scripts/test-visual-local.sh [options] [-- playwright-args...]
+
+Full CI-equivalent local visual test pipeline. Deploys Convex functions,
+runs migrations, seeds data, runs visual tests in Docker, and cleans up.
+
+Options:
+  --help               Show this help message and exit
+  --force              Bypass gh CLI / CI lock safety checks (DANGEROUS)
+  --update-snapshots   Regenerate visual regression baselines
+
+Any additional arguments after "--" are forwarded to the Playwright test
+runner inside the Docker container.
+
+Prerequisites:
+  .env.e2e             Must contain a valid CONVEX_DEPLOY_KEY
+  Docker Desktop       Must be running
+  gh CLI               Must be installed and authenticated (gh auth login)
+
+Safety:
+  This script mutates the shared Convex test backend. Before doing so it
+  verifies the CI mutex ref via the GitHub API. If the check cannot be
+  performed (gh missing, not authenticated, API failure) the script aborts.
+
+  --force skips all safety checks. Use it ONLY when you are CERTAIN that
+  no other test run is touching the backend — on this machine, on other
+  machines, or in CI. Data corruption is possible otherwise.
+
+Examples:
+  pnpm test:visual:docker:full                       # standard run
+  pnpm test:visual:docker:full -- --force             # skip lock checks
+  pnpm test:visual:docker:full:update                 # update baselines
+  pnpm test:visual:docker:full -- --force --update-snapshots
+HELPTEXT
+  exit 0
+}
+
+FORCE=false
+PASSTHROUGH_ARGS=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --help|-h)
+      show_help
+      ;;
+    --force)
+      FORCE=true
+      ;;
+    *)
+      PASSTHROUGH_ARGS+=("$arg")
+      ;;
+  esac
+done
 
 # Check prerequisites
 command -v node >/dev/null 2>&1 || { echo "Error: Node.js is required."; exit 1; }
@@ -56,23 +123,61 @@ export CONVEX_DEPLOY_KEY
 # ---------------------------------------------------------------------------
 # Hard stop if CI holds the Convex test backend lock
 # ---------------------------------------------------------------------------
+warn_force_bypass() {
+  local reason="$1"
+  echo "WARNING: $reason"
+  echo "Proceeding only because --force was provided."
+  echo "Use --force only when you are CERTAIN no other tests are running"
+  echo "against the shared Convex test backend in parallel:"
+  echo "- on this machine"
+  echo "- on other machines"
+  echo "- in CI"
+  echo ""
+}
+
+require_or_warn_with_force() {
+  local reason="$1"
+  if [ "$FORCE" = true ]; then
+    warn_force_bypass "$reason"
+    return 0
+  fi
+
+  echo "Error: $reason"
+  echo "This script requires a working GitHub CLI lock check before mutating"
+  echo "the shared Convex test backend."
+  echo ""
+  echo "Fix the gh setup and retry, or rerun with --force only when you are"
+  echo "CERTAIN no other tests are running in parallel anywhere."
+  exit 1
+}
+
 check_ci_lock() {
   if ! command -v gh >/dev/null 2>&1; then
-    echo "Warning: gh CLI not found — skipping CI lock check."
-    echo "Install gh (https://cli.github.com) to avoid conflicts with CI."
+    require_or_warn_with_force "gh CLI not found."
+    return 0
+  fi
+
+  if ! gh auth status >/dev/null 2>&1; then
+    require_or_warn_with_force "gh CLI is not authenticated."
     return 0
   fi
 
   local repo
-  repo=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || true)
+  repo=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null) || {
+    require_or_warn_with_force "gh repo view failed while determining the current repository."
+    return 0
+  }
   if [ -z "$repo" ]; then
-    echo "Warning: Could not determine GitHub repo — skipping CI lock check."
+    require_or_warn_with_force "gh repo view returned an empty repository identifier."
     return 0
   fi
 
   local ref_sha
-  ref_sha=$(gh api "repos/$repo/git/ref/heads/mutex/convex-test-deploy" \
-    --jq '.object.sha' 2>/dev/null || true)
+  ref_sha=$(gh api "repos/$repo/git/matching-refs/heads/mutex/convex-test-deploy" \
+    --jq '.[0].object.sha // empty' 2>/dev/null) || {
+    require_or_warn_with_force "gh api failed while checking the CI mutex ref."
+    return 0
+  }
 
   if [ -z "$ref_sha" ]; then
     # Lock ref doesn't exist yet — no CI runs have ever used it
@@ -81,17 +186,17 @@ check_ci_lock() {
 
   local lock_msg
   lock_msg=$(gh api "repos/$repo/git/commits/$ref_sha" \
-    --jq '.message' 2>/dev/null || true)
+    --jq '.message' 2>/dev/null) || {
+    require_or_warn_with_force "gh api failed while reading the CI mutex commit."
+    return 0
+  }
+  if [ -z "$lock_msg" ]; then
+    require_or_warn_with_force "gh api returned an empty CI mutex commit message."
+    return 0
+  fi
 
   if [[ "$lock_msg" == lock:* ]]; then
-    echo "ERROR: Convex test backend is locked by CI."
-    echo "  Lock holder: $lock_msg"
-    echo ""
-    echo "A CI workflow is currently deploying to or testing against the shared"
-    echo "Convex test backend. Running locally now would corrupt test data."
-    echo ""
-    echo "Wait for the CI run to finish, then retry."
-    exit 1
+    require_or_warn_with_force "Convex test backend is locked by CI. Lock holder: $lock_msg"
   fi
 }
 
@@ -143,9 +248,9 @@ pnpm test:e2e:seed
 echo ""
 echo "5. Running visual tests in Docker..."
 
-if [ $# -gt 0 ]; then
+if [ ${#PASSTHROUGH_ARGS[@]} -gt 0 ]; then
   docker compose -f docker-compose.test.yml run --rm visual-tests \
-    pnpm run test:visual -- "$@"
+    pnpm run test:visual -- "${PASSTHROUGH_ARGS[@]}"
 else
   docker compose -f docker-compose.test.yml run --rm visual-tests \
     pnpm run test:visual
