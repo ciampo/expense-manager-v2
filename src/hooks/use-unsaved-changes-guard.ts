@@ -27,6 +27,9 @@ export function useUnsavedChangesGuard(isDirty: boolean, skipRef: RefObject<bool
     return isDirtyRef.current
   }, [skipRef])
 
+  // shouldBlockFn reads from a ref for callback-identity stability;
+  // enableBeforeUnload uses the state value directly so React re-renders
+  // propagate the listener registration change.
   return useBlocker({
     shouldBlockFn,
     enableBeforeUnload: isDirty,
