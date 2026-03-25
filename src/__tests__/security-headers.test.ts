@@ -91,6 +91,11 @@ describe('buildCspHeader', () => {
     expect(csp).toContain("frame-ancestors 'none'")
   })
 
+  it('includes upgrade-insecure-requests', () => {
+    const csp = buildCspHeader(TEST_NONCE)
+    expect(csp).toContain('upgrade-insecure-requests')
+  })
+
   it('includes report-to and report-uri directives', () => {
     const csp = buildCspHeader(TEST_NONCE)
     expect(csp).toContain('report-to csp-endpoint')

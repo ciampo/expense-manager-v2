@@ -48,6 +48,7 @@ export function buildCspHeader(nonce: string): string {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
+    'upgrade-insecure-requests',
     'report-to csp-endpoint',
     `report-uri ${CSP_REPORT_PATH}`,
   ].join('; ')
