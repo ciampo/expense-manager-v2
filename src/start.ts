@@ -3,7 +3,7 @@ import { setResponseHeader } from '@tanstack/react-start/server'
 import { generateNonce, buildCspHeader } from '@/lib/security-headers'
 
 const cspMiddleware = createMiddleware().server(({ next, request }) => {
-  if (request.method !== 'GET') {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
     return next()
   }
 
