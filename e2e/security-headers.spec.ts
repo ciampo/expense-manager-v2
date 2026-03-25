@@ -58,6 +58,14 @@ test.describe('Security Headers', () => {
     expect(headers['permissions-policy']).toBeTruthy()
   })
 
+  test('should serve a CSP header on HEAD requests', async ({ request }) => {
+    const response = await request.head('/')
+    const csp = response.headers()['content-security-policy']
+
+    expect(csp).toBeDefined()
+    expect(csp).toMatch(/script-src[^;]*'nonce-/)
+  })
+
   test('should not include a CSP header on non-GET responses', async ({ request }) => {
     const response = await request.post('/', { data: '' })
     const csp = response.headers()['content-security-policy']
