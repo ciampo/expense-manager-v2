@@ -1,8 +1,11 @@
 export const CSP_REPORT_PATH = '/__csp-report'
 
+const NONCE_BYTES = 16
+const NONCE_BASE64_MIN_CHARS = Math.ceil((NONCE_BYTES * 4) / 3) // 22 for 16 bytes
+
 /** Generate a 128-bit cryptographic nonce encoded as base64. */
 export function generateNonce(): string {
-  const bytes = new Uint8Array(16)
+  const bytes = new Uint8Array(NONCE_BYTES)
   crypto.getRandomValues(bytes)
   return btoa(String.fromCharCode(...bytes))
 }
@@ -32,7 +35,7 @@ export const SECURITY_HEADERS: Record<string, string> = {
  * user-controlled values).
  */
 export function buildCspHeader(nonce: string): string {
-  if (!nonce || !/^[A-Za-z0-9+/]{22,}=*$/.test(nonce)) {
+  if (!nonce || !new RegExp(`^[A-Za-z0-9+/]{${NONCE_BASE64_MIN_CHARS},}=*$`).test(nonce)) {
     throw new Error('buildCspHeader: nonce must be a base64 string of at least 128 bits')
   }
 
@@ -49,6 +52,7 @@ export function buildCspHeader(nonce: string): string {
     "base-uri 'self'",
     "form-action 'self'",
     'upgrade-insecure-requests',
+    // Requires the Reporting-Endpoints header set separately in SECURITY_HEADERS
     'report-to csp-endpoint',
     `report-uri ${CSP_REPORT_PATH}`,
   ].join('; ')
