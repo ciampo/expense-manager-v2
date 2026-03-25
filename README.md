@@ -88,40 +88,42 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ### Scripts
 
-| Command                           | Description                                                     |
-| --------------------------------- | --------------------------------------------------------------- |
-| `pnpm setup`                      | Guided interactive local dev setup                              |
-| `pnpm setup:e2e`                  | Guided interactive E2E test project setup                       |
-| `pnpm dev`                        | Start development server                                        |
-| `pnpm dev:e2e`                    | Start dev server with E2E test config                           |
-| `pnpm build`                      | Build for production (includes typecheck)                       |
-| `pnpm preview`                    | Preview production build locally                                |
-| `pnpm preview:e2e`                | Build in E2E mode and preview locally                           |
-| `pnpm deploy`                     | Build and deploy to Cloudflare Workers                          |
-| `pnpm migrate`                    | Run pending Convex migrations                                   |
-| `pnpm codegen`                    | Regenerate Convex types (`convex/_generated/`)                  |
-| `pnpm test`                       | Run all Vitest tests (alias for `test:unit`)                    |
-| `pnpm test:watch`                 | Run Vitest in watch mode (alias for `test:unit:watch`)          |
-| `pnpm test:unit`                  | Run all Vitest tests (unit + Convex backend)                    |
-| `pnpm test:unit:frontend`         | Run frontend unit tests only (`src/`)                           |
-| `pnpm test:unit:convex`           | Run Convex backend tests only (`convex/`)                       |
-| `pnpm test:unit:coverage`         | Run all Vitest tests with coverage report                       |
-| `pnpm test:unit:coverage:changed` | Run all Vitest tests with coverage for changed files only       |
-| `pnpm test:unit:watch`            | Run Vitest in watch mode                                        |
-| `pnpm test:e2e`                   | Run Playwright E2E tests                                        |
-| `pnpm test:e2e:seed`              | Seed test data to E2E Convex project                            |
-| `pnpm test:e2e:cleanup`           | Clean up E2E test data                                          |
-| `pnpm test:visual`                | Run visual regression tests locally                             |
-| `pnpm test:visual:update`         | Update visual regression baselines locally                      |
-| `pnpm test:visual:docker`         | Run visual regression tests in Docker                           |
-| `pnpm test:visual:docker:update`  | Update visual regression baselines in Docker                    |
-| `pnpm lint`                       | Run ESLint                                                      |
-| `pnpm lint:fix`                   | Run ESLint with auto-fix                                        |
-| `pnpm format`                     | Format code with Prettier                                       |
-| `pnpm format:check`               | Check code formatting                                           |
-| `pnpm typecheck`                  | Run TypeScript type checking (`tsc --noEmit`)                   |
-| `pnpm check`                      | Run all CI checks locally (lint, format, typecheck, unit tests) |
-| `pnpm check:env`                  | Audit env vars across local files, GH Secrets, and Convex       |
+| Command                               | Description                                                     |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `pnpm setup`                          | Guided interactive local dev setup                              |
+| `pnpm setup:e2e`                      | Guided interactive E2E test project setup                       |
+| `pnpm dev`                            | Start development server                                        |
+| `pnpm dev:e2e`                        | Start dev server with E2E test config                           |
+| `pnpm build`                          | Build for production (includes typecheck)                       |
+| `pnpm preview`                        | Preview production build locally                                |
+| `pnpm preview:e2e`                    | Build in E2E mode and preview locally                           |
+| `pnpm deploy`                         | Build and deploy to Cloudflare Workers                          |
+| `pnpm migrate`                        | Run pending Convex migrations                                   |
+| `pnpm codegen`                        | Regenerate Convex types (`convex/_generated/`)                  |
+| `pnpm test`                           | Run all Vitest tests (alias for `test:unit`)                    |
+| `pnpm test:watch`                     | Run Vitest in watch mode (alias for `test:unit:watch`)          |
+| `pnpm test:unit`                      | Run all Vitest tests (unit + Convex backend)                    |
+| `pnpm test:unit:frontend`             | Run frontend unit tests only (`src/`)                           |
+| `pnpm test:unit:convex`               | Run Convex backend tests only (`convex/`)                       |
+| `pnpm test:unit:coverage`             | Run all Vitest tests with coverage report                       |
+| `pnpm test:unit:coverage:changed`     | Run all Vitest tests with coverage for changed files only       |
+| `pnpm test:unit:watch`                | Run Vitest in watch mode                                        |
+| `pnpm test:e2e`                       | Run Playwright E2E tests                                        |
+| `pnpm test:e2e:seed`                  | Seed test data to E2E Convex project                            |
+| `pnpm test:e2e:cleanup`               | Clean up E2E test data                                          |
+| `pnpm test:visual`                    | Run visual regression tests locally                             |
+| `pnpm test:visual:update`             | Update visual regression baselines locally                      |
+| `pnpm test:visual:docker`             | Run visual regression tests in Docker (quick, no Convex setup)  |
+| `pnpm test:visual:docker:update`      | Update visual regression baselines in Docker (quick)            |
+| `pnpm test:visual:docker:full`        | Full CI-equivalent pipeline: deploy, seed, test in Docker       |
+| `pnpm test:visual:docker:full:update` | Full pipeline + regenerate baselines                            |
+| `pnpm lint`                           | Run ESLint                                                      |
+| `pnpm lint:fix`                       | Run ESLint with auto-fix                                        |
+| `pnpm format`                         | Format code with Prettier                                       |
+| `pnpm format:check`                   | Check code formatting                                           |
+| `pnpm typecheck`                      | Run TypeScript type checking (`tsc --noEmit`)                   |
+| `pnpm check`                          | Run all CI checks locally (lint, format, typecheck, unit tests) |
+| `pnpm check:env`                      | Audit env vars across local files, GH Secrets, and Convex       |
 
 ### Project Structure
 
@@ -211,12 +213,17 @@ For E2E test authoring conventions (locator strategy, selector patterns), see [`
 Visual tests run in Docker to ensure consistent screenshots. In CI, the `test-integration.yml` and `update-screenshots.yml` workflows automatically deploy the Convex backend, run `seed:postDeploy` migrations, seed test data, and clean up afterward — matching the E2E pattern.
 
 ```bash
-# Run tests (in Docker for consistent screenshots)
+# Full CI-equivalent pipeline (deploy Convex, seed, test, cleanup)
+pnpm test:visual:docker:full
+
+# Quick re-run (assumes Convex backend already set up)
 pnpm test:visual:docker
 
 # Update baselines after intentional UI changes
-pnpm test:visual:docker:update
+pnpm test:visual:docker:full:update
 ```
+
+The `:full` variants run `scripts/test-visual-local.sh`, which mirrors CI's visual job: checks for active CI runs against the shared Convex test backend (aborts on conflict), deploys functions, runs migrations, seeds data, runs tests in Docker, and cleans up on exit. The plain `docker` variants skip Convex setup for faster re-runs when the backend is already configured.
 
 ## Deployment
 
