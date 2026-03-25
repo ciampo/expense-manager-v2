@@ -7,7 +7,7 @@ import {
   addSecurityHeaders,
 } from '@/lib/security-headers'
 
-const TEST_NONCE = 'dGVzdC1ub25jZQ=='
+const TEST_NONCE = 'dGVzdC1ub25jZS12YWx1ZQ=='
 
 describe('generateNonce', () => {
   it('returns a base64-encoded string', () => {
@@ -97,11 +97,11 @@ describe('buildCspHeader', () => {
     expect(csp).toContain(`report-uri ${CSP_REPORT_PATH}`)
   })
 
-  it.each(['', ' ', 'not!base64', 'has spaces', '<script>'])(
+  it.each(['', ' ', 'not!base64', 'has spaces', '<script>', 'AAAA'])(
     'throws on invalid nonce %j',
     (bad) => {
       expect(() => buildCspHeader(bad)).toThrow(
-        'buildCspHeader: nonce must be a non-empty base64 string',
+        'buildCspHeader: nonce must be a base64 string of at least 128 bits',
       )
     },
   )

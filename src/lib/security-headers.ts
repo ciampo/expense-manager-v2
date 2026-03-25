@@ -30,8 +30,8 @@ export const SECURITY_HEADERS: Record<string, string> = {
  * styles (`style` attribute) cannot use nonces and are low-risk.
  */
 export function buildCspHeader(nonce: string): string {
-  if (!nonce || !/^[A-Za-z0-9+/]+=*$/.test(nonce)) {
-    throw new Error('buildCspHeader: nonce must be a non-empty base64 string')
+  if (!nonce || !/^[A-Za-z0-9+/]{22,}=*$/.test(nonce)) {
+    throw new Error('buildCspHeader: nonce must be a base64 string of at least 128 bits')
   }
 
   return [
