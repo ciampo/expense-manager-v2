@@ -293,7 +293,10 @@ enforcement to surface any unexpected violations.
 **HSTS preload:** The `Strict-Transport-Security` header includes the
 `preload` directive, signaling eligibility for the
 [HSTS preload list](https://hstspreload.org). Submission is a separate
-manual step after verifying the header is served consistently.
+manual step after verifying the header is served consistently. The CSP
+also includes `upgrade-insecure-requests`, which instructs browsers to
+rewrite HTTP sub-resource URLs to HTTPS — closing a gap for first-time
+visitors who haven't yet received the HSTS header.
 
 **Trade-off:** Maintaining a strict CSP requires ongoing work — any new
 third-party script or resource needs to be explicitly trusted (or loaded
