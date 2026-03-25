@@ -1,6 +1,6 @@
 import type { RefObject } from 'react'
 import { useBlocker } from '@tanstack/react-router'
-import { useRef, useLayoutEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 
 /**
  * Blocks in-app navigation and the browser's beforeunload event when
@@ -14,10 +14,7 @@ import { useRef, useLayoutEffect, useCallback } from 'react'
 export function useUnsavedChangesGuard(isDirty: boolean, skipRef: RefObject<boolean>) {
   const isDirtyRef = useRef(isDirty)
 
-  // Sync before paint so the blocker's shouldBlockFn — which may still
-  // be the version captured by the previous useBlocker effect — reads
-  // the latest value from the ref.
-  useLayoutEffect(() => {
+  useEffect(() => {
     isDirtyRef.current = isDirty
   })
 
