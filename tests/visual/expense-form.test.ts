@@ -64,4 +64,17 @@ test.describe('Visual Regression - Expense Form', () => {
       mask: [page.locator('footer'), page.locator('#date-picker')],
     })
   })
+
+  test('new expense form — unsaved changes dialog', async ({ page }) => {
+    await page.getByLabel(/amount/i).fill('42')
+    await page.getByRole('button', { name: /^cancel$/i }).click()
+
+    const dialog = page.getByRole('alertdialog')
+    await expect(dialog).toBeVisible()
+
+    await expect(page).toHaveScreenshot('expense-form-unsaved-changes-dialog.png', {
+      fullPage: true,
+      mask: [page.locator('footer'), page.locator('#date-picker')],
+    })
+  })
 })

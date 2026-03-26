@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef, type ChangeEvent } from 'react'
+import { useState, useCallback, useRef, useEffect, type ChangeEvent } from 'react'
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useForm } from '@tanstack/react-form'
+import { useForm, useStore } from '@tanstack/react-form'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { parseCurrencyToCents, centsToInputValue, getTodayISO } from '@/lib/format'
 import { toast } from 'sonner'
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
+import { UnsavedChangesDialog } from '@/components/unsaved-changes-dialog'
 import { expenseFormSchema, MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from './schema'
 import { DateField } from './date-field'
 import { MerchantField } from './merchant-field'
@@ -47,18 +49,36 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
   const { data: merchants } = useSuspenseQuery(convexQuery(api.expenses.getMerchants, {}))
 
+  // Stable initial values — computed once on mount for both the form and
+  // the dirty comparison. Using useState with an initializer avoids
+  // recomputation on re-renders.
+  const [defaultFormValues] = useState(() => ({
+    date: expense?.date || getTodayISO(),
+    merchant: expense?.merchant || '',
+    amount: expense ? centsToInputValue(expense.amount) : '',
+    categoryId: (expense?.categoryId ?? null) as string | null,
+    newCategoryName: '',
+    comment: expense?.comment || '',
+  }))
+  const [initialAttachmentId] = useState(() => expense?.attachmentId)
+
   const [attachmentId, setAttachmentId] = useState<Id<'_storage'> | undefined>(
     expense?.attachmentId,
   )
   const [isUploading, setIsUploading] = useState(false)
   const [showDeleteExpense, setShowDeleteExpense] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isNavigatingAway, setIsNavigatingAway] = useState(false)
+
+  const navigateAway = useCallback(() => {
+    setIsNavigatingAway(true)
+  }, [])
 
   const createExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.create),
     onSuccess: () => {
       toast.success('Expense created')
-      navigate({ to: '/dashboard' })
+      navigateAway()
     },
     onError: () => {
       toast.error('Error creating expense')
@@ -69,7 +89,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     mutationFn: useConvexMutation(api.expenses.update),
     onSuccess: () => {
       toast.success('Expense updated')
-      navigate({ to: '/dashboard' })
+      navigateAway()
     },
     onError: () => {
       toast.error('Error updating expense')
@@ -80,7 +100,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     mutationFn: useConvexMutation(api.expenses.remove),
     onSuccess: () => {
       toast.success('Expense deleted')
-      navigate({ to: '/dashboard' })
+      navigateAway()
     },
     onError: () => {
       toast.error('Error deleting expense')
@@ -106,14 +126,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   })
 
   const form = useForm({
-    defaultValues: {
-      date: expense?.date || getTodayISO(),
-      merchant: expense?.merchant || '',
-      amount: expense ? centsToInputValue(expense.amount) : '',
-      categoryId: (expense?.categoryId ?? null) as string | null,
-      newCategoryName: '',
-      comment: expense?.comment || '',
-    },
+    defaultValues: defaultFormValues,
     validators: {
       onSubmit: expenseFormSchema,
     },
@@ -142,6 +155,17 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       }
     },
   })
+
+  const isFormDirty = useStore(form.store, (s) => !s.isDefaultValue)
+  const isDirty = !isNavigatingAway && (isFormDirty || attachmentId !== initialAttachmentId)
+
+  const blocker = useUnsavedChangesGuard(isDirty)
+
+  useEffect(() => {
+    if (isNavigatingAway) {
+      navigate({ to: '/dashboard' })
+    }
+  }, [isNavigatingAway, navigate])
 
   const handleFileChange = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
@@ -224,128 +248,138 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     isUploading
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
-      }}
-      noValidate
-      className="max-w-2xl space-y-6"
-    >
-      <form.Field name="date">
-        {(field) => <DateField field={field} isLoading={isLoading} />}
-      </form.Field>
-
-      <form.Field name="merchant">
-        {(field) => (
-          <MerchantField field={field} isLoading={isLoading} merchants={merchants ?? []} />
-        )}
-      </form.Field>
-
-      <form.Field name="categoryId">
-        {(categoryIdField) => (
-          <form.Field name="newCategoryName">
-            {(newCatField) => (
-              <CategoryField
-                categoryIdField={categoryIdField}
-                newCatField={newCatField}
-                isLoading={isLoading}
-                categories={categories ?? []}
-              />
-            )}
-          </form.Field>
-        )}
-      </form.Field>
-
-      <form.Field name="amount">
-        {(field) => <AmountField field={field} isLoading={isLoading} />}
-      </form.Field>
-
-      <AttachmentField
-        attachmentId={attachmentId}
-        isPersistedAttachment={attachmentId === expense?.attachmentId}
-        isLoading={isLoading}
-        isUploading={isUploading}
-        fileInputRef={fileInputRef}
-        onFileChange={handleFileChange}
-        onRemoveAttachment={handleRemoveAttachment}
+    <>
+      <UnsavedChangesDialog
+        open={blocker.status === 'blocked'}
+        onStay={() => blocker.status === 'blocked' && blocker.reset()}
+        onLeave={() => blocker.status === 'blocked' && blocker.proceed()}
       />
-
-      <form.Field name="comment">
-        {(field) => {
-          const hasErrors = field.state.meta.errors.length > 0
-          return (
-            <Field data-invalid={hasErrors || undefined}>
-              <FieldLabel htmlFor="comment">Notes (optional)</FieldLabel>
-              <Input
-                id="comment"
-                type="text"
-                placeholder="Add a note..."
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isLoading}
-                aria-invalid={hasErrors}
-                aria-describedby={hasErrors ? 'comment-error' : undefined}
-              />
-              <FieldError id="comment-error" errors={field.state.meta.errors} />
-            </Field>
-          )
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          form.handleSubmit()
         }}
-      </form.Field>
+        noValidate
+        className="max-w-2xl space-y-6"
+      >
+        <form.Field name="date">
+          {(field) => <DateField field={field} isLoading={isLoading} />}
+        </form.Field>
 
-      <div className="flex gap-4">
-        <Button type="submit" disabled={isLoading}>
-          {form.state.isSubmitting
-            ? 'Saving...'
-            : mode === 'create'
-              ? 'Create expense'
-              : 'Save changes'}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isLoading}
-          onClick={() => navigate({ to: '/dashboard' })}
-        >
-          Cancel
-        </Button>
+        <form.Field name="merchant">
+          {(field) => (
+            <MerchantField field={field} isLoading={isLoading} merchants={merchants ?? []} />
+          )}
+        </form.Field>
 
-        {mode === 'edit' && expense && (
-          <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
-            <AlertDialogTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="destructive"
-                  className="ml-auto"
-                  disabled={isLoading}
+        <form.Field name="categoryId">
+          {(categoryIdField) => (
+            <form.Field name="newCategoryName">
+              {(newCatField) => (
+                <CategoryField
+                  categoryIdField={categoryIdField}
+                  newCatField={newCatField}
+                  isLoading={isLoading}
+                  categories={categories ?? []}
                 />
-              }
-            >
-              Delete
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. The expense and any attachment will be permanently
-                  deleted.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeleteExpense}
-                  className="bg-destructive text-destructive-foreground"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-      </div>
-    </form>
+              )}
+            </form.Field>
+          )}
+        </form.Field>
+
+        <form.Field name="amount">
+          {(field) => <AmountField field={field} isLoading={isLoading} />}
+        </form.Field>
+
+        <AttachmentField
+          attachmentId={attachmentId}
+          isPersistedAttachment={attachmentId === expense?.attachmentId}
+          isLoading={isLoading}
+          isUploading={isUploading}
+          fileInputRef={fileInputRef}
+          onFileChange={handleFileChange}
+          onRemoveAttachment={handleRemoveAttachment}
+        />
+
+        <form.Field name="comment">
+          {(field) => {
+            const hasErrors = field.state.meta.errors.length > 0
+            return (
+              <Field data-invalid={hasErrors || undefined}>
+                <FieldLabel htmlFor="comment">Notes (optional)</FieldLabel>
+                <Input
+                  id="comment"
+                  type="text"
+                  placeholder="Add a note..."
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isLoading}
+                  aria-invalid={hasErrors}
+                  aria-describedby={hasErrors ? 'comment-error' : undefined}
+                />
+                <FieldError id="comment-error" errors={field.state.meta.errors} />
+              </Field>
+            )
+          }}
+        </form.Field>
+
+        <div className="flex gap-4">
+          <Button type="submit" disabled={isLoading}>
+            {form.state.isSubmitting
+              ? 'Saving...'
+              : mode === 'create'
+                ? 'Create expense'
+                : 'Save changes'}
+          </Button>
+          {/* Uses navigate() (not navigateAway()) so the blocker can
+              intercept when the form is dirty. navigateAway() bypasses
+              the guard and is reserved for post-save/delete success. */}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isLoading}
+            onClick={() => navigate({ to: '/dashboard' })}
+          >
+            Cancel
+          </Button>
+
+          {mode === 'edit' && expense && (
+            <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="ml-auto"
+                    disabled={isLoading}
+                  />
+                }
+              >
+                Delete
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. The expense and any attachment will be permanently
+                    deleted.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteExpense}
+                    className="bg-destructive text-destructive-foreground"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      </form>
+    </>
   )
 }

@@ -5,7 +5,7 @@ A modern expense management application for tracking work-related expenses, buil
 ## Features
 
 - **Dashboard**: View all expenses in a paginated table with quick delete actions
-- **Expense Management**: Add/edit expenses with category and merchant autocomplete
+- **Expense Management**: Add/edit expenses with category and merchant autocomplete, unsaved changes protection
 - **File Attachments**: Upload receipts and invoices (images, PDFs up to 10MB)
 - **Reports**: Generate monthly CSV exports and download attachments as ZIP
 - **Authentication**: Email/password auth with password reset flow
@@ -133,6 +133,7 @@ expense-manager-v2/
 │   ├── __tests__/           # Unit tests (Vitest)
 │   ├── components/          # React components
 │   │   └── ui/              # ShadCN UI components
+│   ├── hooks/               # Custom React hooks
 │   ├── lib/                 # Utilities (format, schemas, etc.)
 │   └── routes/              # TanStack Router routes
 │       ├── _auth/           # Auth pages (sign-in, sign-up, etc.)

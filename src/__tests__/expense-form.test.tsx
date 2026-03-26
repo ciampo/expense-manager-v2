@@ -153,6 +153,14 @@ const mockNavigate = vi.fn()
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
+  useBlocker: () => ({
+    status: 'idle' as const,
+    current: undefined,
+    next: undefined,
+    action: undefined,
+    proceed: vi.fn(),
+    reset: vi.fn(),
+  }),
 }))
 
 const convexMutationSpies: Record<string, ReturnType<typeof vi.fn>> = {}
