@@ -15,9 +15,10 @@ export const CSP_REPORT_RATE_LIMIT_WINDOW_MS = 60_000
 
 /**
  * Maximum tracked IPs before stale-entry eviction runs.
- * Prevents unbounded growth in long-lived Worker isolates.
+ * When all entries are fresh and the cap is reached, new IPs are
+ * load-shed (treated as rate-limited) to prevent unbounded map growth.
  */
-const RATE_LIMIT_MAP_CAP = 1_000
+export const CSP_REPORT_RATE_LIMIT_MAP_CAP = 1_000
 
 interface RateLimitEntry {
   count: number
@@ -36,11 +37,14 @@ function isRateLimited(ip: string): boolean {
   const entry = ipBuckets.get(ip)
 
   if (!entry || now - entry.windowStart >= CSP_REPORT_RATE_LIMIT_WINDOW_MS) {
-    if (ipBuckets.size >= RATE_LIMIT_MAP_CAP) {
+    if (ipBuckets.size >= CSP_REPORT_RATE_LIMIT_MAP_CAP) {
       for (const [key, val] of ipBuckets) {
         if (now - val.windowStart >= CSP_REPORT_RATE_LIMIT_WINDOW_MS) {
           ipBuckets.delete(key)
         }
+      }
+      if (ipBuckets.size >= CSP_REPORT_RATE_LIMIT_MAP_CAP) {
+        return true
       }
     }
     ipBuckets.set(ip, { count: 1, windowStart: now })
@@ -99,7 +103,10 @@ export async function handleCspReport(request: Request): Promise<Response> {
 
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
   if (isRateLimited(ip)) {
-    return new Response(null, { status: 429 })
+    return new Response(null, {
+      status: 429,
+      headers: { 'Retry-After': String(Math.ceil(CSP_REPORT_RATE_LIMIT_WINDOW_MS / 1000)) },
+    })
   }
 
   const declaredLength = Number(request.headers.get('Content-Length'))

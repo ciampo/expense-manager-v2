@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   CSP_REPORT_MAX_BODY_BYTES,
+  CSP_REPORT_RATE_LIMIT_MAP_CAP,
   CSP_REPORT_RATE_LIMIT_MAX,
   CSP_REPORT_RATE_LIMIT_WINDOW_MS,
   handleCspReport,
@@ -104,7 +105,7 @@ describe('handleCspReport', () => {
       }
     })
 
-    it('rejects the request exceeding the limit with 429', async () => {
+    it('rejects the request exceeding the limit with 429 and Retry-After', async () => {
       for (let i = 0; i < CSP_REPORT_RATE_LIMIT_MAX; i++) {
         await handleCspReport(makeRequest({ contentType: 'application/csp-report', ip: '1.2.3.4' }))
       }
@@ -113,6 +114,9 @@ describe('handleCspReport', () => {
         makeRequest({ contentType: 'application/csp-report', ip: '1.2.3.4' }),
       )
       expect(res.status).toBe(429)
+      expect(res.headers.get('Retry-After')).toBe(
+        String(Math.ceil(CSP_REPORT_RATE_LIMIT_WINDOW_MS / 1000)),
+      )
     })
 
     it('tracks IPs independently', async () => {
@@ -153,6 +157,44 @@ describe('handleCspReport', () => {
 
       const res = await handleCspReport(makeRequest({ contentType: 'application/csp-report' }))
       expect(res.status).toBe(429)
+    })
+
+    it('load-sheds new IPs when the map is at capacity with all-fresh entries', async () => {
+      vi.useFakeTimers()
+
+      for (let i = 0; i < CSP_REPORT_RATE_LIMIT_MAP_CAP; i++) {
+        await handleCspReport(
+          makeRequest({
+            contentType: 'application/csp-report',
+            ip: `10.0.${Math.floor(i / 256)}.${i % 256}`,
+          }),
+        )
+      }
+
+      const res = await handleCspReport(
+        makeRequest({ contentType: 'application/csp-report', ip: '192.168.0.1' }),
+      )
+      expect(res.status).toBe(429)
+    })
+
+    it('evicts stale entries when the map reaches capacity', async () => {
+      vi.useFakeTimers()
+
+      for (let i = 0; i < CSP_REPORT_RATE_LIMIT_MAP_CAP; i++) {
+        await handleCspReport(
+          makeRequest({
+            contentType: 'application/csp-report',
+            ip: `10.0.${Math.floor(i / 256)}.${i % 256}`,
+          }),
+        )
+      }
+
+      vi.advanceTimersByTime(CSP_REPORT_RATE_LIMIT_WINDOW_MS)
+
+      const res = await handleCspReport(
+        makeRequest({ contentType: 'application/csp-report', ip: '192.168.0.1' }),
+      )
+      expect(res.status).toBe(204)
     })
   })
 
