@@ -89,6 +89,45 @@ export const expenseSchema = z.object({
 })
 
 // ---------------------------------------------------------------------------
+// Draft expense schemas
+// ---------------------------------------------------------------------------
+
+/**
+ * Schema for partial draft updates — all expense fields are optional,
+ * but each present field is validated with its full-strength schema.
+ */
+export const draftExpenseUpdateSchema = z.object({
+  date: expenseDateSchema.optional(),
+  merchant: expenseMerchantSchema.optional(),
+  amount: expenseAmountSchema.optional(),
+  comment: expenseCommentSchema,
+})
+
+/**
+ * Schema for completing a draft — all required fields must be present.
+ * Reuses the existing `expenseSchema` (date, merchant, amount required).
+ */
+export const completeDraftSchema = expenseSchema
+
+// ---------------------------------------------------------------------------
+// API key schemas
+// ---------------------------------------------------------------------------
+
+export const API_KEY_NAME_MAX_LENGTH = 100
+
+export const apiKeyNameSchema = z
+  .string()
+  .transform((s) => s.trim())
+  .pipe(
+    z
+      .string()
+      .min(1, { message: 'API key name is required.' })
+      .max(API_KEY_NAME_MAX_LENGTH, {
+        message: `API key name must be ${API_KEY_NAME_MAX_LENGTH} characters or less.`,
+      }),
+  )
+
+// ---------------------------------------------------------------------------
 // Category schemas
 // ---------------------------------------------------------------------------
 

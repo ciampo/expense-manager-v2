@@ -56,7 +56,7 @@ async function cleanupOrphanedMerchant(
     .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
     .collect()
 
-  if (!userExpenses.some((e) => normalizeMerchantName(e.merchant) === normalized)) {
+  if (!userExpenses.some((e) => e.merchant && normalizeMerchantName(e.merchant) === normalized)) {
     await ctx.db.delete('merchants', merchant._id)
   }
 }
@@ -234,7 +234,7 @@ export const update = mutation({
 
     await upsertMerchant(ctx, userId, merchant)
 
-    if (existing.categoryId !== categoryId) {
+    if (existing.categoryId && existing.categoryId !== categoryId) {
       await cleanupOrphanedCategory(ctx, userId, existing.categoryId)
     }
     // Merchant cleanup is intentionally deferred to the daily cron.
@@ -274,8 +274,12 @@ export const remove = mutation({
 
     await ctx.db.delete('expenses', args.id)
 
-    await cleanupOrphanedCategory(ctx, userId, expense.categoryId)
-    await cleanupOrphanedMerchant(ctx, userId, expense.merchant)
+    if (expense.categoryId) {
+      await cleanupOrphanedCategory(ctx, userId, expense.categoryId)
+    }
+    if (expense.merchant) {
+      await cleanupOrphanedMerchant(ctx, userId, expense.merchant)
+    }
 
     return args.id
   },

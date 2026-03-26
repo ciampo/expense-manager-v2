@@ -414,7 +414,7 @@ describe('expenses.create', () => {
     const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
     expect(expense).not.toBeNull()
 
-    const category = await t.query(async (ctx) => ctx.db.get('categories', expense!.categoryId))
+    const category = await t.query(async (ctx) => ctx.db.get('categories', expense!.categoryId!))
     expect(category?.name).toBe('Custom Category')
     expect(category?.userId).toBe(userId)
   })

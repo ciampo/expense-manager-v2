@@ -55,9 +55,22 @@ function EditExpensePage() {
 function EditExpenseForm({ expenseId }: { expenseId: Id<'expenses'> }) {
   const { data: expense } = useSuspenseQuery(convexQuery(api.expenses.get, { id: expenseId }))
 
-  if (!expense) {
+  if (!expense || !expense.date || !expense.merchant || !expense.amount || !expense.categoryId) {
     return <RouteNotFoundComponent />
   }
 
-  return <ExpenseForm expense={expense} mode="edit" />
+  return (
+    <ExpenseForm
+      expense={{
+        _id: expense._id,
+        date: expense.date,
+        merchant: expense.merchant,
+        amount: expense.amount,
+        categoryId: expense.categoryId,
+        attachmentId: expense.attachmentId,
+        comment: expense.comment,
+      }}
+      mode="edit"
+    />
+  )
 }

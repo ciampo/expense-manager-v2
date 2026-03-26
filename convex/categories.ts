@@ -228,7 +228,9 @@ export const listWithCounts = query({
         .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
         .collect()
       for (const expense of allExpenses) {
-        counts.set(expense.categoryId, (counts.get(expense.categoryId) ?? 0) + 1)
+        if (expense.categoryId) {
+          counts.set(expense.categoryId, (counts.get(expense.categoryId) ?? 0) + 1)
+        }
       }
     }
 

@@ -7,7 +7,14 @@
  */
 
 import type { z } from 'zod'
-import { expenseSchema, categorySchema, merchantNameSchema } from './zodSchemas'
+import {
+  expenseSchema,
+  categorySchema,
+  merchantNameSchema,
+  draftExpenseUpdateSchema,
+  completeDraftSchema,
+  apiKeyNameSchema,
+} from './zodSchemas'
 
 export { isValidCalendarDate as isValidDate } from './zodSchemas'
 
@@ -49,6 +56,42 @@ export function validateCategoryFields(args: {
  */
 export function validateMerchantName(name: string): string {
   return parseOrThrow(merchantNameSchema, name)
+}
+
+/**
+ * Validate and clean draft expense update fields. All fields are optional;
+ * present fields are fully validated. Returns trimmed/normalized values.
+ * Throws a plain Error with a descriptive message on invalid input.
+ */
+export function validateDraftUpdate(args: {
+  date?: string
+  merchant?: string
+  amount?: number
+  comment?: string
+}): z.infer<typeof draftExpenseUpdateSchema> {
+  return parseOrThrow(draftExpenseUpdateSchema, args)
+}
+
+/**
+ * Validate that a draft has all required fields to be completed.
+ * Returns trimmed/normalized values.
+ * Throws a plain Error with a descriptive message on invalid input.
+ */
+export function validateDraftCompletion(args: {
+  date: string
+  merchant: string
+  amount: number
+  comment?: string
+}): z.infer<typeof completeDraftSchema> {
+  return parseOrThrow(completeDraftSchema, args)
+}
+
+/**
+ * Validate and clean an API key name. Returns the trimmed value.
+ * Throws a plain Error with a descriptive message on invalid input.
+ */
+export function validateApiKeyName(name: string): string {
+  return parseOrThrow(apiKeyNameSchema, name)
 }
 
 /**

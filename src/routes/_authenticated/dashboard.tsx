@@ -271,11 +271,13 @@ function ExpenseTable() {
           <TableBody>
             {expenses.map((expense) => (
               <TableRow key={expense._id}>
-                <TableCell>{formatDate(expense.date)}</TableCell>
-                <TableCell>{expense.merchant}</TableCell>
-                <TableCell>{categoryMap.get(expense.categoryId) || 'N/A'}</TableCell>
+                <TableCell>{expense.date ? formatDate(expense.date) : '—'}</TableCell>
+                <TableCell>{expense.merchant ?? '—'}</TableCell>
+                <TableCell>
+                  {expense.categoryId ? categoryMap.get(expense.categoryId) || 'N/A' : '—'}
+                </TableCell>
                 <TableCell className="text-right font-medium">
-                  {formatCurrency(expense.amount)}
+                  {expense.amount != null ? formatCurrency(expense.amount) : '—'}
                 </TableCell>
                 <TableCell>
                   {expense.attachmentId ? (
