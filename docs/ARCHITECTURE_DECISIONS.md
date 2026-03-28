@@ -288,7 +288,14 @@ receives violation reports (via `report-to` and legacy `report-uri`
 directives). The Worker logs reports with `console.log`, making them
 visible in Cloudflare's real-time logs (`wrangler tail`) with no
 external infrastructure required. Reporting remains active under
-enforcement to surface any unexpected violations.
+enforcement to surface any unexpected violations. The endpoint is
+hardened against abuse with three layers: per-IP rate limiting (10
+requests / 60 s per Worker isolate, in-memory fixed-window), a
+Content-Type allowlist (`application/csp-report` and
+`application/reports+json`), and a 10 KB body size cap with streaming
+enforcement. The rate limiter is per-isolate by design — a distributed
+approach (Durable Objects / KV) would add disproportionate cost for a
+fire-and-forget logging sink.
 
 **HSTS preload:** The `Strict-Transport-Security` header includes the
 `preload` directive, signaling eligibility for the

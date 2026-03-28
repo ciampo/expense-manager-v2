@@ -178,6 +178,7 @@ describe('handleCspReport', () => {
 
     it('load-sheds new IPs when the map is at capacity with all-fresh entries', async () => {
       vi.useFakeTimers()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       for (let i = 0; i < CSP_REPORT_RATE_LIMIT_MAP_CAP; i++) {
         await handleCspReport(
@@ -192,6 +193,7 @@ describe('handleCspReport', () => {
         makeRequest({ contentType: 'application/csp-report', ip: '192.168.0.1' }),
       )
       expect(res.status).toBe(429)
+      expect(warnSpy).toHaveBeenCalledWith('[CSP Rate Limit] map at capacity, load-shedding new IP')
     })
 
     it('evicts stale entries when the map reaches capacity', async () => {

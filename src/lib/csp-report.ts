@@ -44,6 +44,7 @@ function isRateLimited(ip: string): boolean {
         }
       }
       if (ipBuckets.size >= CSP_REPORT_RATE_LIMIT_MAP_CAP) {
+        console.warn('[CSP Rate Limit] map at capacity, load-shedding new IP')
         return true
       }
     }
