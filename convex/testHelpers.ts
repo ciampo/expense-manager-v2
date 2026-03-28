@@ -131,6 +131,15 @@ export async function insertDraftExpense(
 }
 
 /**
+ * Patch a draft expense to mark it as complete (`isDraft: false`).
+ */
+export async function completeDraft(t: TestCtx, expenseId: Id<'expenses'>) {
+  await t.run(async (ctx) => {
+    await ctx.db.patch('expenses', expenseId, { isDraft: false })
+  })
+}
+
+/**
  * Store a blob in Convex storage. Returns the storage ID.
  */
 export async function setupStorageFile(t: TestCtx, content: BlobPart = 'test-content') {

@@ -47,10 +47,11 @@ export function distinctMonthsFromDates(dates: string[]): { year: number; month:
  * Leverages the by_user_and_date index ordering: instead of reading every
  * expense, we fetch only the latest non-draft expense in each month and
  * then skip ahead to the previous month boundary. This makes the query
- * O(M) where M = number of distinct months, rather than O(N) for total
- * expenses. Drafts are excluded via a post-read filter (isDraft !== true)
- * rather than an index equality predicate, so that expenses with
- * isDraft: undefined (pre-backfill) are included defensively.
+ * roughly O(M) where M = number of distinct months (each step may also
+ * scan past any draft expenses at the month boundary). Drafts are excluded
+ * via a post-read filter (isDraft !== true) rather than an index equality
+ * predicate, so that expenses with isDraft: undefined (pre-backfill) are
+ * included defensively.
  */
 export const availableMonths = query({
   args: {},
