@@ -253,21 +253,17 @@ function UploadPage() {
 
   // ── Retry handler ────────────────────────────────────────────────────
 
-  const handleRetry = useCallback(
-    (id: string) => {
-      const item = items.find((i) => i.id === id)
-      if (!item) return
-
-      const validationError = validateFile(item.file)
-      if (validationError) {
-        updateItem(id, { status: 'error', error: validationError })
-        return
-      }
-
-      updateItem(id, { status: 'queued', error: undefined })
-    },
-    [items, updateItem],
-  )
+  const handleRetry = useCallback((id: string) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item
+        const validationError = validateFile(item.file)
+        return validationError
+          ? { ...item, status: 'error' as const, error: validationError }
+          : { ...item, status: 'queued' as const, error: undefined }
+      }),
+    )
+  }, [])
 
   // ── Reset for another batch ──────────────────────────────────────────
 
