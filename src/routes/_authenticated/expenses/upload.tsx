@@ -55,11 +55,6 @@ function validateFile(file: File): string | null {
   return null
 }
 
-let nextId = 0
-function generateId(): string {
-  return `upload-${++nextId}-${Date.now()}`
-}
-
 // ── Component ────────────────────────────────────────────────────────────
 
 function UploadPage() {
@@ -95,23 +90,18 @@ function UploadPage() {
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files)
+    let slotsAvailable = 0
 
     setItems((prev) => {
       const remaining = MAX_BATCH_SIZE - prev.length
-      if (remaining <= 0) {
-        toast.error(`Batch limit reached (max ${MAX_BATCH_SIZE} files)`)
-        return prev
-      }
+      slotsAvailable = remaining
+      if (remaining <= 0) return prev
 
       const toAdd = fileArray.slice(0, remaining)
-      if (fileArray.length > remaining) {
-        toast.error(`Only ${remaining} more file(s) can be added (max ${MAX_BATCH_SIZE})`)
-      }
-
       const newItems: UploadItem[] = toAdd.map((file) => {
         const validationError = validateFile(file)
         return {
-          id: generateId(),
+          id: crypto.randomUUID(),
           file,
           status: validationError ? ('error' as const) : ('queued' as const),
           error: validationError ?? undefined,
@@ -120,6 +110,12 @@ function UploadPage() {
 
       return [...prev, ...newItems]
     })
+
+    if (slotsAvailable <= 0) {
+      toast.error(`Batch limit reached (max ${MAX_BATCH_SIZE} files)`)
+    } else if (fileArray.length > slotsAvailable) {
+      toast.error(`Only ${slotsAvailable} more file(s) can be added (max ${MAX_BATCH_SIZE})`)
+    }
   }, [])
 
   // ── Drag & drop handlers ─────────────────────────────────────────────
