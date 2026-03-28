@@ -572,7 +572,20 @@ describe('ExpenseForm component', () => {
       })
     })
 
-    it('"Save draft" calls updateDraft mutation', async () => {
+    it('"Save as complete" shows validation errors when required fields are missing', async () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save as complete' }))
+
+      await waitFor(() => {
+        const alerts = screen.getAllByRole('alert')
+        expect(alerts.length).toBeGreaterThan(0)
+      })
+
+      expect(convexMutationSpies['expenses.completeDraft']).not.toHaveBeenCalled()
+    })
+
+    it('"Save draft" calls updateDraft mutation with populated field values', async () => {
       render(<ExpenseForm mode="complete-draft" expense={mockDraftExpensePartial} />)
 
       fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
@@ -581,6 +594,11 @@ describe('ExpenseForm component', () => {
         expect(convexMutationSpies['expenses.updateDraft']).toHaveBeenCalledWith(
           expect.objectContaining({
             id: mockDraftExpensePartial._id,
+            date: '2026-03-20',
+            merchant: 'Grocery Store',
+            amount: 999,
+            categoryId: mockDraftExpensePartial.categoryId,
+            attachmentId: mockDraftExpensePartial.attachmentId,
           }),
         )
       })
