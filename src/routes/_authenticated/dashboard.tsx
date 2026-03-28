@@ -46,6 +46,7 @@ const PAGINATION_THRESHOLD = Math.min(...PAGE_SIZE_OPTIONS)
 const DEFAULT_PAGE_SIZE = 25
 
 type DraftFilter = 'complete' | 'drafts' | 'all'
+const DRAFT_FILTERS: ReadonlySet<string> = new Set<DraftFilter>(['complete', 'drafts', 'all'])
 
 function draftFilterToArg(filter: DraftFilter): boolean | undefined {
   if (filter === 'complete') return false
@@ -110,7 +111,13 @@ function DraftFilterTabs({
   const { data: draftCount } = useSuspenseQuery(convexQuery(api.expenses.draftCount, {}))
 
   return (
-    <Tabs value={value} onValueChange={(v) => onValueChange(v as DraftFilter)} className="mb-4">
+    <Tabs
+      value={value}
+      onValueChange={(v) => {
+        if (DRAFT_FILTERS.has(v as string)) onValueChange(v as DraftFilter)
+      }}
+      className="mb-4"
+    >
       <TabsList aria-label="Filter expenses by status">
         <TabsTrigger value="complete">Complete</TabsTrigger>
         <TabsTrigger value="drafts">
