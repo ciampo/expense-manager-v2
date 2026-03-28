@@ -465,6 +465,7 @@ export const completeDraft = mutation({
     amount: v.number(),
     categoryId: v.optional(v.id('categories')),
     newCategoryName: v.optional(v.string()),
+    attachmentId: v.optional(v.id('_storage')),
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -484,6 +485,18 @@ export const completeDraft = mutation({
     const { date, merchant, amount, comment } = validateDraftCompletion(args)
     const categoryId = await resolveCategory(ctx, userId, args)
 
+    if (args.attachmentId !== undefined && args.attachmentId !== existing.attachmentId) {
+      await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
+      if (existing.attachmentId) {
+        try {
+          await ctx.storage.delete(existing.attachmentId)
+        } catch {
+          // File may have already been deleted
+        }
+        await deleteUploadRecord(ctx, existing.attachmentId)
+      }
+    }
+
     const previousCategoryId = existing.categoryId
 
     await ctx.db.patch('expenses', args.id, {
@@ -493,6 +506,7 @@ export const completeDraft = mutation({
       amount,
       categoryId,
       comment,
+      ...(args.attachmentId !== undefined ? { attachmentId: args.attachmentId } : {}),
     })
 
     await upsertMerchant(ctx, userId, merchant)

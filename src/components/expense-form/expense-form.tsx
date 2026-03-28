@@ -166,6 +166,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             ...(value.categoryId
               ? { categoryId: value.categoryId as Id<'categories'> }
               : { newCategoryName: value.newCategoryName.trim() }),
+            attachmentId,
             comment: value.comment.trim() || undefined,
           })
         } catch {
