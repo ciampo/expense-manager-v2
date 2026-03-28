@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
+import { cn } from '@/lib/utils'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { toast } from 'sonner'
 import { Suspense, useMemo, useState, useTransition } from 'react'
@@ -363,7 +364,10 @@ function ExpenseTable({ draftFilter }: { draftFilter: DraftFilter }) {
                   {expense.categoryId ? categoryMap.get(expense.categoryId) || 'N/A' : '—'}
                 </TableCell>
                 <TableCell
-                  className={`text-right font-medium${expense.isDraft && expense.amount == null ? 'text-muted-foreground' : ''}`}
+                  className={cn(
+                    'text-right font-medium',
+                    expense.isDraft && expense.amount == null && 'text-muted-foreground',
+                  )}
                 >
                   {expense.amount != null ? formatCurrency(expense.amount) : '—'}
                 </TableCell>
