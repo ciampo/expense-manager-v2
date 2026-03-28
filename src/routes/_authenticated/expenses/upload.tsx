@@ -269,6 +269,8 @@ function UploadPage() {
 
   const handleReset = useCallback(() => {
     setItems([])
+    dragCounterRef.current = 0
+    setIsDragOver(false)
   }, [])
 
   // ── Render ───────────────────────────────────────────────────────────
