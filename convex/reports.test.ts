@@ -143,6 +143,18 @@ describe('reports.availableMonths', () => {
     expect(result).toEqual([{ year: 2026, month: 3 }])
   })
 
+  it('includes month that has both draft and complete expenses', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-03-10' })
+    await insertDraftExpense(t, userId, categoryId, { date: '2026-03-20', amount: 9999 })
+
+    const result = await asUser.query(api.reports.availableMonths, {})
+    expect(result).toEqual([{ year: 2026, month: 3 }])
+  })
+
   it('includes month after completing a draft', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
@@ -597,6 +609,35 @@ describe('reports.monthlyAttachments', () => {
 
     const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
     expect(result).toEqual([])
+  })
+
+  it('only returns attachments from complete expenses when drafts coexist', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const completeStorageId = await t.run(async (ctx) =>
+      ctx.storage.store(new Blob(['complete-receipt'])),
+    )
+    const draftStorageId = await t.run(async (ctx) =>
+      ctx.storage.store(new Blob(['draft-receipt'])),
+    )
+
+    await insertExpense(t, userId, categoryId, {
+      date: '2026-03-05',
+      merchant: 'Complete Shop',
+      amount: 1000,
+      attachmentId: completeStorageId,
+    })
+    await insertDraftExpense(t, userId, categoryId, {
+      date: '2026-03-15',
+      amount: 5000,
+      attachmentId: draftStorageId,
+    })
+
+    const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
+    expect(result).toHaveLength(1)
+    expect(result[0].merchant).toBe('Complete Shop')
   })
 
   it('includes attachment after completing a draft', async () => {
