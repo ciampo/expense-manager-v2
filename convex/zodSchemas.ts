@@ -100,7 +100,7 @@ export const draftExpenseUpdateSchema = z.object({
   date: expenseDateSchema.optional(),
   merchant: expenseMerchantSchema.optional(),
   amount: expenseAmountSchema.optional(),
-  comment: expenseCommentSchema,
+  comment: expenseCommentSchema.optional(),
 })
 
 /**
