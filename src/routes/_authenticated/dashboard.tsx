@@ -77,6 +77,11 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 
 function DashboardPage() {
   const [draftFilter, setDraftFilter] = useState<DraftFilter>('complete')
+  const [, startFilterTransition] = useTransition()
+
+  const handleFilterChange = (value: DraftFilter) => {
+    startFilterTransition(() => setDraftFilter(value))
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -86,15 +91,17 @@ function DashboardPage() {
           <p className="text-muted-foreground">Manage your expenses</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" render={<Link to="/expenses/upload" />}>
+          <Button variant="outline" disabled title="Coming soon">
             Upload receipts
           </Button>
           <Button render={<Link to="/expenses/new" />}>+ New expense</Button>
         </div>
       </div>
 
+      <Suspense fallback={<Skeleton className="mb-4 h-9 w-64" />}>
+        <DraftFilterTabs value={draftFilter} onValueChange={handleFilterChange} />
+      </Suspense>
       <Suspense fallback={<TableSkeleton />}>
-        <DraftFilterTabs value={draftFilter} onValueChange={setDraftFilter} />
         <ExpenseTable draftFilter={draftFilter} />
       </Suspense>
     </div>
