@@ -19,7 +19,7 @@ const VALID_BODY = JSON.stringify({
 function makeRequest(
   options: {
     contentType?: string | null
-    body?: string
+    body?: BodyInit | null
     ip?: string
     contentLength?: string
   } = {},
@@ -35,10 +35,27 @@ function makeRequest(
     headers.set('Content-Length', options.contentLength)
   }
 
-  return new Request('https://example.com/__csp-report', {
-    method: 'POST',
-    headers,
-    body: options.body ?? VALID_BODY,
+  const body = options.body === undefined ? VALID_BODY : options.body
+  const init: RequestInit = { method: 'POST', headers, body }
+  if (body instanceof ReadableStream) {
+    // @ts-expect-error -- duplex is required for streaming bodies but not yet in all TS lib types
+    init.duplex = 'half'
+  }
+  return new Request('https://example.com/__csp-report', init)
+}
+
+/**
+ * Build a ReadableStream body from a string. Unlike a plain string body,
+ * the Request constructor won't auto-set a Content-Length header, so the
+ * streaming path in readLimitedBody is exercised.
+ */
+function streamBody(text: string): ReadableStream<Uint8Array> {
+  const encoded = new TextEncoder().encode(text)
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoded)
+      controller.close()
+    },
   })
 }
 
@@ -77,7 +94,7 @@ describe('handleCspReport', () => {
       expect(res.status).toBe(204)
     })
 
-    it('rejects missing Content-Type with 415', async () => {
+    it('rejects when no Content-Type is explicitly set (browser default) with 415', async () => {
       const res = await handleCspReport(makeRequest({ contentType: null }))
       expect(res.status).toBe(415)
     })
@@ -211,20 +228,39 @@ describe('handleCspReport', () => {
       expect(res.status).toBe(413)
     })
 
-    it('rejects when actual streamed body exceeds the limit with 413', async () => {
+    it('rejects when streamed body exceeds the limit (no Content-Length) with 413', async () => {
       const oversized = 'x'.repeat(CSP_REPORT_MAX_BODY_BYTES + 1)
       const res = await handleCspReport(
-        makeRequest({ contentType: 'application/csp-report', body: oversized }),
+        makeRequest({
+          contentType: 'application/csp-report',
+          body: streamBody(oversized),
+        }),
       )
       expect(res.status).toBe(413)
     })
 
-    it('accepts a body at exactly the limit', async () => {
+    it('accepts a streamed body at exactly the limit', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
       const body = 'x'.repeat(CSP_REPORT_MAX_BODY_BYTES)
       const res = await handleCspReport(
-        makeRequest({ contentType: 'application/csp-report', body }),
+        makeRequest({ contentType: 'application/csp-report', body: streamBody(body) }),
       )
       expect(res.status).toBe(204)
+      expect(warnSpy).toHaveBeenCalledWith('[CSP Report] Failed to parse report body')
+    })
+
+    it('falls through to streaming check when Content-Length is non-numeric', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const res = await handleCspReport(
+        makeRequest({
+          contentType: 'application/csp-report',
+          contentLength: 'garbage',
+        }),
+      )
+      expect(res.status).toBe(204)
+      expect(warnSpy).not.toHaveBeenCalled()
     })
   })
 
@@ -252,6 +288,17 @@ describe('handleCspReport', () => {
 
       const res = await handleCspReport(
         makeRequest({ contentType: 'application/csp-report', body: 'not json' }),
+      )
+
+      expect(res.status).toBe(204)
+      expect(warnSpy).toHaveBeenCalledWith('[CSP Report] Failed to parse report body')
+    })
+
+    it('returns 204 and warns for empty body', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const res = await handleCspReport(
+        makeRequest({ contentType: 'application/csp-report', body: null }),
       )
 
       expect(res.status).toBe(204)
