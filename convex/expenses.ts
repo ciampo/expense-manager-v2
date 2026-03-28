@@ -331,6 +331,9 @@ export const createDraft = mutation({
  * Create multiple draft expenses from a list of storage IDs.
  * Called by the REST API HTTP action — also creates upload records
  * for each file so ownership is tracked.
+ *
+ * The caller is responsible for deduplicating `storageIds` — passing
+ * the same ID twice will create duplicate upload records and drafts.
  */
 const MAX_BULK_DRAFT_SIZE = 50
 
@@ -475,6 +478,8 @@ export const completeDraft = mutation({
     const { date, merchant, amount, comment } = validateDraftCompletion(args)
     const categoryId = await resolveCategory(ctx, userId, args)
 
+    const previousCategoryId = existing.categoryId
+
     await ctx.db.patch('expenses', args.id, {
       isDraft: false,
       date,
@@ -485,6 +490,10 @@ export const completeDraft = mutation({
     })
 
     await upsertMerchant(ctx, userId, merchant)
+
+    if (previousCategoryId && previousCategoryId !== categoryId) {
+      await cleanupOrphanedCategory(ctx, userId, previousCategoryId)
+    }
 
     return args.id
   },

@@ -1013,6 +1013,21 @@ describe('expenses.createDraftsBulk', () => {
 // ── updateDraft ─────────────────────────────────────────────────────────
 
 describe('expenses.updateDraft', () => {
+  it('is a no-op when called with only the id', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, { merchant: 'Existing' })
+
+    const before = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+
+    const result = await asUser.mutation(api.expenses.updateDraft, { id: draftId })
+
+    const after = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(result).toBe(draftId)
+    expect(after?.merchant).toBe(before?.merchant)
+    expect(after?._creationTime).toBe(before?._creationTime)
+  })
+
   it('applies a partial update to a draft', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
@@ -1147,6 +1162,21 @@ describe('expenses.updateDraft', () => {
 // ── completeDraft ───────────────────────────────────────────────────────
 
 describe('expenses.completeDraft', () => {
+  it('rejects unauthenticated calls', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await expect(
+      t.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+      }),
+    ).rejects.toThrow('Not authenticated')
+  })
+
   it('completes a draft when all required fields are present', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
@@ -1268,6 +1298,24 @@ describe('expenses.completeDraft', () => {
         ...VALID_EXPENSE_FIELDS,
       }),
     ).rejects.toThrow('Category is required')
+  })
+
+  it('cleans up orphaned auto-created category from draft phase', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    const draftCategoryId = await setupCategory(t, userId, 'Draft Phase Cat')
+    const finalCategoryId = await setupCategory(t, userId, 'Final Cat')
+    const draftId = await insertDraft(t, userId, { categoryId: draftCategoryId })
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId: finalCategoryId,
+    })
+
+    const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', draftCategoryId))
+    expect(oldCategory).toBeNull()
   })
 })
 
