@@ -64,6 +64,7 @@ function UploadPage() {
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const processingRef = useRef(false)
+  const dragCounterRef = useRef(0)
 
   const { mutateAsync: generateUploadUrl } = useMutation({
     mutationFn: useConvexMutation(api.storage.generateUploadUrl),
@@ -122,20 +123,31 @@ function UploadPage() {
   }, [])
 
   // ── Drag & drop handlers ─────────────────────────────────────────────
+  // Uses a counter to avoid flicker when the cursor moves over child
+  // elements (each child fires dragEnter/dragLeave on the parent).
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    dragCounterRef.current++
+    setIsDragOver(true)
+  }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
-    setIsDragOver(true)
   }, [])
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault()
-    setIsDragOver(false)
+    dragCounterRef.current--
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false)
+    }
   }, [])
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
+      dragCounterRef.current = 0
       setIsDragOver(false)
       if (e.dataTransfer.files.length > 0) {
         addFiles(e.dataTransfer.files)
@@ -284,6 +296,7 @@ function UploadPage() {
           role="button"
           tabIndex={0}
           aria-label="Drop files here or click to browse"
+          onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
