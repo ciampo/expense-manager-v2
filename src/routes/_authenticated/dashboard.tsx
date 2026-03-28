@@ -130,7 +130,11 @@ function DraftFilterTabs({
         <TabsTrigger value="drafts">
           Drafts{' '}
           {draftCount > 0 && (
-            <Badge variant="secondary" className="ml-1 min-w-5 justify-center px-1">
+            <Badge
+              variant="secondary"
+              className="ml-1 min-w-5 justify-center px-1"
+              aria-label={`${draftCount} draft expense${draftCount === 1 ? '' : 's'}`}
+            >
               {draftCount}
             </Badge>
           )}
@@ -405,7 +409,7 @@ function ExpenseTable({ draftFilter }: { draftFilter: DraftFilter }) {
                       aria-label={
                         expense.isDraft
                           ? `Complete ${expense.merchant ?? 'draft'} expense`
-                          : `Edit ${expense.merchant ?? 'draft'} expense`
+                          : `Edit ${expense.merchant ?? 'unnamed'} expense`
                       }
                       render={
                         <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} />
@@ -423,7 +427,7 @@ function ExpenseTable({ draftFilter }: { draftFilter: DraftFilter }) {
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive"
-                            aria-label={`Delete ${expense.merchant ?? 'draft'} expense`}
+                            aria-label={`Delete ${expense.merchant ?? (expense.isDraft ? 'draft' : 'unnamed')} expense`}
                           />
                         }
                       >
