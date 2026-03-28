@@ -286,10 +286,15 @@ function ExpenseTable({ draftFilter }: { draftFilter: DraftFilter }) {
       toast.success('Expense deleted')
     },
     onSettled: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: convexQuery(api.expenses.list, {}).queryKey,
-        exact: false,
-      })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: convexQuery(api.expenses.list, {}).queryKey,
+          exact: false,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: convexQuery(api.expenses.draftCount, {}).queryKey,
+        }),
+      ])
     },
   })
 
