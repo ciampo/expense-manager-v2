@@ -26,7 +26,6 @@ const MAX_CONCURRENT = 3
 const ALLOWED_EXTENSIONS = ALLOWED_CONTENT_TYPES.map((t) => {
   const ext = t.split('/')[1]
   if (ext === 'jpeg') return '.jpg/.jpeg'
-  if (ext === 'vnd.openxmlformats-officedocument.spreadsheetml.sheet') return '.xlsx'
   return `.${ext}`
 }).join(', ')
 
