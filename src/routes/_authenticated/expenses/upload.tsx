@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { useConvexMutation } from '@convex-dev/react-query'
 import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { RouteErrorComponent } from '@/components/route-error'
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
@@ -203,17 +204,17 @@ function UploadPage() {
         }
 
         const json: unknown = await response.json()
-        const storageId = (json as Record<string, unknown>)?.storageId
+        const storageId = (json as { storageId?: string })?.storageId
         if (!storageId) {
           throw new Error('Upload response missing storageId')
         }
 
         if (signal.aborted) return
-        await confirmUpload({ storageId })
+        await confirmUpload({ storageId: storageId as Id<'_storage'> })
 
         if (signal.aborted) return
         updateItem(item.id, { status: 'creating-draft' })
-        await createDraft({ attachmentId: storageId })
+        await createDraft({ attachmentId: storageId as Id<'_storage'> })
 
         if (signal.aborted) return
         updateItem(item.id, { status: 'done' })
