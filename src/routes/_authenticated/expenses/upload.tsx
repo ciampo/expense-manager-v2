@@ -45,6 +45,9 @@ interface UploadItem {
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 function validateFile(file: File): string | null {
+  if (file.size === 0) {
+    return 'File is empty'
+  }
   if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
     return 'Unsupported file type'
   }
