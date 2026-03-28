@@ -23,7 +23,12 @@ import { parseCurrencyToCents, centsToInputValue, getTodayISO } from '@/lib/form
 import { toast } from 'sonner'
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
 import { UnsavedChangesDialog } from '@/components/unsaved-changes-dialog'
-import { expenseFormSchema, MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from './schema'
+import {
+  expenseFormSchema,
+  draftExpenseFormSchema,
+  MAX_FILE_SIZE,
+  ALLOWED_CONTENT_TYPES,
+} from './schema'
 import { DateField } from './date-field'
 import { MerchantField } from './merchant-field'
 import { CategoryField } from './category-field'
@@ -281,10 +286,27 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     }
   }
 
-  const handleSaveDraft = useCallback(async () => {
+  async function handleSaveDraft() {
     if (!expense) return
 
     const values = form.state.values
+
+    // Strip empty strings so the draft schema's optional validators
+    // receive undefined rather than invalid empty values.
+    const toValidate: Record<string, unknown> = {}
+    if (values.date) toValidate.date = values.date
+    if (values.merchant.trim()) toValidate.merchant = values.merchant.trim()
+    if (values.amount) toValidate.amount = values.amount
+    if (values.categoryId) toValidate.categoryId = values.categoryId
+    if (values.newCategoryName?.trim()) toValidate.newCategoryName = values.newCategoryName.trim()
+    if (values.comment?.trim()) toValidate.comment = values.comment.trim()
+
+    const parsed = draftExpenseFormSchema.safeParse(toValidate)
+    if (!parsed.success) {
+      const firstMsg = parsed.error.issues[0]?.message
+      toast.error(firstMsg ?? 'Invalid field values')
+      return
+    }
 
     const draftData: {
       id: Id<'expenses'>
@@ -316,7 +338,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     } catch {
       // Error toast shown by mutation onError callbacks
     }
-  }, [expense, form.state.values, attachmentId, updateDraft])
+  }
 
   const isLoading =
     form.state.isSubmitting ||
