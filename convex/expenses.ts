@@ -163,6 +163,7 @@ export const create = mutation({
 
     const expenseId = await ctx.db.insert('expenses', {
       userId,
+      isDraft: false,
       date,
       merchant,
       amount,
