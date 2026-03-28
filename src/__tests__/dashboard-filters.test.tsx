@@ -8,22 +8,6 @@ import type { Id } from '../../convex/_generated/dataModel'
 
 const mockNavigate = vi.fn()
 
-vi.mock('@tanstack/react-router', () => ({
-  createFileRoute: () => (_opts: unknown) => null,
-  Link: ({ children, to, params, ...rest }: Record<string, unknown>) => {
-    const href =
-      typeof to === 'string' && params && typeof params === 'object' && 'expenseId' in params
-        ? `/expenses/${(params as { expenseId: string }).expenseId}`
-        : (to as string)
-    return (
-      <a href={href} {...rest}>
-        {children as React.ReactNode}
-      </a>
-    )
-  },
-  useNavigate: () => mockNavigate,
-}))
-
 let mockDraftCount = 3
 
 const convexMutationSpies: Record<string, ReturnType<typeof vi.fn>> = {}
@@ -120,33 +104,9 @@ const draftExpensePartial = {
 }
 
 // ---------------------------------------------------------------------------
-// Dynamic import after mocks
+// Capture the DashboardPage component from createFileRoute's config
 // ---------------------------------------------------------------------------
 
-// We need to import the components dynamically, but since we're using
-// vi.mock at the top level, we can import after the mocks are set up.
-// The dashboard file exports a Route object from createFileRoute, and we
-// need to access the internal components. To work around this, we'll
-// re-export the components via a test-friendly approach.
-
-// Instead, we'll import the dashboard module and test through the
-// Route component. But since createFileRoute is mocked, we need to
-// access the components differently.
-
-// The simplest approach: import the dashboard module to get the functions
-// declared inside, but since they're not exported, we test via the
-// rendered Route component. However, createFileRoute is mocked to return
-// null, so we need a different strategy.
-
-// Let's use a helper approach: directly test the rendering by importing
-// the file which registers the route, then render the page component.
-
-// Actually, the cleanest approach for this test pattern is to extract
-// the components or test indirectly. Given the existing test patterns in
-// the codebase, let's keep it simple and test via rendering.
-
-// We need the dashboard module's internal components. Let's mock
-// createFileRoute to capture the component.
 let DashboardComponent: React.ComponentType | null = null
 
 vi.mock('@tanstack/react-router', async () => {
