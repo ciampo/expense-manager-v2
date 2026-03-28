@@ -8,7 +8,7 @@ import {
   setupCategory,
   insertExpense,
   insertDraftExpense,
-  completeDraft,
+  markDraftComplete,
 } from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -167,7 +167,7 @@ describe('reports.availableMonths', () => {
 
     expect(await asUser.query(api.reports.availableMonths, {})).toEqual([])
 
-    await completeDraft(t, draftId)
+    await markDraftComplete(t, draftId)
 
     expect(await asUser.query(api.reports.availableMonths, {})).toEqual([{ year: 2026, month: 4 }])
   })
@@ -412,7 +412,7 @@ describe('reports.monthlyData', () => {
 
     expect((await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })).total).toBe(0)
 
-    await completeDraft(t, draftId)
+    await markDraftComplete(t, draftId)
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.expenses).toHaveLength(1)
@@ -654,7 +654,7 @@ describe('reports.monthlyAttachments', () => {
 
     expect(await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })).toEqual([])
 
-    await completeDraft(t, draftId)
+    await markDraftComplete(t, draftId)
 
     const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
     expect(result).toHaveLength(1)

@@ -133,7 +133,7 @@ export async function insertDraftExpense(
 /**
  * Patch a draft expense to mark it as complete (`isDraft: false`).
  */
-export async function completeDraft(t: TestCtx, expenseId: Id<'expenses'>) {
+export async function markDraftComplete(t: TestCtx, expenseId: Id<'expenses'>) {
   await t.run(async (ctx) => {
     await ctx.db.patch('expenses', expenseId, { isDraft: false })
   })
