@@ -90,23 +90,23 @@ async function readLimitedBody(request: Request, maxBytes: number): Promise<stri
 /**
  * Handle an incoming CSP violation report with hardened validation:
  *
- * 1. Content-Type must be `application/csp-report` or `application/reports+json`
- * 2. Per-IP rate limiting (fixed window, 10 req / 60 s per isolate)
+ * 1. Per-IP rate limiting (fixed window, 10 req / 60 s per isolate)
+ * 2. Content-Type must be `application/csp-report` or `application/reports+json`
  * 3. Body capped at 10 KB (fast-path via Content-Length, then streaming check)
  */
 export async function handleCspReport(request: Request): Promise<Response> {
-  const rawType = request.headers.get('Content-Type') ?? ''
-  const mediaType = rawType.split(';')[0].trim().toLowerCase()
-  if (!ALLOWED_CONTENT_TYPES.has(mediaType)) {
-    return new Response(null, { status: 415 })
-  }
-
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
   if (isRateLimited(ip)) {
     return new Response(null, {
       status: 429,
       headers: { 'Retry-After': String(Math.ceil(CSP_REPORT_RATE_LIMIT_WINDOW_MS / 1000)) },
     })
+  }
+
+  const rawType = request.headers.get('Content-Type') ?? ''
+  const mediaType = rawType.split(';')[0].trim().toLowerCase()
+  if (!ALLOWED_CONTENT_TYPES.has(mediaType)) {
+    return new Response(null, { status: 415 })
   }
 
   const declaredLength = Number(request.headers.get('Content-Length'))
