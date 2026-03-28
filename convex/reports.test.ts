@@ -105,7 +105,7 @@ describe('reports.availableMonths', () => {
     expect(result).toEqual([{ year: 2026, month: 3 }])
   })
 
-  it('excludes months that only contain expenses with isDraft undefined (pre-backfill)', async () => {
+  it('includes months from expenses with isDraft undefined (pre-backfill)', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
@@ -124,7 +124,10 @@ describe('reports.availableMonths', () => {
     })
 
     const result = await asUser.query(api.reports.availableMonths, {})
-    expect(result).toEqual([{ year: 2026, month: 3 }])
+    expect(result).toEqual([
+      { year: 2026, month: 6 },
+      { year: 2026, month: 3 },
+    ])
   })
 
   it('excludes months that only contain draft expenses', async () => {
@@ -350,7 +353,7 @@ describe('reports.monthlyData', () => {
     expect(result.expenses.map((e) => e.date)).toEqual(['2026-03-05', '2026-03-12', '2026-03-20'])
   })
 
-  it('excludes expenses with isDraft undefined (pre-backfill) from totals', async () => {
+  it('includes expenses with isDraft undefined (pre-backfill) in totals', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
@@ -369,8 +372,8 @@ describe('reports.monthlyData', () => {
     })
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
-    expect(result.expenses).toHaveLength(1)
-    expect(result.total).toBe(2000)
+    expect(result.expenses).toHaveLength(2)
+    expect(result.total).toBe(7000)
   })
 
   it('excludes draft expenses from totals', async () => {
@@ -557,7 +560,7 @@ describe('reports.monthlyAttachments', () => {
     ).rejects.toThrow('Invalid month')
   })
 
-  it('excludes attachments from expenses with isDraft undefined (pre-backfill)', async () => {
+  it('includes attachments from expenses with isDraft undefined (pre-backfill)', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
@@ -578,7 +581,8 @@ describe('reports.monthlyAttachments', () => {
     })
 
     const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
-    expect(result).toEqual([])
+    expect(result).toHaveLength(1)
+    expect(result[0].merchant).toBe('Legacy Shop')
   })
 
   it('excludes attachments from draft expenses', async () => {
