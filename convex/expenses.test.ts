@@ -1157,6 +1157,36 @@ describe('expenses.updateDraft', () => {
       }),
     ).rejects.toThrow('Category not found')
   })
+
+  it("rejects updating another user's draft", async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id } = await setupAuthenticatedUser(t)
+    const { asUser: asUser2 } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, user1Id)
+
+    await expect(
+      asUser2.mutation(api.expenses.updateDraft, {
+        id: draftId,
+        merchant: 'Nope',
+      }),
+    ).rejects.toThrow('Expense not found')
+  })
+
+  it('cleans up orphaned category when changing category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const oldCategoryId = await setupCategory(t, userId, 'Old Draft Cat')
+    const newCategoryId = await setupCategory(t, userId, 'New Draft Cat')
+    const draftId = await insertDraft(t, userId, { categoryId: oldCategoryId })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      categoryId: newCategoryId,
+    })
+
+    const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', oldCategoryId))
+    expect(oldCategory).toBeNull()
+  })
 })
 
 // ── completeDraft ───────────────────────────────────────────────────────
@@ -1298,6 +1328,22 @@ describe('expenses.completeDraft', () => {
         ...VALID_EXPENSE_FIELDS,
       }),
     ).rejects.toThrow('Category is required')
+  })
+
+  it("rejects completing another user's draft", async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id } = await setupAuthenticatedUser(t)
+    const { asUser: asUser2 } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const draftId = await insertDraft(t, user1Id)
+
+    await expect(
+      asUser2.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+      }),
+    ).rejects.toThrow('Expense not found')
   })
 
   it('cleans up orphaned auto-created category from draft phase', async () => {

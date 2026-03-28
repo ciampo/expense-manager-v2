@@ -414,6 +414,7 @@ export const updateDraft = mutation({
 
     // Category is optional for partial updates — `resolveCategory` can't be
     // used here because it throws when neither ID nor name is provided.
+    let previousCategoryId: Id<'categories'> | undefined
     if (args.categoryId !== undefined || args.newCategoryName !== undefined) {
       let categoryId: Id<'categories'> | undefined = args.categoryId
       if (!categoryId && args.newCategoryName) {
@@ -421,6 +422,7 @@ export const updateDraft = mutation({
       }
       if (categoryId) {
         await verifyCategoryAccess(ctx, categoryId, userId)
+        previousCategoryId = existing.categoryId
         patch.categoryId = categoryId
       }
     }
@@ -440,6 +442,10 @@ export const updateDraft = mutation({
 
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch('expenses', args.id, patch)
+    }
+
+    if (previousCategoryId && previousCategoryId !== patch.categoryId) {
+      await cleanupOrphanedCategory(ctx, userId, previousCategoryId)
     }
 
     return args.id
