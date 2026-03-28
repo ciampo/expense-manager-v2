@@ -3,7 +3,12 @@ import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { setupAuthenticatedUser, setupCategory, insertExpense } from './testHelpers'
+import {
+  setupAuthenticatedUser,
+  setupCategory,
+  insertExpense,
+  insertDraftExpense,
+} from './testHelpers'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -106,17 +111,7 @@ describe('reports.availableMonths', () => {
     const categoryId = await setupCategory(t, userId)
 
     await insertExpense(t, userId, categoryId, { date: '2026-03-10' })
-    await t.run(async (ctx) => {
-      await ctx.db.insert('expenses', {
-        userId,
-        isDraft: true,
-        date: '2026-06-15',
-        merchant: 'Draft Merchant',
-        amount: 1000,
-        categoryId,
-        createdAt: Date.now(),
-      })
-    })
+    await insertDraftExpense(t, userId, categoryId, { date: '2026-06-15', amount: 1000 })
 
     const result = await asUser.query(api.reports.availableMonths, {})
     expect(result).toEqual([{ year: 2026, month: 3 }])
@@ -127,16 +122,9 @@ describe('reports.availableMonths', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    const draftId = await t.run(async (ctx) => {
-      return await ctx.db.insert('expenses', {
-        userId,
-        isDraft: true,
-        date: '2026-04-10',
-        merchant: 'Draft Merchant',
-        amount: 3000,
-        categoryId,
-        createdAt: Date.now(),
-      })
+    const draftId = await insertDraftExpense(t, userId, categoryId, {
+      date: '2026-04-10',
+      amount: 3000,
     })
 
     expect(await asUser.query(api.reports.availableMonths, {})).toEqual([])
@@ -356,23 +344,36 @@ describe('reports.monthlyData', () => {
     expect(result.expenses.map((e) => e.date)).toEqual(['2026-03-05', '2026-03-12', '2026-03-20'])
   })
 
+  it('excludes expenses with isDraft undefined (pre-backfill) from totals', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-03-05', amount: 2000 })
+    // Simulate a pre-backfill expense that was never migrated
+    await t.run(async (ctx) => {
+      await ctx.db.insert('expenses', {
+        userId,
+        date: '2026-03-10',
+        merchant: 'Legacy Merchant',
+        amount: 5000,
+        categoryId,
+        createdAt: Date.now(),
+      })
+    })
+
+    const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
+    expect(result.expenses).toHaveLength(1)
+    expect(result.total).toBe(2000)
+  })
+
   it('excludes draft expenses from totals', async () => {
     const t = convexTest(schema, modules)
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
     await insertExpense(t, userId, categoryId, { date: '2026-03-05', amount: 2000 })
-    await t.run(async (ctx) => {
-      await ctx.db.insert('expenses', {
-        userId,
-        isDraft: true,
-        date: '2026-03-10',
-        merchant: 'Draft Store',
-        amount: 9999,
-        categoryId,
-        createdAt: Date.now(),
-      })
-    })
+    await insertDraftExpense(t, userId, categoryId, { date: '2026-03-10', amount: 9999 })
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.expenses).toHaveLength(1)
@@ -384,16 +385,9 @@ describe('reports.monthlyData', () => {
     const { userId, asUser } = await setupAuthenticatedUser(t)
     const categoryId = await setupCategory(t, userId)
 
-    const draftId = await t.run(async (ctx) => {
-      return await ctx.db.insert('expenses', {
-        userId,
-        isDraft: true,
-        date: '2026-03-10',
-        merchant: 'Draft Store',
-        amount: 5000,
-        categoryId,
-        createdAt: Date.now(),
-      })
+    const draftId = await insertDraftExpense(t, userId, categoryId, {
+      date: '2026-03-10',
+      amount: 5000,
     })
 
     expect((await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })).total).toBe(0)
@@ -414,17 +408,7 @@ describe('reports.monthlyData', () => {
 
     await insertExpense(t, userId, categoryId, { date: '2026-03-01', amount: 1000 })
     await insertExpense(t, userId, categoryId, { date: '2026-03-15', amount: 3000 })
-    await t.run(async (ctx) => {
-      await ctx.db.insert('expenses', {
-        userId,
-        isDraft: true,
-        date: '2026-03-20',
-        merchant: 'Draft Store',
-        amount: 7777,
-        categoryId,
-        createdAt: Date.now(),
-      })
-    })
+    await insertDraftExpense(t, userId, categoryId, { date: '2026-03-20', amount: 7777 })
 
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.expenses).toHaveLength(2)
@@ -603,17 +587,10 @@ describe('reports.monthlyAttachments', () => {
 
     const storageId = await t.run(async (ctx) => ctx.storage.store(new Blob(['draft-receipt'])))
 
-    await t.run(async (ctx) => {
-      await ctx.db.insert('expenses', {
-        userId,
-        isDraft: true,
-        date: '2026-03-10',
-        merchant: 'Draft Shop',
-        amount: 1500,
-        categoryId,
-        attachmentId: storageId,
-        createdAt: Date.now(),
-      })
+    await insertDraftExpense(t, userId, categoryId, {
+      date: '2026-03-10',
+      amount: 1500,
+      attachmentId: storageId,
     })
 
     const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
@@ -627,17 +604,9 @@ describe('reports.monthlyAttachments', () => {
 
     const storageId = await t.run(async (ctx) => ctx.storage.store(new Blob(['receipt'])))
 
-    const draftId = await t.run(async (ctx) => {
-      return await ctx.db.insert('expenses', {
-        userId,
-        isDraft: true,
-        date: '2026-03-10',
-        merchant: 'Draft Shop',
-        amount: 2500,
-        categoryId,
-        attachmentId: storageId,
-        createdAt: Date.now(),
-      })
+    const draftId = await insertDraftExpense(t, userId, categoryId, {
+      date: '2026-03-10',
+      attachmentId: storageId,
     })
 
     expect(await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })).toEqual([])
@@ -648,6 +617,6 @@ describe('reports.monthlyAttachments', () => {
 
     const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
     expect(result).toHaveLength(1)
-    expect(result[0].merchant).toBe('Draft Shop')
+    expect(result[0].merchant).toBe('Draft Merchant')
   })
 })
