@@ -39,38 +39,61 @@ function EditExpensePage() {
   }
 
   return (
+    <Suspense fallback={<EditExpensePageSkeleton />}>
+      <EditExpenseContent expenseId={expenseId as Id<'expenses'>} />
+    </Suspense>
+  )
+}
+
+function EditExpensePageSkeleton() {
+  return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Edit expense</h1>
-        <p className="text-muted-foreground">Edit the expense details</p>
+        <h1 className="text-3xl font-bold">Loading...</h1>
       </div>
-
-      <Suspense fallback={<ExpenseFormSkeleton />}>
-        <EditExpenseForm expenseId={expenseId as Id<'expenses'>} />
-      </Suspense>
+      <ExpenseFormSkeleton />
     </div>
   )
 }
 
-function EditExpenseForm({ expenseId }: { expenseId: Id<'expenses'> }) {
+function EditExpenseContent({ expenseId }: { expenseId: Id<'expenses'> }) {
   const { data: expense } = useSuspenseQuery(convexQuery(api.expenses.get, { id: expenseId }))
 
-  if (!expense || !expense.date || !expense.merchant || !expense.amount || !expense.categoryId) {
+  if (!expense) {
     return <RouteNotFoundComponent />
   }
 
+  const isDraft = expense.isDraft === true
+
+  if (!isDraft && (!expense.date || !expense.merchant || !expense.amount || !expense.categoryId)) {
+    return <RouteNotFoundComponent />
+  }
+
+  const mode = isDraft ? 'complete-draft' : 'edit'
+  const title = isDraft ? 'Complete draft' : 'Edit expense'
+  const subtitle = isDraft
+    ? 'Fill in the missing details to complete this expense'
+    : 'Edit the expense details'
+
   return (
-    <ExpenseForm
-      expense={{
-        _id: expense._id,
-        date: expense.date,
-        merchant: expense.merchant,
-        amount: expense.amount,
-        categoryId: expense.categoryId,
-        attachmentId: expense.attachmentId,
-        comment: expense.comment,
-      }}
-      mode="edit"
-    />
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">{title}</h1>
+        <p className="text-muted-foreground">{subtitle}</p>
+      </div>
+
+      <ExpenseForm
+        expense={{
+          _id: expense._id,
+          date: expense.date,
+          merchant: expense.merchant,
+          amount: expense.amount,
+          categoryId: expense.categoryId,
+          attachmentId: expense.attachmentId,
+          comment: expense.comment,
+        }}
+        mode={mode}
+      />
+    </div>
   )
 }
