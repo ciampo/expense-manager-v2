@@ -44,7 +44,7 @@ export function distinctMonthsFromDates(dates: string[]): { year: number; month:
  * Get the distinct months for which the user has expense data.
  * Returns an array of { year, month } objects sorted newest first.
  *
- * Leverages the by_user_and_date index ordering: instead of reading every
+ * Leverages the by_user_and_draft_and_date index ordering: instead of reading every
  * expense, we fetch only the latest expense in each month and then skip
  * ahead to the previous month boundary. This makes the query O(M) where
  * M = number of distinct months, rather than O(N) for total expenses.
@@ -63,8 +63,8 @@ export const availableMonths = query({
     while (true) {
       const expense = await ctx.db
         .query('expenses')
-        .withIndex('by_user_and_date', (q) => {
-          const base = q.eq('userId', userId)
+        .withIndex('by_user_and_draft_and_date', (q) => {
+          const base = q.eq('userId', userId).eq('isDraft', false)
           return upperBound ? base.lt('date', upperBound) : base
         })
         .order('desc')
@@ -102,15 +102,14 @@ export const monthlyData = query({
     const startDate = `${args.year}-${monthStr}-01`
     const endDate = `${args.year}-${monthStr}-31` // This works because string comparison
 
-    // Get all expenses for the month using the composite date index
     const expenses = await ctx.db
       .query('expenses')
-      .withIndex('by_user_and_date', (q) =>
-        q.eq('userId', userId).gte('date', startDate).lte('date', endDate),
+      .withIndex('by_user_and_draft_and_date', (q) =>
+        q.eq('userId', userId).eq('isDraft', false).gte('date', startDate).lte('date', endDate),
       )
       .collect()
 
-    // Collect unique category IDs from this month's expenses (skip drafts without a category)
+    // Collect unique category IDs from this month's expenses
     const categoryIds = [
       ...new Set(expenses.map((e) => e.categoryId).filter((id): id is Id<'categories'> => !!id)),
     ]
@@ -181,8 +180,8 @@ export const monthlyAttachments = query({
 
     const expenses = await ctx.db
       .query('expenses')
-      .withIndex('by_user_and_date', (q) =>
-        q.eq('userId', userId).gte('date', startDate).lte('date', endDate),
+      .withIndex('by_user_and_draft_and_date', (q) =>
+        q.eq('userId', userId).eq('isDraft', false).gte('date', startDate).lte('date', endDate),
       )
       .filter((q) => q.neq(q.field('attachmentId'), undefined))
       .collect()

@@ -99,6 +99,54 @@ describe('reports.availableMonths', () => {
     const result = await asUser1.query(api.reports.availableMonths, {})
     expect(result).toEqual([{ year: 2026, month: 3 }])
   })
+
+  it('excludes months that only contain draft expenses', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-03-10' })
+    await t.run(async (ctx) => {
+      await ctx.db.insert('expenses', {
+        userId,
+        isDraft: true,
+        date: '2026-06-15',
+        merchant: 'Draft Merchant',
+        amount: 1000,
+        categoryId,
+        createdAt: Date.now(),
+      })
+    })
+
+    const result = await asUser.query(api.reports.availableMonths, {})
+    expect(result).toEqual([{ year: 2026, month: 3 }])
+  })
+
+  it('includes month after completing a draft', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const draftId = await t.run(async (ctx) => {
+      return await ctx.db.insert('expenses', {
+        userId,
+        isDraft: true,
+        date: '2026-04-10',
+        merchant: 'Draft Merchant',
+        amount: 3000,
+        categoryId,
+        createdAt: Date.now(),
+      })
+    })
+
+    expect(await asUser.query(api.reports.availableMonths, {})).toEqual([])
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch('expenses', draftId, { isDraft: false })
+    })
+
+    expect(await asUser.query(api.reports.availableMonths, {})).toEqual([{ year: 2026, month: 4 }])
+  })
 })
 
 // ── monthlyData ─────────────────────────────────────────────────────────
@@ -221,6 +269,7 @@ describe('reports.monthlyData', () => {
     await t.run(async (ctx) => {
       await ctx.db.insert('expenses', {
         userId: user1Id,
+        isDraft: false,
         date: '2026-03-05',
         merchant: 'Test',
         amount: 500,
@@ -248,6 +297,7 @@ describe('reports.monthlyData', () => {
     await t.run(async (ctx) => {
       await ctx.db.insert('expenses', {
         userId,
+        isDraft: false,
         date: '2026-03-05',
         merchant: 'Restaurant',
         amount: 2500,
@@ -305,6 +355,86 @@ describe('reports.monthlyData', () => {
     const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
     expect(result.expenses.map((e) => e.date)).toEqual(['2026-03-05', '2026-03-12', '2026-03-20'])
   })
+
+  it('excludes draft expenses from totals', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-03-05', amount: 2000 })
+    await t.run(async (ctx) => {
+      await ctx.db.insert('expenses', {
+        userId,
+        isDraft: true,
+        date: '2026-03-10',
+        merchant: 'Draft Store',
+        amount: 9999,
+        categoryId,
+        createdAt: Date.now(),
+      })
+    })
+
+    const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
+    expect(result.expenses).toHaveLength(1)
+    expect(result.total).toBe(2000)
+  })
+
+  it('includes draft expense after completing it', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const draftId = await t.run(async (ctx) => {
+      return await ctx.db.insert('expenses', {
+        userId,
+        isDraft: true,
+        date: '2026-03-10',
+        merchant: 'Draft Store',
+        amount: 5000,
+        categoryId,
+        createdAt: Date.now(),
+      })
+    })
+
+    expect((await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })).total).toBe(0)
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch('expenses', draftId, { isDraft: false })
+    })
+
+    const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
+    expect(result.expenses).toHaveLength(1)
+    expect(result.total).toBe(5000)
+  })
+
+  it('only counts complete expenses when drafts and complete expenses coexist', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId, { date: '2026-03-01', amount: 1000 })
+    await insertExpense(t, userId, categoryId, { date: '2026-03-15', amount: 3000 })
+    await t.run(async (ctx) => {
+      await ctx.db.insert('expenses', {
+        userId,
+        isDraft: true,
+        date: '2026-03-20',
+        merchant: 'Draft Store',
+        amount: 7777,
+        categoryId,
+        createdAt: Date.now(),
+      })
+    })
+
+    const result = await asUser.query(api.reports.monthlyData, { year: 2026, month: 3 })
+    expect(result.expenses).toHaveLength(2)
+    expect(result.total).toBe(4000)
+    expect(result.categories['Test Category']).toEqual({
+      name: 'Test Category',
+      total: 4000,
+      count: 2,
+    })
+  })
 })
 
 // ── monthlyAttachments ──────────────────────────────────────────────────
@@ -337,6 +467,7 @@ describe('reports.monthlyAttachments', () => {
     await t.run(async (ctx) => {
       await ctx.db.insert('expenses', {
         userId,
+        isDraft: false,
         date: '2026-03-10',
         merchant: 'Grocery Store',
         amount: 4500,
@@ -368,6 +499,7 @@ describe('reports.monthlyAttachments', () => {
     await t.run(async (ctx) => {
       await ctx.db.insert('expenses', {
         userId,
+        isDraft: false,
         date: '2026-03-15',
         merchant: 'Shop',
         amount: 2000,
@@ -394,6 +526,7 @@ describe('reports.monthlyAttachments', () => {
     await t.run(async (ctx) => {
       await ctx.db.insert('expenses', {
         userId: user2Id,
+        isDraft: false,
         date: '2026-03-10',
         merchant: 'Other User Shop',
         amount: 1000,
@@ -420,6 +553,7 @@ describe('reports.monthlyAttachments', () => {
     await t.run(async (ctx) => {
       await ctx.db.insert('expenses', {
         userId,
+        isDraft: false,
         date: '2026-02-15',
         merchant: 'Feb Shop',
         amount: 1000,
@@ -429,6 +563,7 @@ describe('reports.monthlyAttachments', () => {
       })
       await ctx.db.insert('expenses', {
         userId,
+        isDraft: false,
         date: '2026-03-15',
         merchant: 'Mar Shop',
         amount: 2000,
@@ -459,5 +594,60 @@ describe('reports.monthlyAttachments', () => {
     await expect(
       asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 13 }),
     ).rejects.toThrow('Invalid month')
+  })
+
+  it('excludes attachments from draft expenses', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const storageId = await t.run(async (ctx) => ctx.storage.store(new Blob(['draft-receipt'])))
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('expenses', {
+        userId,
+        isDraft: true,
+        date: '2026-03-10',
+        merchant: 'Draft Shop',
+        amount: 1500,
+        categoryId,
+        attachmentId: storageId,
+        createdAt: Date.now(),
+      })
+    })
+
+    const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
+    expect(result).toEqual([])
+  })
+
+  it('includes attachment after completing a draft', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const storageId = await t.run(async (ctx) => ctx.storage.store(new Blob(['receipt'])))
+
+    const draftId = await t.run(async (ctx) => {
+      return await ctx.db.insert('expenses', {
+        userId,
+        isDraft: true,
+        date: '2026-03-10',
+        merchant: 'Draft Shop',
+        amount: 2500,
+        categoryId,
+        attachmentId: storageId,
+        createdAt: Date.now(),
+      })
+    })
+
+    expect(await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })).toEqual([])
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch('expenses', draftId, { isDraft: false })
+    })
+
+    const result = await asUser.query(api.reports.monthlyAttachments, { year: 2026, month: 3 })
+    expect(result).toHaveLength(1)
+    expect(result[0].merchant).toBe('Draft Shop')
   })
 })
