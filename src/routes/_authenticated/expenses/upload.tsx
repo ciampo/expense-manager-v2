@@ -178,7 +178,7 @@ function UploadPage() {
   )
 
   const processFile = useCallback(
-    async (item: UploadItem) => {
+    async (item: UploadItem, signal: AbortSignal) => {
       try {
         updateItem(item.id, { status: 'uploading' })
 
@@ -188,20 +188,31 @@ function UploadPage() {
           method: 'POST',
           headers: { 'Content-Type': item.file.type },
           body: item.file,
+          signal,
         })
 
         if (!response.ok) {
           throw new Error('Upload failed')
         }
 
-        const { storageId } = await response.json()
+        const json: unknown = await response.json()
+        const storageId = (json as Record<string, unknown>)?.storageId
+        if (!storageId) {
+          throw new Error('Upload response missing storageId')
+        }
+
+        if (signal.aborted) return
         await confirmUpload({ storageId })
 
+        if (signal.aborted) return
         updateItem(item.id, { status: 'creating-draft' })
         await createDraft({ attachmentId: storageId })
 
+        if (signal.aborted) return
         updateItem(item.id, { status: 'done' })
       } catch (error) {
+        if (signal.aborted) return
+
         const message =
           error instanceof Error && /too many/i.test(error.message)
             ? 'Rate limited — try again shortly'
@@ -227,14 +238,17 @@ function UploadPage() {
 
     processingRef.current = true
     const batch = queued.slice(0, slots)
+    const controller = new AbortController()
 
-    Promise.all(batch.map(processFile)).finally(() => {
+    Promise.all(batch.map((item) => processFile(item, controller.signal))).finally(() => {
       processingRef.current = false
       // Force a re-render so the effect re-evaluates the queue and picks
       // up remaining items. Without this, the effect may not re-fire after
       // the ref is cleared because no state change is guaranteed.
       setItems((prev) => [...prev])
     })
+
+    return () => controller.abort()
   }, [items, processFile])
 
   // ── Retry handler ────────────────────────────────────────────────────
