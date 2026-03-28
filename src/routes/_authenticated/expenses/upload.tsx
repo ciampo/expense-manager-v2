@@ -219,6 +219,10 @@ function UploadPage() {
 
     Promise.all(batch.map(processFile)).finally(() => {
       processingRef.current = false
+      // Force a re-render so the effect re-evaluates the queue and picks
+      // up remaining items. Without this, the effect may not re-fire after
+      // the ref is cleared because no state change is guaranteed.
+      setItems((prev) => [...prev])
     })
   }, [items, processFile])
 
