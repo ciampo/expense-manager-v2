@@ -65,6 +65,7 @@ function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const processingRef = useRef(false)
   const dragCounterRef = useRef(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const { mutateAsync: generateUploadUrl } = useMutation({
     mutationFn: useConvexMutation(api.storage.generateUploadUrl),
@@ -85,6 +86,12 @@ function UploadPage() {
   const errorCount = items.filter((i) => i.status === 'error').length
   const uploadableCount = items.length - errorCount
   const isComplete = items.length > 0 && !hasActiveUploads
+
+  // ── Abort in-flight uploads on unmount ────────────────────────────────
+
+  useEffect(() => {
+    return () => abortControllerRef.current?.abort()
+  }, [])
 
   // ── Unsaved changes guard ────────────────────────────────────────────
 
@@ -238,17 +245,17 @@ function UploadPage() {
 
     processingRef.current = true
     const batch = queued.slice(0, slots)
-    const controller = new AbortController()
+    abortControllerRef.current = new AbortController()
 
-    Promise.all(batch.map((item) => processFile(item, controller.signal))).finally(() => {
-      processingRef.current = false
-      // Force a re-render so the effect re-evaluates the queue and picks
-      // up remaining items. Without this, the effect may not re-fire after
-      // the ref is cleared because no state change is guaranteed.
-      setItems((prev) => [...prev])
-    })
-
-    return () => controller.abort()
+    Promise.all(batch.map((item) => processFile(item, abortControllerRef.current!.signal))).finally(
+      () => {
+        processingRef.current = false
+        // Force a re-render so the effect re-evaluates the queue and picks
+        // up remaining items. Without this, the effect may not re-fire after
+        // the ref is cleared because no state change is guaranteed.
+        setItems((prev) => [...prev])
+      },
+    )
   }, [items, processFile])
 
   // ── Retry handler ────────────────────────────────────────────────────
