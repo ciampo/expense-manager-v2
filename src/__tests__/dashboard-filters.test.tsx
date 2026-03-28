@@ -332,11 +332,11 @@ describe('Dashboard filters', () => {
   })
 
   describe('Header buttons', () => {
-    it('renders "Upload receipts" button', () => {
+    it('renders disabled "Upload receipts" button', () => {
       renderDashboard()
 
-      const uploadButton = screen.getByRole('link', { name: /Upload receipts/i })
-      expect(uploadButton.getAttribute('href')).toBe('/expenses/upload')
+      const uploadButton = screen.getByRole('button', { name: /Upload receipts/i })
+      expect(uploadButton.hasAttribute('disabled')).toBe(true)
     })
 
     it('renders "+ New expense" button', () => {
