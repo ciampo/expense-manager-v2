@@ -1365,6 +1365,99 @@ describe('expenses.completeDraft', () => {
   })
 })
 
+// ── completeDraft — attachment handling ─────────────────────────────────
+
+describe('expenses.completeDraft — attachment handling', () => {
+  it('preserves existing attachment when attachmentId is omitted', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+    const draftId = await insertDraft(t, userId, { attachmentId: storageId })
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+    })
+
+    const completed = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(completed?.attachmentId).toBe(storageId)
+
+    const fileStillExists = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(fileStillExists).not.toBeNull()
+  })
+
+  it('replaces attachment when a new attachmentId is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const oldStorageId = await setupStorageFile(t)
+    await setupUploadRecord(t, oldStorageId, userId)
+    const newStorageId = await setupStorageFile(t)
+    await setupUploadRecord(t, newStorageId, userId)
+
+    const draftId = await insertDraft(t, userId, { attachmentId: oldStorageId })
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+      attachmentId: newStorageId,
+    })
+
+    const completed = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(completed?.attachmentId).toBe(newStorageId)
+
+    const oldFileStillExists = await t.query(async (ctx) => ctx.storage.getUrl(oldStorageId))
+    expect(oldFileStillExists).toBeNull()
+  })
+
+  it('keeps attachment when the same attachmentId is re-sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+    const draftId = await insertDraft(t, userId, { attachmentId: storageId })
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+      attachmentId: storageId,
+    })
+
+    const completed = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(completed?.attachmentId).toBe(storageId)
+
+    const fileStillExists = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(fileStillExists).not.toBeNull()
+  })
+
+  it('rejects attachment not owned by the current user', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, user2Id)
+    const draftId = await insertDraft(t, user1Id)
+
+    await expect(
+      asUser1.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+        attachmentId: storageId,
+      }),
+    ).rejects.toThrow('Attachment not found or not owned by current user')
+  })
+})
+
 // ── draftCount ──────────────────────────────────────────────────────────
 
 describe('expenses.draftCount', () => {
