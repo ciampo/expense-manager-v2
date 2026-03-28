@@ -979,6 +979,35 @@ describe('expenses.createDraftsBulk', () => {
     expect(uploads).toHaveLength(2)
     expect(uploads.every((u) => u.userId === userId)).toBe(true)
   })
+
+  it('returns empty array for empty storageIds', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+
+    const expenseIds = await t.mutation(internal.expenses.createDraftsBulk, {
+      storageIds: [],
+      userId,
+    })
+
+    expect(expenseIds).toEqual([])
+  })
+
+  it('rejects when batch exceeds max size', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+
+    const storageIds = []
+    for (let i = 0; i < 51; i++) {
+      storageIds.push(await setupStorageFile(t, `file-${i}`))
+    }
+
+    await expect(
+      t.mutation(internal.expenses.createDraftsBulk, {
+        storageIds,
+        userId,
+      }),
+    ).rejects.toThrow('Too many files in a single batch')
+  })
 })
 
 // ── updateDraft ─────────────────────────────────────────────────────────
@@ -1065,6 +1094,53 @@ describe('expenses.updateDraft', () => {
 
     const oldFileUrl = await t.query(async (ctx) => ctx.storage.getUrl(oldStorageId))
     expect(oldFileUrl).toBeNull()
+  })
+
+  it('patches category when categoryId is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      categoryId,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.categoryId).toBe(categoryId)
+  })
+
+  it('creates and patches category when newCategoryName is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      newCategoryName: 'Draft Category',
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.categoryId).toBeTruthy()
+
+    const category = await t.query(async (ctx) => ctx.db.get('categories', updated!.categoryId!))
+    expect(category?.name).toBe('Draft Category')
+  })
+
+  it("rejects another user's categoryId", async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+    const user2Category = await setupCategory(t, user2Id, 'Private Cat')
+    const draftId = await insertDraft(t, user1Id)
+
+    await expect(
+      asUser1.mutation(api.expenses.updateDraft, {
+        id: draftId,
+        categoryId: user2Category,
+      }),
+    ).rejects.toThrow('Category not found')
   })
 })
 
@@ -1179,6 +1255,19 @@ describe('expenses.completeDraft', () => {
 
     const category = await t.query(async (ctx) => ctx.db.get('categories', expense!.categoryId!))
     expect(category?.name).toBe('New Cat')
+  })
+
+  it('rejects when no category is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await expect(
+      asUser.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+      }),
+    ).rejects.toThrow('Category is required')
   })
 })
 

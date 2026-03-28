@@ -332,12 +332,18 @@ export const createDraft = mutation({
  * Called by the REST API HTTP action — also creates upload records
  * for each file so ownership is tracked.
  */
+const MAX_BULK_DRAFT_SIZE = 50
+
 export const createDraftsBulk = internalMutation({
   args: {
     storageIds: v.array(v.id('_storage')),
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    if (args.storageIds.length > MAX_BULK_DRAFT_SIZE) {
+      throw new Error(`Too many files in a single batch (max ${MAX_BULK_DRAFT_SIZE})`)
+    }
+
     const expenseIds: Id<'expenses'>[] = []
 
     for (const storageId of args.storageIds) {
@@ -403,6 +409,8 @@ export const updateDraft = mutation({
     if (validated.amount !== undefined) patch.amount = validated.amount
     if (validated.comment !== undefined) patch.comment = validated.comment
 
+    // Category is optional for partial updates — `resolveCategory` can't be
+    // used here because it throws when neither ID nor name is provided.
     if (args.categoryId !== undefined || args.newCategoryName !== undefined) {
       let categoryId: Id<'categories'> | undefined = args.categoryId
       if (!categoryId && args.newCategoryName) {
