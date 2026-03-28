@@ -287,7 +287,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   }
 
   async function handleSaveDraft() {
-    if (!expense) return
+    if (!expense || updateDraft.isPending) return
 
     const values = form.state.values
 
@@ -319,18 +319,17 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       attachmentId?: Id<'_storage'>
     } = { id: expense._id }
 
-    if (values.date) draftData.date = values.date
-    if (values.merchant.trim()) draftData.merchant = values.merchant.trim()
-    if (values.amount) {
-      const amountCents = parseCurrencyToCents(values.amount)
-      if (amountCents > 0) draftData.amount = amountCents
+    if (parsed.data.date) draftData.date = parsed.data.date
+    if (parsed.data.merchant) draftData.merchant = parsed.data.merchant
+    if (parsed.data.amount !== undefined && parsed.data.amount > 0) {
+      draftData.amount = parsed.data.amount
     }
     if (values.categoryId) {
       draftData.categoryId = values.categoryId as Id<'categories'>
-    } else if (values.newCategoryName?.trim()) {
-      draftData.newCategoryName = values.newCategoryName.trim()
+    } else if (parsed.data.newCategoryName) {
+      draftData.newCategoryName = parsed.data.newCategoryName
     }
-    if (values.comment?.trim()) draftData.comment = values.comment.trim()
+    if (parsed.data.comment) draftData.comment = parsed.data.comment
     if (attachmentId) draftData.attachmentId = attachmentId
 
     try {
