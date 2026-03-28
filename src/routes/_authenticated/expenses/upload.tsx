@@ -82,6 +82,7 @@ function UploadPage() {
   )
   const doneCount = items.filter((i) => i.status === 'done').length
   const errorCount = items.filter((i) => i.status === 'error').length
+  const uploadableCount = items.length - errorCount
   const isComplete = items.length > 0 && !hasActiveUploads
 
   // ── Unsaved changes guard ────────────────────────────────────────────
@@ -363,7 +364,7 @@ function UploadPage() {
             {/* Progress header */}
             {hasActiveUploads && (
               <p className="text-muted-foreground text-sm" role="status" aria-live="polite">
-                Uploading… {doneCount} of {items.length} complete
+                Uploading… {doneCount} of {uploadableCount} complete
               </p>
             )}
 
