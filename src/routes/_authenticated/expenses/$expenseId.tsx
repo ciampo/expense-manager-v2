@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
   component: EditExpensePage,
   errorComponent: RouteErrorComponent,
   head: () => ({
-    meta: [{ title: 'Edit Expense — Expense Manager' }],
+    meta: [{ title: 'Expense — Expense Manager' }],
   }),
   loader: async ({ context, params }) => {
     if (!CONVEX_ID_RE.test(params.expenseId)) return

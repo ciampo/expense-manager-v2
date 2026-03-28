@@ -447,6 +447,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               {updateDraft.isPending ? 'Saving...' : 'Save draft'}
             </Button>
           )}
+          {/* Uses navigate() (not navigateAway()) so the blocker can
+              intercept when the form is dirty. navigateAway() bypasses
+              the guard and is reserved for post-save/delete success. */}
           <Button
             type="button"
             variant="outline"
