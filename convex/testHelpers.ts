@@ -101,6 +101,45 @@ export async function insertDraft(
 }
 
 /**
+ * Insert a draft expense. Mirrors `insertExpense` but with `isDraft: true`.
+ * All fields default to valid values so the draft can be "completed" by
+ * patching `isDraft` to `false` without further changes.
+ */
+export async function insertDraftExpense(
+  t: TestCtx,
+  userId: Id<'users'>,
+  categoryId: Id<'categories'>,
+  overrides: Partial<{
+    date: string
+    merchant: string
+    amount: number
+    attachmentId: Id<'_storage'>
+  }> = {},
+) {
+  return await t.run(async (ctx) => {
+    return await ctx.db.insert('expenses', {
+      userId,
+      isDraft: true,
+      date: overrides.date ?? '2026-03-01',
+      merchant: overrides.merchant ?? 'Draft Merchant',
+      amount: overrides.amount ?? 2500,
+      categoryId,
+      ...(overrides.attachmentId !== undefined ? { attachmentId: overrides.attachmentId } : {}),
+      createdAt: Date.now(),
+    })
+  })
+}
+
+/**
+ * Patch a draft expense to mark it as complete (`isDraft: false`).
+ */
+export async function markDraftComplete(t: TestCtx, expenseId: Id<'expenses'>) {
+  await t.run(async (ctx) => {
+    await ctx.db.patch('expenses', expenseId, { isDraft: false })
+  })
+}
+
+/**
  * Store a blob in Convex storage. Returns the storage ID.
  */
 export async function setupStorageFile(t: TestCtx, content: BlobPart = 'test-content') {
