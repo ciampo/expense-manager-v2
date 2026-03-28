@@ -291,7 +291,7 @@ function ExpenseTable() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      aria-label={`Edit ${expense.merchant} expense`}
+                      aria-label={`Edit ${expense.merchant ?? 'draft'} expense`}
                       render={
                         <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} />
                       }
@@ -308,7 +308,7 @@ function ExpenseTable() {
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive"
-                            aria-label={`Delete ${expense.merchant} expense`}
+                            aria-label={`Delete ${expense.merchant ?? 'draft'} expense`}
                           />
                         }
                       >
