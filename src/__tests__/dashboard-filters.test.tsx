@@ -346,4 +346,49 @@ describe('Dashboard filters', () => {
       expect(newButton.getAttribute('href')).toBe('/expenses/new')
     })
   })
+
+  describe('Empty states', () => {
+    function setupEmptyQuery() {
+      useSuspenseQueryImpl = (queryOptions: unknown) => {
+        const args = queryOptions as { queryKey: unknown[] }
+        const key = args.queryKey?.[0]
+        if (key === 'categories.list') return { data: mockCategories }
+        if (key === 'expenses.draftCount') return { data: 0 }
+        if (key === 'expenses.list') {
+          return { data: { expenses: [], continueCursor: null, isDone: true } }
+        }
+        return { data: null }
+      }
+    }
+
+    it('shows "You haven\'t recorded any expenses yet" for Complete filter', () => {
+      setupEmptyQuery()
+      renderDashboard()
+
+      expect(screen.getByText("You haven't recorded any expenses yet")).toBeDefined()
+      expect(screen.getByRole('link', { name: /Add your first expense/i })).toBeDefined()
+    })
+
+    it('shows "No draft expenses" for Drafts filter without CTA', () => {
+      setupEmptyQuery()
+      renderDashboard()
+
+      const draftsTab = screen.getAllByRole('tab')[1]
+      fireEvent.click(draftsTab)
+
+      expect(screen.getByText('No draft expenses')).toBeDefined()
+      expect(screen.queryByRole('link', { name: /Add your first expense/i })).toBeNull()
+    })
+
+    it('shows "No expenses found" for All filter', () => {
+      setupEmptyQuery()
+      renderDashboard()
+
+      const allTab = screen.getAllByRole('tab')[2]
+      fireEvent.click(allTab)
+
+      expect(screen.getByText('No expenses found')).toBeDefined()
+      expect(screen.getByRole('link', { name: /Add your first expense/i })).toBeDefined()
+    })
+  })
 })
