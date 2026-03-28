@@ -102,7 +102,7 @@ function dropFiles(dropzone: HTMLElement, files: File[]) {
     items: files.map((f) => ({ kind: 'file', type: f.type, getAsFile: () => f })),
   }
 
-  fireEvent.dragOver(dropzone, { dataTransfer })
+  fireEvent.dragEnter(dropzone, { dataTransfer })
   fireEvent.drop(dropzone, { dataTransfer })
 }
 
@@ -183,6 +183,15 @@ describe('Bulk upload page', () => {
 
       expect(screen.getByText('huge.jpg')).toBeDefined()
       expect(screen.getByText(/File too large/)).toBeDefined()
+    })
+
+    it('marks zero-byte files as error', () => {
+      render(<UploadPage />)
+
+      dropFiles(getDropzone(), [createFile('empty.jpg', 0, 'image/jpeg')])
+
+      expect(screen.getByText('empty.jpg')).toBeDefined()
+      expect(screen.getByText('File is empty')).toBeDefined()
     })
 
     it('accepts all allowed file types', () => {
@@ -308,10 +317,10 @@ describe('Bulk upload page', () => {
   })
 
   describe('drag interaction', () => {
-    it('shows "Drop files here" during drag over', () => {
+    it('shows "Drop files here" during drag enter', () => {
       render(<UploadPage />)
 
-      fireEvent.dragOver(getDropzone(), {
+      fireEvent.dragEnter(getDropzone(), {
         dataTransfer: { files: [], types: ['Files'], items: [] },
       })
 
@@ -323,7 +332,7 @@ describe('Bulk upload page', () => {
 
       const dropzone = getDropzone()
 
-      fireEvent.dragOver(dropzone, {
+      fireEvent.dragEnter(dropzone, {
         dataTransfer: { files: [], types: ['Files'], items: [] },
       })
       fireEvent.dragLeave(dropzone, {
