@@ -77,7 +77,7 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 
 function DashboardPage() {
   const [draftFilter, setDraftFilter] = useState<DraftFilter>('complete')
-  const [, startFilterTransition] = useTransition()
+  const [isFilterPending, startFilterTransition] = useTransition()
 
   const handleFilterChange = (value: DraftFilter) => {
     startFilterTransition(() => setDraftFilter(value))
@@ -102,7 +102,7 @@ function DashboardPage() {
         <DraftFilterTabs value={draftFilter} onValueChange={handleFilterChange} />
       </Suspense>
       <Suspense fallback={<TableSkeleton />}>
-        <ExpenseTable draftFilter={draftFilter} />
+        <ExpenseTable draftFilter={draftFilter} isFilterPending={isFilterPending} />
       </Suspense>
     </div>
   )
@@ -188,7 +188,13 @@ function TableSkeleton() {
   )
 }
 
-function ExpenseTable({ draftFilter }: { draftFilter: DraftFilter }) {
+function ExpenseTable({
+  draftFilter,
+  isFilterPending,
+}: {
+  draftFilter: DraftFilter
+  isFilterPending: boolean
+}) {
   const queryClient = useQueryClient()
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
 
@@ -348,7 +354,7 @@ function ExpenseTable({ draftFilter }: { draftFilter: DraftFilter }) {
     <div className="space-y-4">
       <div
         className="rounded-md border transition-opacity"
-        style={{ opacity: isPending ? 0.6 : 1 }}
+        style={{ opacity: isPending || isFilterPending ? 0.6 : 1 }}
       >
         <Table aria-label="Expenses">
           <TableHeader>

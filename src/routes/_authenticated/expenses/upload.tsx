@@ -1,3 +1,5 @@
+// Stub route scaffolded for #274 — bulk receipt upload.
+// Exists so the route tree includes /expenses/upload for type-safe links.
 import { createFileRoute } from '@tanstack/react-router'
 import { RouteErrorComponent } from '@/components/route-error'
 
