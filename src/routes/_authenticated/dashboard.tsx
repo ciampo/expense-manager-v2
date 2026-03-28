@@ -4,6 +4,8 @@ import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { api } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
   TableBody,
@@ -42,6 +44,14 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 const PAGINATION_THRESHOLD = Math.min(...PAGE_SIZE_OPTIONS)
 const DEFAULT_PAGE_SIZE = 25
 
+type DraftFilter = 'complete' | 'drafts' | 'all'
+
+function draftFilterToArg(filter: DraftFilter): boolean | undefined {
+  if (filter === 'complete') return false
+  if (filter === 'drafts') return true
+  return undefined
+}
+
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
   errorComponent: RouteErrorComponent,
@@ -51,14 +61,21 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(
-        convexQuery(api.expenses.list, { cursor: null, limit: DEFAULT_PAGE_SIZE }),
+        convexQuery(api.expenses.list, {
+          cursor: null,
+          limit: DEFAULT_PAGE_SIZE,
+          isDraft: false,
+        }),
       ),
       context.queryClient.ensureQueryData(convexQuery(api.categories.list, {})),
+      context.queryClient.ensureQueryData(convexQuery(api.expenses.draftCount, {})),
     ])
   },
 })
 
 function DashboardPage() {
+  const [draftFilter, setDraftFilter] = useState<DraftFilter>('complete')
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
@@ -66,13 +83,46 @@ function DashboardPage() {
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Manage your expenses</p>
         </div>
-        <Button render={<Link to="/expenses/new" />}>+ New expense</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" render={<Link to="/expenses/upload" />}>
+            Upload receipts
+          </Button>
+          <Button render={<Link to="/expenses/new" />}>+ New expense</Button>
+        </div>
       </div>
 
       <Suspense fallback={<TableSkeleton />}>
-        <ExpenseTable />
+        <DraftFilterTabs value={draftFilter} onValueChange={setDraftFilter} />
+        <ExpenseTable draftFilter={draftFilter} />
       </Suspense>
     </div>
+  )
+}
+
+function DraftFilterTabs({
+  value,
+  onValueChange,
+}: {
+  value: DraftFilter
+  onValueChange: (value: DraftFilter) => void
+}) {
+  const { data: draftCount } = useSuspenseQuery(convexQuery(api.expenses.draftCount, {}))
+
+  return (
+    <Tabs value={value} onValueChange={(v) => onValueChange(v as DraftFilter)} className="mb-4">
+      <TabsList aria-label="Filter expenses by status">
+        <TabsTrigger value="complete">Complete</TabsTrigger>
+        <TabsTrigger value="drafts">
+          Drafts{' '}
+          {draftCount > 0 && (
+            <Badge variant="secondary" className="ml-1 min-w-5 justify-center px-1">
+              {draftCount}
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="all">All</TabsTrigger>
+      </TabsList>
+    </Tabs>
   )
 }
 
@@ -119,7 +169,7 @@ function TableSkeleton() {
   )
 }
 
-function ExpenseTable() {
+function ExpenseTable({ draftFilter }: { draftFilter: DraftFilter }) {
   const queryClient = useQueryClient()
   const { data: categories } = useSuspenseQuery(convexQuery(api.categories.list, {}))
 
@@ -130,10 +180,19 @@ function ExpenseTable() {
   const [cursors, setCursors] = useState<(string | null)[]>([null])
   const [isPending, startTransition] = useTransition()
 
+  const isDraftArg = draftFilterToArg(draftFilter)
+
+  // Reset pagination when the draft filter changes
+  const [prevFilter, setPrevFilter] = useState(draftFilter)
+  if (draftFilter !== prevFilter) {
+    setPrevFilter(draftFilter)
+    setCursors([null])
+  }
+
   const currentCursor = cursors[cursors.length - 1]
   const pageNumber = cursors.length
 
-  const queryArgs = { cursor: currentCursor, limit: pageSize }
+  const queryArgs = { cursor: currentCursor, limit: pageSize, isDraft: isDraftArg }
   const { data: expensesPage } = useSuspenseQuery(convexQuery(api.expenses.list, queryArgs))
   const expenses = expensesPage?.expenses ?? []
 
@@ -147,7 +206,7 @@ function ExpenseTable() {
     isLoading: isNextPagePeekLoading,
     isError: isNextPagePeekError,
   } = useQuery({
-    ...convexQuery(api.expenses.list, { cursor: nextCursor, limit: 1 }),
+    ...convexQuery(api.expenses.list, { cursor: nextCursor, limit: 1, isDraft: isDraftArg }),
     enabled: shouldPeekNext,
   })
   const canGoNext = (() => {
@@ -191,6 +250,7 @@ function ExpenseTable() {
         const prevQueryKey = convexQuery(api.expenses.list, {
           cursor: prevCursor,
           limit: pageSize,
+          isDraft: isDraftArg,
         }).queryKey
         // Cancel any in-flight fetches / reactive subscription pushes
         // for the previous page so they don't overwrite our optimistic
@@ -242,11 +302,20 @@ function ExpenseTable() {
     [categories],
   )
 
+  const emptyMessage =
+    draftFilter === 'drafts'
+      ? 'No draft expenses'
+      : draftFilter === 'complete'
+        ? "You haven't recorded any expenses yet"
+        : 'No expenses found'
+
   if (expenses.length === 0 && !canGoPrevious) {
     return (
       <div className="rounded-md border p-8 text-center">
-        <p className="text-muted-foreground mb-4">You haven&apos;t recorded any expenses yet</p>
-        <Button render={<Link to="/expenses/new" />}>Add your first expense</Button>
+        <p className="text-muted-foreground mb-4">{emptyMessage}</p>
+        {draftFilter !== 'drafts' && (
+          <Button render={<Link to="/expenses/new" />}>Add your first expense</Button>
+        )}
       </div>
     )
   }
@@ -271,12 +340,31 @@ function ExpenseTable() {
           <TableBody>
             {expenses.map((expense) => (
               <TableRow key={expense._id}>
-                <TableCell>{expense.date ? formatDate(expense.date) : '—'}</TableCell>
-                <TableCell>{expense.merchant ?? '—'}</TableCell>
+                <TableCell
+                  className={expense.isDraft && !expense.date ? 'text-muted-foreground' : ''}
+                >
+                  {expense.date ? formatDate(expense.date) : '—'}
+                </TableCell>
                 <TableCell>
+                  <span
+                    className={expense.isDraft && !expense.merchant ? 'text-muted-foreground' : ''}
+                  >
+                    {expense.merchant ?? '—'}
+                  </span>
+                  {expense.isDraft && (
+                    <Badge variant="muted" className="ml-2">
+                      Draft
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell
+                  className={expense.isDraft && !expense.categoryId ? 'text-muted-foreground' : ''}
+                >
                   {expense.categoryId ? categoryMap.get(expense.categoryId) || 'N/A' : '—'}
                 </TableCell>
-                <TableCell className="text-right font-medium">
+                <TableCell
+                  className={`text-right font-medium${expense.isDraft && expense.amount == null ? 'text-muted-foreground' : ''}`}
+                >
                   {expense.amount != null ? formatCurrency(expense.amount) : '—'}
                 </TableCell>
                 <TableCell>
@@ -291,12 +379,16 @@ function ExpenseTable() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      aria-label={`Edit ${expense.merchant ?? 'draft'} expense`}
+                      aria-label={
+                        expense.isDraft
+                          ? `Complete ${expense.merchant ?? 'draft'} expense`
+                          : `Edit ${expense.merchant ?? 'draft'} expense`
+                      }
                       render={
                         <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} />
                       }
                     >
-                      Edit
+                      {expense.isDraft ? 'Complete' : 'Edit'}
                     </Button>
                     <AlertDialog
                       open={deletingId === expense._id}
