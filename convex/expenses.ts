@@ -1,12 +1,17 @@
 import { v } from 'convex/values'
 import type { MutationCtx } from './_generated/server'
-import { mutation, query } from './_generated/server'
+import { internalMutation, mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
-import { resolveCategory } from './categories'
+import { resolveCategory, upsertCategory, verifyCategoryAccess } from './categories'
 import { upsertMerchant } from './merchants'
 import { verifyAttachmentOwnership, deleteUploadRecord } from './storage'
-import { normalizeMerchantName, validateExpenseFields } from './validation'
+import {
+  normalizeMerchantName,
+  validateExpenseFields,
+  validateDraftUpdate,
+  validateDraftCompletion,
+} from './validation'
 
 /**
  * Delete an auto-created user-custom category if no expenses reference it.
@@ -71,6 +76,7 @@ export const list = query({
   args: {
     cursor: v.optional(v.union(v.string(), v.null())),
     limit: v.optional(v.number()),
+    isDraft: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx)
@@ -78,14 +84,19 @@ export const list = query({
       return { expenses: [], continueCursor: null, isDone: true }
     }
 
-    const result = await ctx.db
-      .query('expenses')
-      .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
-      .order('desc')
-      .paginate({
-        numItems: Math.max(1, Math.min(Math.trunc(args.limit ?? 50), 100)),
-        cursor: args.cursor ?? null,
-      })
+    const baseQuery =
+      args.isDraft === undefined
+        ? ctx.db.query('expenses').withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+        : ctx.db
+            .query('expenses')
+            .withIndex('by_user_and_draft_and_date', (q) =>
+              q.eq('userId', userId).eq('isDraft', args.isDraft!),
+            )
+
+    const result = await baseQuery.order('desc').paginate({
+      numItems: Math.max(1, Math.min(Math.trunc(args.limit ?? 50), 100)),
+      cursor: args.cursor ?? null,
+    })
 
     return {
       expenses: result.page,
@@ -203,6 +214,9 @@ export const update = mutation({
     if (!existing || existing.userId !== userId) {
       throw new Error('Expense not found')
     }
+    if (existing.isDraft) {
+      throw new Error('Cannot update a draft expense — use updateDraft or completeDraft instead')
+    }
 
     const { date, merchant, amount, comment } = validateExpenseFields(args)
     const categoryId = await resolveCategory(ctx, userId, args)
@@ -283,6 +297,209 @@ export const remove = mutation({
     }
 
     return args.id
+  },
+})
+
+// ── Draft lifecycle ─────────────────────────────────────────────────────
+
+/**
+ * Create a draft expense from a single attachment.
+ * Sets `isDraft: true` with only `userId`, `attachmentId`, and `createdAt`.
+ */
+export const createDraft = mutation({
+  args: {
+    attachmentId: v.id('_storage'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) {
+      throw new Error('Not authenticated')
+    }
+
+    await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
+
+    return await ctx.db.insert('expenses', {
+      userId,
+      isDraft: true,
+      attachmentId: args.attachmentId,
+      createdAt: Date.now(),
+    })
+  },
+})
+
+/**
+ * Create multiple draft expenses from a list of storage IDs.
+ * Called by the REST API HTTP action — also creates upload records
+ * for each file so ownership is tracked.
+ */
+export const createDraftsBulk = internalMutation({
+  args: {
+    storageIds: v.array(v.id('_storage')),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const expenseIds: Id<'expenses'>[] = []
+
+    for (const storageId of args.storageIds) {
+      await ctx.db.insert('uploads', {
+        storageId,
+        userId: args.userId,
+        createdAt: Date.now(),
+      })
+
+      const expenseId = await ctx.db.insert('expenses', {
+        userId: args.userId,
+        isDraft: true,
+        attachmentId: storageId,
+        createdAt: Date.now(),
+      })
+      expenseIds.push(expenseId)
+    }
+
+    return expenseIds
+  },
+})
+
+/**
+ * Partial-field update for a draft expense.
+ * Only the provided fields are validated and patched.
+ * Rejects if the target expense is not a draft.
+ */
+export const updateDraft = mutation({
+  args: {
+    id: v.id('expenses'),
+    date: v.optional(v.string()),
+    merchant: v.optional(v.string()),
+    amount: v.optional(v.number()),
+    categoryId: v.optional(v.id('categories')),
+    newCategoryName: v.optional(v.string()),
+    attachmentId: v.optional(v.id('_storage')),
+    comment: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) {
+      throw new Error('Not authenticated')
+    }
+
+    const existing = await ctx.db.get('expenses', args.id)
+    if (!existing || existing.userId !== userId) {
+      throw new Error('Expense not found')
+    }
+    if (!existing.isDraft) {
+      throw new Error('Expense is not a draft')
+    }
+
+    const validated = validateDraftUpdate({
+      date: args.date,
+      merchant: args.merchant,
+      amount: args.amount,
+      comment: args.comment,
+    })
+
+    const patch: Record<string, unknown> = {}
+    if (validated.date !== undefined) patch.date = validated.date
+    if (validated.merchant !== undefined) patch.merchant = validated.merchant
+    if (validated.amount !== undefined) patch.amount = validated.amount
+    if (validated.comment !== undefined) patch.comment = validated.comment
+
+    if (args.categoryId !== undefined || args.newCategoryName !== undefined) {
+      let categoryId: Id<'categories'> | undefined = args.categoryId
+      if (!categoryId && args.newCategoryName) {
+        categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
+      }
+      if (categoryId) {
+        await verifyCategoryAccess(ctx, categoryId, userId)
+        patch.categoryId = categoryId
+      }
+    }
+
+    if (args.attachmentId !== undefined && args.attachmentId !== existing.attachmentId) {
+      await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
+      if (existing.attachmentId) {
+        try {
+          await ctx.storage.delete(existing.attachmentId)
+        } catch {
+          // File may have already been deleted
+        }
+        await deleteUploadRecord(ctx, existing.attachmentId)
+      }
+      patch.attachmentId = args.attachmentId
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch('expenses', args.id, patch)
+    }
+
+    return args.id
+  },
+})
+
+/**
+ * Complete a draft expense by providing all required fields.
+ * Validates completeness, resolves category, upserts merchant,
+ * and sets `isDraft: false`.
+ */
+export const completeDraft = mutation({
+  args: {
+    id: v.id('expenses'),
+    date: v.string(),
+    merchant: v.string(),
+    amount: v.number(),
+    categoryId: v.optional(v.id('categories')),
+    newCategoryName: v.optional(v.string()),
+    comment: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) {
+      throw new Error('Not authenticated')
+    }
+
+    const existing = await ctx.db.get('expenses', args.id)
+    if (!existing || existing.userId !== userId) {
+      throw new Error('Expense not found')
+    }
+    if (!existing.isDraft) {
+      throw new Error('Expense is not a draft')
+    }
+
+    const { date, merchant, amount, comment } = validateDraftCompletion(args)
+    const categoryId = await resolveCategory(ctx, userId, args)
+
+    await ctx.db.patch('expenses', args.id, {
+      isDraft: false,
+      date,
+      merchant,
+      amount,
+      categoryId,
+      comment,
+    })
+
+    await upsertMerchant(ctx, userId, merchant)
+
+    return args.id
+  },
+})
+
+/**
+ * Return the count of the current user's draft expenses.
+ * Uses the `by_user_and_draft_and_date` index prefix.
+ */
+export const draftCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx)
+    if (!userId) {
+      return 0
+    }
+
+    const drafts = await ctx.db
+      .query('expenses')
+      .withIndex('by_user_and_draft_and_date', (q) => q.eq('userId', userId).eq('isDraft', true))
+      .collect()
+
+    return drafts.length
   },
 })
 
