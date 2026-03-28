@@ -70,10 +70,9 @@ export const availableMonths = query({
         .order('desc')
         .first()
 
-      if (!expense) break
+      if (!expense || !expense.date) break
 
-      const date = expense.date!
-      const [year, month] = date.split('-')
+      const [year, month] = expense.date.split('-')
       monthSet.add(`${year}-${month}`)
       upperBound = `${year}-${month}-01`
     }
