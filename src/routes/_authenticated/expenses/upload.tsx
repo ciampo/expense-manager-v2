@@ -353,7 +353,7 @@ function UploadPage() {
           accept={ALLOWED_CONTENT_TYPES.join(',')}
           onChange={handleFileInput}
           className="hidden"
-          aria-hidden="true"
+          aria-label="Upload receipt files"
         />
 
         {/* File list */}
@@ -401,7 +401,7 @@ function UploadPage() {
                       {formatFileSize(item.file.size)}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2" aria-live="polite">
                     <FileStatusBadge status={item.status} error={item.error} />
                     {item.status === 'error' && (
                       <Button
@@ -438,7 +438,7 @@ function FileStatusBadge({ status, error }: { status: FileStatus; error?: string
       return <span className="text-xs font-medium text-green-600 dark:text-green-400">Done</span>
     case 'error':
       return (
-        <span className="text-destructive text-xs font-medium" title={error}>
+        <span className="text-destructive text-xs font-medium" role="alert">
           {error ?? 'Error'}
         </span>
       )
