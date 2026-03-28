@@ -98,10 +98,12 @@ function AuthenticatedLayout() {
           <nav aria-label="Main navigation" className="hidden items-center gap-6 md:flex">
             <Link
               to="/dashboard"
-              className="text-muted-foreground hover:text-foreground [&.active]:text-foreground relative text-sm font-medium transition-colors"
+              className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
             >
-              Dashboard
-              <DraftCountIndicator />
+              <span className="inline-flex items-center gap-1.5">
+                Dashboard
+                <DraftCountIndicator />
+              </span>
             </Link>
             <Link
               to="/reports"
