@@ -329,8 +329,8 @@ export const createDraft = mutation({
 
 /**
  * Create multiple draft expenses from a list of storage IDs.
- * Called by the REST API HTTP action — also creates upload records
- * for each file so ownership is tracked.
+ * Intended for internal callers (e.g. a future REST API HTTP action) —
+ * also creates upload records for each file so ownership is tracked.
  *
  * The caller is responsible for deduplicating `storageIds` — passing
  * the same ID twice will create duplicate upload records and drafts.
