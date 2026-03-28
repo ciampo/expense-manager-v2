@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from '@/lib/schemas'
 
 // ---------------------------------------------------------------------------
@@ -118,6 +118,7 @@ let UploadPage: React.ComponentType
 
 beforeEach(async () => {
   vi.clearAllMocks()
+  Object.assign(mockBlocker, { status: 'idle' })
   capturedComponent = null
   vi.resetModules()
   await import('@/routes/_authenticated/expenses/upload')
@@ -337,6 +338,65 @@ describe('Bulk upload page', () => {
     it('does not show unsaved changes dialog when blocker is idle', () => {
       render(<UploadPage />)
       expect(screen.queryByRole('alertdialog')).toBeNull()
+    })
+
+    it('shows unsaved changes dialog when blocker is blocked', () => {
+      Object.assign(mockBlocker, { status: 'blocked' })
+
+      render(<UploadPage />)
+
+      expect(screen.getByRole('alertdialog')).toBeDefined()
+      expect(screen.getByText('Unsaved changes')).toBeDefined()
+    })
+  })
+
+  describe('happy path — successful upload', () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ storageId: 'test-storage-id' }),
+          }),
+        ),
+      )
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('transitions file through to Done status', async () => {
+      render(<UploadPage />)
+
+      dropFiles(getDropzone(), [createValidFile()])
+
+      await waitFor(() => {
+        expect(screen.getByText('Done')).toBeDefined()
+      })
+    })
+
+    it('shows post-completion summary with draft count', async () => {
+      render(<UploadPage />)
+
+      dropFiles(getDropzone(), [createValidFile()])
+
+      await waitFor(() => {
+        expect(screen.getByText(/1 draft created/)).toBeDefined()
+      })
+
+      expect(screen.getByRole('button', { name: 'Upload more' })).toBeDefined()
+    })
+
+    it('shows "View drafts" link after successful uploads', async () => {
+      render(<UploadPage />)
+
+      dropFiles(getDropzone(), [createValidFile()])
+
+      await waitFor(() => {
+        expect(screen.getByText('View drafts')).toBeDefined()
+      })
     })
   })
 })
