@@ -137,16 +137,6 @@ describe('Bulk upload page', () => {
       expect(screen.getByText(/drop receipt images to create draft expenses/i)).toBeDefined()
     })
 
-    it('renders breadcrumb with Dashboard link', () => {
-      render(<UploadPage />)
-
-      const breadcrumb = screen.getByRole('navigation', { name: 'Breadcrumb' })
-      expect(breadcrumb).toBeDefined()
-
-      const dashboardLink = screen.getByText('Dashboard')
-      expect(dashboardLink.closest('a')).toBeDefined()
-    })
-
     it('renders the dropzone', () => {
       render(<UploadPage />)
       expect(getDropzone()).toBeDefined()

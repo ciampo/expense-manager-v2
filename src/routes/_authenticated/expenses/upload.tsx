@@ -282,18 +282,6 @@ function UploadPage() {
       />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb" className="text-muted-foreground mb-4 text-sm">
-          <Link to="/dashboard" className="hover:text-foreground">
-            Dashboard
-          </Link>
-          <span className="mx-2" aria-hidden="true">
-            /
-          </span>
-          <span className="text-foreground">Upload receipts</span>
-        </nav>
-
-        {/* Page header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Upload receipts</h1>
           <p className="text-muted-foreground">
