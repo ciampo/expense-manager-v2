@@ -163,7 +163,7 @@ describe('Bulk upload page', () => {
       dropFiles(getDropzone(), [createFile('doc.txt', 1024, 'text/plain')])
 
       expect(screen.getByText('doc.txt')).toBeDefined()
-      expect(screen.getByText('Unsupported file type')).toBeDefined()
+      expect(screen.getByText('Unsupported file type. Use images or PDF.')).toBeDefined()
     })
 
     it('marks files exceeding size limit as error', () => {
@@ -172,7 +172,7 @@ describe('Bulk upload page', () => {
       dropFiles(getDropzone(), [createFile('huge.jpg', MAX_FILE_SIZE + 1, 'image/jpeg')])
 
       expect(screen.getByText('huge.jpg')).toBeDefined()
-      expect(screen.getByText(/File too large/)).toBeDefined()
+      expect(screen.getByText(/File too large\. Maximum/)).toBeDefined()
     })
 
     it('marks zero-byte files as error', () => {
@@ -256,7 +256,7 @@ describe('Bulk upload page', () => {
 
       dropFiles(getDropzone(), [createFile('bad.txt', 1024, 'text/plain')])
 
-      expect(screen.getByText('Unsupported file type')).toBeDefined()
+      expect(screen.getByText('Unsupported file type. Use images or PDF.')).toBeDefined()
       expect(screen.getByRole('button', { name: /retry/i })).toBeDefined()
     })
 

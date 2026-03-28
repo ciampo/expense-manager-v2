@@ -49,10 +49,10 @@ function validateFile(file: File): string | null {
     return 'File is empty'
   }
   if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
-    return 'Unsupported file type'
+    return 'Unsupported file type. Use images or PDF.'
   }
   if (file.size > MAX_FILE_SIZE) {
-    return `File too large (max ${MAX_SIZE_LABEL})`
+    return `File too large. Maximum ${MAX_SIZE_LABEL}.`
   }
   return null
 }
@@ -215,7 +215,7 @@ function UploadPage() {
 
         const message =
           error instanceof Error && /too many/i.test(error.message)
-            ? 'Rate limited — try again shortly'
+            ? 'Too many uploads. Please wait a moment and try again.'
             : error instanceof Error
               ? error.message
               : 'Upload failed'
