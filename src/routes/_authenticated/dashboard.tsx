@@ -271,11 +271,13 @@ function ExpenseTable() {
           <TableBody>
             {expenses.map((expense) => (
               <TableRow key={expense._id}>
-                <TableCell>{formatDate(expense.date)}</TableCell>
-                <TableCell>{expense.merchant}</TableCell>
-                <TableCell>{categoryMap.get(expense.categoryId) || 'N/A'}</TableCell>
+                <TableCell>{expense.date ? formatDate(expense.date) : '—'}</TableCell>
+                <TableCell>{expense.merchant ?? '—'}</TableCell>
+                <TableCell>
+                  {expense.categoryId ? categoryMap.get(expense.categoryId) || 'N/A' : '—'}
+                </TableCell>
                 <TableCell className="text-right font-medium">
-                  {formatCurrency(expense.amount)}
+                  {expense.amount != null ? formatCurrency(expense.amount) : '—'}
                 </TableCell>
                 <TableCell>
                   {expense.attachmentId ? (
@@ -289,7 +291,7 @@ function ExpenseTable() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      aria-label={`Edit ${expense.merchant} expense`}
+                      aria-label={`Edit ${expense.merchant ?? 'draft'} expense`}
                       render={
                         <Link to="/expenses/$expenseId" params={{ expenseId: expense._id }} />
                       }
@@ -306,7 +308,7 @@ function ExpenseTable() {
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive"
-                            aria-label={`Delete ${expense.merchant} expense`}
+                            aria-label={`Delete ${expense.merchant ?? 'draft'} expense`}
                           />
                         }
                       >

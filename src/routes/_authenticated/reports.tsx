@@ -162,7 +162,12 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
 
     setIsDownloadingCsv(true)
     try {
-      const csvContent = buildCsvContent(data.expenses, month)
+      const csvContent = buildCsvContent(
+        data.expenses.filter(
+          (e): e is typeof e & { date: string; amount: number } => !!e.date && e.amount != null,
+        ),
+        month,
+      )
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const saveAs = await loadFileSaver()
@@ -235,8 +240,8 @@ function MonthlyReport({ year, month }: { year: number; month: number }) {
         const { attachment, blob, contentType } = result.value
 
         const filename = buildZipFilename(
-          attachment.date,
-          attachment.merchant,
+          attachment.date ?? '',
+          attachment.merchant ?? '',
           contentType,
           filenameCount,
         )

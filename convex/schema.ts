@@ -7,15 +7,17 @@ export default defineSchema({
 
   expenses: defineTable({
     userId: v.id('users'),
-    date: v.string(), // ISO date string (YYYY-MM-DD)
-    merchant: v.string(), // Merchant name (autocomplete from existing)
-    amount: v.number(), // EUR cents (e.g., 1250 = €12.50)
-    categoryId: v.id('categories'),
+    isDraft: v.optional(v.boolean()), // undefined treated as false after backfill
+    date: v.optional(v.string()), // ISO date string (YYYY-MM-DD)
+    merchant: v.optional(v.string()), // Merchant name (autocomplete from existing)
+    amount: v.optional(v.number()), // EUR cents (e.g., 1250 = €12.50)
+    categoryId: v.optional(v.id('categories')),
     attachmentId: v.optional(v.id('_storage')),
     comment: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index('by_user_and_date', ['userId', 'date'])
+    .index('by_user_and_draft_and_date', ['userId', 'isDraft', 'date'])
     .index('by_user_and_attachment', ['userId', 'attachmentId'])
     .index('by_attachment', ['attachmentId'])
     .index('by_category', ['categoryId']),
@@ -38,6 +40,17 @@ export default defineSchema({
     normalizedName: v.string(), // lowercased for case-insensitive dedup
     userId: v.id('users'),
   }).index('by_user_and_normalized_name', ['userId', 'normalizedName']),
+
+  apiKeys: defineTable({
+    userId: v.id('users'),
+    hashedKey: v.string(), // SHA-256 hex digest
+    prefix: v.string(), // first 8 chars of the raw key, for display
+    name: v.string(),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index('by_hashed_key', ['hashedKey'])
+    .index('by_user', ['userId']),
 
   /**
    * Tracks file uploads so we can verify ownership from the moment of upload,

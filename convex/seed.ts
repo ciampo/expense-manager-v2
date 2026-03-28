@@ -79,6 +79,7 @@ async function runBackfillMerchants(ctx: MutationCtx) {
 
   const seen = new Set<string>()
   for (const expense of expenses) {
+    if (!expense.merchant) continue
     const key = `${expense.userId}:${normalizeMerchantName(expense.merchant)}`
     if (seen.has(key)) continue
     seen.add(key)
@@ -86,6 +87,20 @@ async function runBackfillMerchants(ctx: MutationCtx) {
   }
 
   return { processed: seen.size, message: `Backfilled ${seen.size} unique merchants` }
+}
+
+async function runBackfillExpensesDraft(ctx: MutationCtx) {
+  const expenses = await ctx.db.query('expenses').collect()
+
+  let updated = 0
+  for (const expense of expenses) {
+    if (expense.isDraft === undefined) {
+      await ctx.db.patch('expenses', expense._id, { isDraft: false })
+      updated++
+    }
+  }
+
+  return { updated, total: expenses.length, message: `Backfilled ${updated} expenses with isDraft` }
 }
 
 async function runBackfillCategoryNormalizedName(ctx: MutationCtx) {
@@ -116,6 +131,12 @@ export const backfillCategoryNormalizedName = internalMutation({
   handler: async (ctx) => runBackfillCategoryNormalizedName(ctx),
 })
 
+/** Set `isDraft: false` on all existing expenses where `isDraft` is undefined. */
+export const backfillExpensesDraft = internalMutation({
+  args: {},
+  handler: async (ctx) => runBackfillExpensesDraft(ctx),
+})
+
 /**
  * Run all pending migrations. Called automatically after every
  * `npx convex deploy` in CI (deploy.yml, test-integration.yml) and available
@@ -126,7 +147,8 @@ export const postDeploy = internalMutation({
   handler: async (ctx) => {
     const merchants = await runBackfillMerchants(ctx)
     const categories = await runBackfillCategoryNormalizedName(ctx)
-    return { merchants, categories }
+    const expensesDraft = await runBackfillExpensesDraft(ctx)
+    return { merchants, categories, expensesDraft }
   },
 })
 
@@ -222,6 +244,12 @@ export const cleanup = internalMutation({
     const merchants = await ctx.db.query('merchants').collect()
     for (const merchant of merchants) {
       await ctx.db.delete('merchants', merchant._id)
+    }
+
+    // Delete all API keys
+    const apiKeys = await ctx.db.query('apiKeys').collect()
+    for (const apiKey of apiKeys) {
+      await ctx.db.delete('apiKeys', apiKey._id)
     }
 
     // Delete user-created categories (keep predefined).

@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
+import type { Id } from './_generated/dataModel'
 import { auth } from './auth'
 
 export function validateYearMonth(year: number, month: number): void {
@@ -69,7 +70,7 @@ export const availableMonths = query({
         .order('desc')
         .first()
 
-      if (!expense) break
+      if (!expense || !expense.date) break
 
       const [year, month] = expense.date.split('-')
       monthSet.add(`${year}-${month}`)
@@ -109,8 +110,10 @@ export const monthlyData = query({
       )
       .collect()
 
-    // Collect unique category IDs from this month's expenses
-    const categoryIds = [...new Set(expenses.map((e) => e.categoryId))]
+    // Collect unique category IDs from this month's expenses (skip drafts without a category)
+    const categoryIds = [
+      ...new Set(expenses.map((e) => e.categoryId).filter((id): id is Id<'categories'> => !!id)),
+    ]
     // Fetch only the categories referenced by these expenses
     const categories = await Promise.all(categoryIds.map((id) => ctx.db.get('categories', id)))
     // Defense-in-depth: only allow predefined categories (no userId) or
@@ -126,25 +129,27 @@ export const monthlyData = query({
     let total = 0
 
     for (const expense of expenses) {
-      total += expense.amount
-      const category = categoryMap.get(expense.categoryId)
+      const amount = expense.amount ?? 0
+      total += amount
+      const category = expense.categoryId ? categoryMap.get(expense.categoryId) : undefined
       const categoryName = category?.name || 'Unknown'
 
       if (!categoryTotals[categoryName]) {
         categoryTotals[categoryName] = { name: categoryName, total: 0, count: 0 }
       }
-      categoryTotals[categoryName].total += expense.amount
+      categoryTotals[categoryName].total += amount
       categoryTotals[categoryName].count += 1
     }
 
     // Enrich expenses with category names
     const enrichedExpenses = expenses.map((expense) => ({
       ...expense,
-      categoryName: categoryMap.get(expense.categoryId)?.name || 'Unknown',
+      categoryName:
+        (expense.categoryId ? categoryMap.get(expense.categoryId)?.name : undefined) || 'Unknown',
     }))
 
     // Sort by date
-    enrichedExpenses.sort((a, b) => a.date.localeCompare(b.date))
+    enrichedExpenses.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
 
     return {
       expenses: enrichedExpenses,

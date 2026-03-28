@@ -59,6 +59,7 @@ export async function insertExpense(
   return await t.run(async (ctx) => {
     return await ctx.db.insert('expenses', {
       userId,
+      isDraft: false,
       date: overrides.date ?? '2026-03-01',
       merchant: overrides.merchant ?? 'Test Merchant',
       amount: overrides.amount ?? 2500,

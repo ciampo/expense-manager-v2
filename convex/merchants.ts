@@ -49,8 +49,10 @@ export const listWithCounts = query({
 
     const countMap = new Map<string, number>()
     for (const expense of allExpenses) {
-      const normalized = normalizeMerchantName(expense.merchant)
-      countMap.set(normalized, (countMap.get(normalized) ?? 0) + 1)
+      if (expense.merchant) {
+        const normalized = normalizeMerchantName(expense.merchant)
+        countMap.set(normalized, (countMap.get(normalized) ?? 0) + 1)
+      }
     }
 
     return merchants
@@ -100,7 +102,7 @@ export const rename = mutation({
       .collect()
 
     for (const expense of userExpenses) {
-      if (normalizeMerchantName(expense.merchant) === oldNormalized) {
+      if (expense.merchant && normalizeMerchantName(expense.merchant) === oldNormalized) {
         await ctx.db.patch('expenses', expense._id, { merchant: newName })
       }
     }
@@ -134,7 +136,7 @@ export const remove = mutation({
       .collect()
 
     const hasReference = userExpenses.some(
-      (e) => normalizeMerchantName(e.merchant) === merchant.normalizedName,
+      (e) => e.merchant && normalizeMerchantName(e.merchant) === merchant.normalizedName,
     )
     if (hasReference) {
       throw new Error('Cannot delete merchant that is used by expenses')
@@ -175,7 +177,9 @@ export const cleanupOrphanedMerchants = internalMutation({
         .withIndex('by_user_and_date', (q) => q.eq('userId', userId as Id<'users'>))
         .collect()
 
-      const referencedNames = new Set(userExpenses.map((e) => normalizeMerchantName(e.merchant)))
+      const referencedNames = new Set(
+        userExpenses.filter((e) => e.merchant).map((e) => normalizeMerchantName(e.merchant!)),
+      )
 
       for (const merchant of userMerchants) {
         if (deleted >= CLEANUP_BATCH_SIZE) break
