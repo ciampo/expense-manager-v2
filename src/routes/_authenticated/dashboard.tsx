@@ -91,7 +91,7 @@ function DashboardPage() {
           <p className="text-muted-foreground">Manage your expenses</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" disabled title="Coming soon">
+          <Button variant="outline" render={<Link to="/expenses/upload" />}>
             Upload receipts
           </Button>
           <Button render={<Link to="/expenses/new" />}>+ New expense</Button>
