@@ -71,6 +71,36 @@ export async function insertExpense(
 }
 
 /**
+ * Insert a draft expense with sensible defaults. Override any field via `overrides`.
+ */
+export async function insertDraft(
+  t: TestCtx,
+  userId: Id<'users'>,
+  overrides: Partial<{
+    date: string
+    merchant: string
+    amount: number
+    categoryId: Id<'categories'>
+    attachmentId: Id<'_storage'>
+    comment: string
+  }> = {},
+) {
+  return await t.run(async (ctx) => {
+    return await ctx.db.insert('expenses', {
+      userId,
+      isDraft: true,
+      ...(overrides.date !== undefined ? { date: overrides.date } : {}),
+      ...(overrides.merchant !== undefined ? { merchant: overrides.merchant } : {}),
+      ...(overrides.amount !== undefined ? { amount: overrides.amount } : {}),
+      ...(overrides.categoryId !== undefined ? { categoryId: overrides.categoryId } : {}),
+      ...(overrides.attachmentId !== undefined ? { attachmentId: overrides.attachmentId } : {}),
+      ...(overrides.comment !== undefined ? { comment: overrides.comment } : {}),
+      createdAt: Date.now(),
+    })
+  })
+}
+
+/**
  * Store a blob in Convex storage. Returns the storage ID.
  */
 export async function setupStorageFile(t: TestCtx, content: BlobPart = 'test-content') {

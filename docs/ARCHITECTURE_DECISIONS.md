@@ -314,3 +314,36 @@ dynamically by a nonced script, which `'strict-dynamic'` allows). The
 nonce must be generated per request, which prevents full-page caching or
 prerendering. This is acceptable for this app since every page load is
 user-specific (authenticated) anyway.
+
+---
+
+## 12. Draft expenses share the expenses table
+
+Draft expenses are stored in the same `expenses` table as completed
+expenses, distinguished by an `isDraft: v.optional(v.boolean())` field
+rather than a separate `drafts` table.
+
+**Why:** Drafts and completed expenses share the same schema shape — a
+draft is simply an expense with optional fields not yet filled in. A
+single table avoids data duplication, simplifies the completion flow
+(a `ctx.db.patch` flipping `isDraft` to `false`), and lets queries
+like "all user expenses" work without cross-table joins.
+
+**Two-phase lifecycle:** Drafts follow a create → update → complete
+flow. `createDraft` inserts a minimal record (`userId`, `attachmentId`,
+`isDraft: true`). `updateDraft` allows partial field updates with
+per-field validation. `completeDraft` validates all required fields are
+present and promotes the draft to a full expense (`isDraft: false`).
+The regular `update` mutation rejects drafts to enforce the two-phase
+contract.
+
+**Schema migration:** The `isDraft` field is `v.optional()` so existing
+expenses don't require an immediate backfill. A `postDeploy` migration
+(`backfillExpensesDraft` in `seed.ts`) sets `isDraft: false` on legacy
+rows. The `by_user_and_draft_and_date` index enables efficient filtered
+queries (drafts only, completed only, or all).
+
+**At scale:** If draft-specific metadata grows (e.g. OCR processing
+status, AI extraction confidence), consider a separate `draftMetadata`
+table with a foreign key to the expense, keeping the core expenses table
+lean.

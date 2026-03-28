@@ -1,13 +1,14 @@
 // @vitest-environment edge-runtime
 import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
-import { api } from './_generated/api'
+import { api, internal } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
 import schema from './schema'
 import {
   setupAuthenticatedUser,
   setupCategory,
   insertExpense,
+  insertDraft,
   setupStorageFile,
   setupUploadRecord,
 } from './testHelpers'
@@ -887,5 +888,654 @@ describe('expenses.update — category orphan cleanup', () => {
 
     const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', catA))
     expect(oldCategory).not.toBeNull()
+  })
+})
+
+// ── createDraft ─────────────────────────────────────────────────────────
+
+describe('expenses.createDraft', () => {
+  it('creates a draft with attachment and sets isDraft true', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+
+    const expenseId = await asUser.mutation(api.expenses.createDraft, {
+      attachmentId: storageId,
+    })
+
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense).not.toBeNull()
+    expect(expense?.isDraft).toBe(true)
+    expect(expense?.attachmentId).toBe(storageId)
+    expect(expense?.userId).toBe(userId)
+    expect(expense?.createdAt).toBeTypeOf('number')
+    expect(expense?.date).toBeUndefined()
+    expect(expense?.merchant).toBeUndefined()
+    expect(expense?.amount).toBeUndefined()
+    expect(expense?.categoryId).toBeUndefined()
+  })
+
+  it('rejects unauthenticated calls', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+
+    await expect(t.mutation(api.expenses.createDraft, { attachmentId: storageId })).rejects.toThrow(
+      'Not authenticated',
+    )
+  })
+
+  it('rejects attachment not owned by current user', async () => {
+    const t = convexTest(schema, modules)
+    const { asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, user2Id)
+
+    await expect(
+      asUser1.mutation(api.expenses.createDraft, { attachmentId: storageId }),
+    ).rejects.toThrow('Attachment not found or not owned by current user')
+  })
+})
+
+// ── createDraftsBulk ────────────────────────────────────────────────────
+
+describe('expenses.createDraftsBulk', () => {
+  it('creates multiple drafts, all with isDraft true', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const storageId1 = await setupStorageFile(t, 'file-1')
+    const storageId2 = await setupStorageFile(t, 'file-2')
+    const storageId3 = await setupStorageFile(t, 'file-3')
+
+    const expenseIds = await t.mutation(internal.expenses.createDraftsBulk, {
+      storageIds: [storageId1, storageId2, storageId3],
+      userId,
+    })
+
+    expect(expenseIds).toHaveLength(3)
+
+    for (let i = 0; i < expenseIds.length; i++) {
+      const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseIds[i]))
+      expect(expense?.isDraft).toBe(true)
+      expect(expense?.userId).toBe(userId)
+    }
+  })
+
+  it('creates upload records for each file', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const storageId1 = await setupStorageFile(t, 'file-a')
+    const storageId2 = await setupStorageFile(t, 'file-b')
+
+    await t.mutation(internal.expenses.createDraftsBulk, {
+      storageIds: [storageId1, storageId2],
+      userId,
+    })
+
+    const uploads = await t.query(async (ctx) => ctx.db.query('uploads').collect())
+    expect(uploads).toHaveLength(2)
+    expect(uploads.every((u) => u.userId === userId)).toBe(true)
+  })
+
+  it('returns empty array for empty storageIds', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+
+    const expenseIds = await t.mutation(internal.expenses.createDraftsBulk, {
+      storageIds: [],
+      userId,
+    })
+
+    expect(expenseIds).toEqual([])
+  })
+
+  it('rejects when batch exceeds max size', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+
+    const storageIds = []
+    for (let i = 0; i < 51; i++) {
+      storageIds.push(await setupStorageFile(t, `file-${i}`))
+    }
+
+    await expect(
+      t.mutation(internal.expenses.createDraftsBulk, {
+        storageIds,
+        userId,
+      }),
+    ).rejects.toThrow('Too many files in a single batch')
+  })
+})
+
+// ── updateDraft ─────────────────────────────────────────────────────────
+
+describe('expenses.updateDraft', () => {
+  it('is a no-op when called with only the id', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, { merchant: 'Existing' })
+
+    const before = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+
+    const result = await asUser.mutation(api.expenses.updateDraft, { id: draftId })
+
+    const after = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(result).toBe(draftId)
+    expect(after?.merchant).toBe(before?.merchant)
+    expect(after?._creationTime).toBe(before?._creationTime)
+  })
+
+  it('applies a partial update to a draft', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: 'New Merchant',
+      amount: 1500,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBe('New Merchant')
+    expect(updated?.amount).toBe(1500)
+    expect(updated?.isDraft).toBe(true)
+    expect(updated?.date).toBeUndefined()
+  })
+
+  it('rejects if target is not a draft', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await expect(
+      asUser.mutation(api.expenses.updateDraft, {
+        id: expenseId,
+        merchant: 'Updated',
+      }),
+    ).rejects.toThrow('Expense is not a draft')
+  })
+
+  it('rejects unauthenticated calls', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await expect(
+      t.mutation(api.expenses.updateDraft, { id: draftId, merchant: 'Nope' }),
+    ).rejects.toThrow('Not authenticated')
+  })
+
+  it('validates provided fields', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await expect(
+      asUser.mutation(api.expenses.updateDraft, {
+        id: draftId,
+        date: 'not-a-date',
+      }),
+    ).rejects.toThrow()
+
+    await expect(
+      asUser.mutation(api.expenses.updateDraft, {
+        id: draftId,
+        amount: -100,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('updates attachment and cleans up old one', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const oldStorageId = await setupStorageFile(t, 'old')
+    await setupUploadRecord(t, oldStorageId, userId)
+    const newStorageId = await setupStorageFile(t, 'new')
+    await setupUploadRecord(t, newStorageId, userId)
+    const draftId = await insertDraft(t, userId, { attachmentId: oldStorageId })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      attachmentId: newStorageId,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.attachmentId).toBe(newStorageId)
+
+    const oldFileUrl = await t.query(async (ctx) => ctx.storage.getUrl(oldStorageId))
+    expect(oldFileUrl).toBeNull()
+  })
+
+  it('patches category when categoryId is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      categoryId,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.categoryId).toBe(categoryId)
+  })
+
+  it('creates and patches category when newCategoryName is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      newCategoryName: 'Draft Category',
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.categoryId).toBeTruthy()
+
+    const category = await t.query(async (ctx) => ctx.db.get('categories', updated!.categoryId!))
+    expect(category?.name).toBe('Draft Category')
+  })
+
+  it("rejects another user's categoryId", async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+    const user2Category = await setupCategory(t, user2Id, 'Private Cat')
+    const draftId = await insertDraft(t, user1Id)
+
+    await expect(
+      asUser1.mutation(api.expenses.updateDraft, {
+        id: draftId,
+        categoryId: user2Category,
+      }),
+    ).rejects.toThrow('Category not found')
+  })
+
+  it("rejects updating another user's draft", async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id } = await setupAuthenticatedUser(t)
+    const { asUser: asUser2 } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, user1Id)
+
+    await expect(
+      asUser2.mutation(api.expenses.updateDraft, {
+        id: draftId,
+        merchant: 'Nope',
+      }),
+    ).rejects.toThrow('Expense not found')
+  })
+
+  it('cleans up orphaned category when changing category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const oldCategoryId = await setupCategory(t, userId, 'Old Draft Cat')
+    const newCategoryId = await setupCategory(t, userId, 'New Draft Cat')
+    const draftId = await insertDraft(t, userId, { categoryId: oldCategoryId })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      categoryId: newCategoryId,
+    })
+
+    const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', oldCategoryId))
+    expect(oldCategory).toBeNull()
+  })
+})
+
+// ── completeDraft ───────────────────────────────────────────────────────
+
+describe('expenses.completeDraft', () => {
+  it('rejects unauthenticated calls', async () => {
+    const t = convexTest(schema, modules)
+    const { userId } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await expect(
+      t.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+      }),
+    ).rejects.toThrow('Not authenticated')
+  })
+
+  it('completes a draft when all required fields are present', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+    })
+
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(expense?.isDraft).toBe(false)
+    expect(expense?.date).toBe('2026-03-01')
+    expect(expense?.merchant).toBe('Test Merchant')
+    expect(expense?.amount).toBe(2500)
+    expect(expense?.categoryId).toBe(categoryId)
+  })
+
+  it('rejects when required fields are missing', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await expect(
+      asUser.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        date: '2026-03-01',
+        merchant: '',
+        amount: 2500,
+        categoryId,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('sets isDraft to false', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+    })
+
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(expense?.isDraft).toBe(false)
+  })
+
+  it('creates a merchant record', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+      merchant: 'Draft Merchant',
+    })
+
+    const merchants = await t.query(async (ctx) =>
+      ctx.db
+        .query('merchants')
+        .withIndex('by_user_and_normalized_name', (q) => q.eq('userId', userId))
+        .collect(),
+    )
+    expect(merchants).toHaveLength(1)
+    expect(merchants[0].name).toBe('Draft Merchant')
+  })
+
+  it('rejects if target is not a draft', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const expenseId = await insertExpense(t, userId, categoryId)
+
+    await expect(
+      asUser.mutation(api.expenses.completeDraft, {
+        id: expenseId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+      }),
+    ).rejects.toThrow('Expense is not a draft')
+  })
+
+  it('resolves category from newCategoryName', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      newCategoryName: 'New Cat',
+    })
+
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(expense?.isDraft).toBe(false)
+    expect(expense?.categoryId).toBeTruthy()
+
+    const category = await t.query(async (ctx) => ctx.db.get('categories', expense!.categoryId!))
+    expect(category?.name).toBe('New Cat')
+  })
+
+  it('rejects when no category is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await expect(
+      asUser.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+      }),
+    ).rejects.toThrow('Category is required')
+  })
+
+  it("rejects completing another user's draft", async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id } = await setupAuthenticatedUser(t)
+    const { asUser: asUser2 } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const draftId = await insertDraft(t, user1Id)
+
+    await expect(
+      asUser2.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+      }),
+    ).rejects.toThrow('Expense not found')
+  })
+
+  it('cleans up orphaned auto-created category from draft phase', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    const draftCategoryId = await setupCategory(t, userId, 'Draft Phase Cat')
+    const finalCategoryId = await setupCategory(t, userId, 'Final Cat')
+    const draftId = await insertDraft(t, userId, { categoryId: draftCategoryId })
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId: finalCategoryId,
+    })
+
+    const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', draftCategoryId))
+    expect(oldCategory).toBeNull()
+  })
+})
+
+// ── draftCount ──────────────────────────────────────────────────────────
+
+describe('expenses.draftCount', () => {
+  it('returns correct count of drafts', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertDraft(t, userId)
+    await insertDraft(t, userId)
+    await insertDraft(t, userId)
+    await insertExpense(t, userId, categoryId)
+    await insertExpense(t, userId, categoryId)
+
+    const count = await asUser.query(api.expenses.draftCount, {})
+    expect(count).toBe(3)
+  })
+
+  it('returns 0 for unauthenticated users', async () => {
+    const t = convexTest(schema, modules)
+    const count = await t.query(api.expenses.draftCount, {})
+    expect(count).toBe(0)
+  })
+
+  it('ignores complete expenses', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertExpense(t, userId, categoryId)
+    await insertExpense(t, userId, categoryId)
+
+    const count = await asUser.query(api.expenses.draftCount, {})
+    expect(count).toBe(0)
+  })
+
+  it('ignores drafts from other users', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+
+    await insertDraft(t, user1Id)
+    await insertDraft(t, user2Id)
+    await insertDraft(t, user2Id)
+
+    const count = await asUser1.query(api.expenses.draftCount, {})
+    expect(count).toBe(1)
+  })
+})
+
+// ── list with isDraft filter ────────────────────────────────────────────
+
+describe('expenses.list — isDraft filter', () => {
+  it('returns only drafts when isDraft is true', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertDraft(t, userId)
+    await insertDraft(t, userId)
+    await insertExpense(t, userId, categoryId)
+
+    const result = await asUser.query(api.expenses.list, { isDraft: true })
+    expect(result.expenses).toHaveLength(2)
+    expect(result.expenses.every((e) => e.isDraft === true)).toBe(true)
+  })
+
+  it('returns only complete expenses when isDraft is false', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertDraft(t, userId)
+    await insertExpense(t, userId, categoryId)
+    await insertExpense(t, userId, categoryId)
+
+    const result = await asUser.query(api.expenses.list, { isDraft: false })
+    expect(result.expenses).toHaveLength(2)
+    expect(result.expenses.every((e) => e.isDraft === false)).toBe(true)
+  })
+
+  it('returns all expenses when isDraft is undefined', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    await insertDraft(t, userId)
+    await insertExpense(t, userId, categoryId)
+
+    const result = await asUser.query(api.expenses.list, {})
+    expect(result.expenses).toHaveLength(2)
+  })
+})
+
+// ── create always sets isDraft false ────────────────────────────────────
+
+describe('expenses.create — isDraft', () => {
+  it('always sets isDraft to false on new expenses', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const expenseId = await asUser.mutation(api.expenses.create, {
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+    })
+
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', expenseId))
+    expect(expense?.isDraft).toBe(false)
+  })
+})
+
+// ── update rejects draft expenses ───────────────────────────────────────
+
+describe('expenses.update — rejects drafts', () => {
+  it('rejects updating a draft expense', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId)
+
+    await expect(
+      asUser.mutation(api.expenses.update, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+      }),
+    ).rejects.toThrow('Cannot update a draft expense')
+  })
+})
+
+// ── remove handles drafts ───────────────────────────────────────────────
+
+describe('expenses.remove — draft cleanup', () => {
+  it('deletes a draft expense', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.remove, { id: draftId })
+
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(expense).toBeNull()
+  })
+
+  it('cleans up attachment when deleting a draft', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+    const draftId = await insertDraft(t, userId, { attachmentId: storageId })
+
+    await asUser.mutation(api.expenses.remove, { id: draftId })
+
+    const uploadRecord = await t.query(async (ctx) =>
+      ctx.db
+        .query('uploads')
+        .withIndex('by_storage_id', (q) => q.eq('storageId', storageId))
+        .first(),
+    )
+    expect(uploadRecord).toBeNull()
+  })
+
+  it('handles draft with no optional fields', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.remove, { id: draftId })
+
+    const expense = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(expense).toBeNull()
   })
 })
