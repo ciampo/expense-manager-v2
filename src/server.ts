@@ -1,4 +1,5 @@
 import handler, { createServerEntry } from '@tanstack/react-start/server-entry'
+import { handleCspReport } from '@/lib/csp-report'
 import { addSecurityHeaders, CSP_REPORT_PATH } from '@/lib/security-headers'
 
 export default createServerEntry({
@@ -13,13 +14,3 @@ export default createServerEntry({
     return addSecurityHeaders(response)
   },
 })
-
-async function handleCspReport(request: Request): Promise<Response> {
-  try {
-    const body = await request.json()
-    console.log('[CSP Report]', JSON.stringify(body))
-  } catch {
-    console.warn('[CSP Report] Failed to parse report body')
-  }
-  return new Response(null, { status: 204 })
-}
