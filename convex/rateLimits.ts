@@ -21,6 +21,8 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   passwordReset: { kind: 'fixed window', rate: 3, period: HOUR },
   // Storage: prevent upload abuse
   fileUpload: { kind: 'token bucket', rate: 10, period: MINUTE },
+  // API keys: prevent mass key creation
+  apiKeyCreate: { kind: 'fixed window', rate: 10, period: HOUR },
 })
 
 /**
