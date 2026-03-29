@@ -35,18 +35,30 @@ import { CategoryField } from './category-field'
 import { AmountField } from './amount-field'
 import { AttachmentField } from './attachment-field'
 
-interface ExpenseFormProps {
-  expense?: {
-    _id: Id<'expenses'>
-    date?: string
-    merchant?: string
-    amount?: number
-    categoryId?: Id<'categories'>
-    attachmentId?: Id<'_storage'>
-    comment?: string
-  }
-  mode: 'create' | 'edit' | 'complete-draft'
+interface DraftExpense {
+  _id: Id<'expenses'>
+  date?: string
+  merchant?: string
+  amount?: number
+  categoryId?: Id<'categories'>
+  attachmentId?: Id<'_storage'>
+  comment?: string
 }
+
+interface CompleteExpense {
+  _id: Id<'expenses'>
+  date: string
+  merchant: string
+  amount: number
+  categoryId: Id<'categories'>
+  attachmentId?: Id<'_storage'>
+  comment?: string
+}
+
+type ExpenseFormProps =
+  | { mode: 'create'; expense?: undefined }
+  | { mode: 'edit'; expense: CompleteExpense }
+  | { mode: 'complete-draft'; expense: DraftExpense }
 
 export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const navigate = useNavigate()
@@ -308,28 +320,32 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       return
     }
 
+    // Build the mutation payload. Populated fields are sent as values;
+    // fields the user has cleared are sent as null so the backend can
+    // unset them via patch(undefined). Omitted args (undefined) leave
+    // the existing DB value untouched.
     const draftData: {
       id: Id<'expenses'>
-      date?: string
-      merchant?: string
-      amount?: number
-      categoryId?: Id<'categories'>
-      newCategoryName?: string
-      comment?: string
+      date?: string | null
+      merchant?: string | null
+      amount?: number | null
+      categoryId?: Id<'categories'> | null
+      newCategoryName?: string | null
+      comment?: string | null
       attachmentId?: Id<'_storage'>
     } = { id: expense._id }
 
-    if (parsed.data.date) draftData.date = parsed.data.date
-    if (parsed.data.merchant) draftData.merchant = parsed.data.merchant
-    if (parsed.data.amount !== undefined && parsed.data.amount > 0) {
-      draftData.amount = parsed.data.amount
-    }
-    if (values.categoryId) {
-      draftData.categoryId = values.categoryId as Id<'categories'>
+    draftData.date = parsed.data.date ?? null
+    draftData.merchant = parsed.data.merchant ?? null
+    draftData.amount = parsed.data.amount ?? null
+    if (parsed.data.categoryId) {
+      draftData.categoryId = parsed.data.categoryId as Id<'categories'>
     } else if (parsed.data.newCategoryName) {
       draftData.newCategoryName = parsed.data.newCategoryName
+    } else {
+      draftData.categoryId = null
     }
-    if (parsed.data.comment) draftData.comment = parsed.data.comment
+    draftData.comment = parsed.data.comment ?? null
     if (attachmentId) draftData.attachmentId = attachmentId
 
     try {

@@ -603,6 +603,37 @@ describe('ExpenseForm component', () => {
         )
       })
     })
+
+    it('"Save draft" with empty form sends null for cleared fields', async () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+
+      await waitFor(() => {
+        expect(convexMutationSpies['expenses.updateDraft']).toHaveBeenCalledWith({
+          id: mockDraftExpenseAttachmentOnly._id,
+          date: null,
+          merchant: null,
+          amount: null,
+          categoryId: null,
+          comment: null,
+          attachmentId: mockDraftExpenseAttachmentOnly.attachmentId,
+        })
+      })
+    })
+
+    it('"Save draft" shows toast when a field value is invalid', async () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpensePartial} />)
+
+      const commentInput = screen.getByPlaceholderText('Add a note...') as HTMLTextAreaElement
+      fireEvent.change(commentInput, { target: { value: 'x'.repeat(COMMENT_MAX_LENGTH + 1) } })
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+
+      await waitFor(() => {
+        expect(convexMutationSpies['expenses.updateDraft']).not.toHaveBeenCalled()
+      })
+    })
   })
 })
 
