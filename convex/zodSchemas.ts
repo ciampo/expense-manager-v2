@@ -117,6 +117,7 @@ export const API_KEY_NAME_MAX_LENGTH = 100
 
 export const apiKeyNameSchema = z
   .string()
+  .max(1000, { message: 'Input too long.' })
   .transform((s) => s.trim())
   .pipe(
     z
