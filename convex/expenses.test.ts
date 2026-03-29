@@ -1187,6 +1187,60 @@ describe('expenses.updateDraft', () => {
     const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', oldCategoryId))
     expect(oldCategory).toBeNull()
   })
+
+  it('clears a field when null is sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, {
+      merchant: 'Old Merchant',
+      comment: 'Old comment',
+    })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: null,
+      comment: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBeUndefined()
+    expect(updated?.comment).toBeUndefined()
+  })
+
+  it('clears category when null categoryId is sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId, { categoryId })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      categoryId: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.categoryId).toBeUndefined()
+  })
+
+  it('preserves fields not included in the update when others are cleared', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, {
+      merchant: 'Keep Me',
+      date: '2026-03-15',
+      comment: 'Clear Me',
+    })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      comment: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBe('Keep Me')
+    expect(updated?.date).toBe('2026-03-15')
+    expect(updated?.comment).toBeUndefined()
+  })
 })
 
 // ── completeDraft ───────────────────────────────────────────────────────
