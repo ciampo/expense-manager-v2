@@ -37,7 +37,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { type FormEvent, Suspense, useCallback, useState } from 'react'
+import { type FormEvent, Suspense, useCallback, useRef, useState } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { RouteErrorComponent } from '@/components/route-error'
 import { API_KEY_NAME_MAX_LENGTH } from '@/lib/schemas'
@@ -568,13 +568,15 @@ function CreateApiKeyForm({
 
 function NewKeyDisplay({ rawKey, onDismiss }: { rawKey: string; onDismiss: () => void }) {
   const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(rawKey)
       setCopied(true)
       toast.success('API key copied to clipboard')
-      setTimeout(() => setCopied(false), 2000)
+      clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       toast.error('Failed to copy to clipboard')
     }

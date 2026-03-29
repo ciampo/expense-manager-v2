@@ -112,6 +112,7 @@ export const revoke = mutation({
     }
 
     await ctx.db.delete('apiKeys', args.id)
+    return args.id
   },
 })
 
@@ -141,7 +142,7 @@ export const verify = internalMutation({
 
     if (!record) return null
 
-    await ctx.db.patch(record._id, { lastUsedAt: Date.now() })
+    await ctx.db.patch('apiKeys', record._id, { lastUsedAt: Date.now() })
     return record.userId
   },
 })
