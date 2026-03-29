@@ -3,7 +3,11 @@ import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
-import { setupAuthenticatedUser } from './testHelpers'
+import rateLimiterTesting from '@convex-dev/rate-limiter/test'
+import { setupAuthenticatedUser, type TestCtx } from './testHelpers'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -22,6 +26,7 @@ async function createKey(
 describe('apiKeys.create', () => {
   it('returns a raw key with the em_ prefix and correct length', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     const { rawKey } = await createKey(asUser)
@@ -32,6 +37,7 @@ describe('apiKeys.create', () => {
 
   it('stores the key hash, prefix, and name — never the raw key', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { userId, asUser } = await setupAuthenticatedUser(t)
 
     const { rawKey } = await createKey(asUser, 'My Key')
@@ -53,6 +59,7 @@ describe('apiKeys.create', () => {
 
   it('trims the key name', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { userId, asUser } = await setupAuthenticatedUser(t)
 
     await createKey(asUser, '  Padded Name  ')
@@ -68,6 +75,7 @@ describe('apiKeys.create', () => {
 
   it('rejects empty name', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await expect(createKey(asUser, '')).rejects.toThrow('API key name is required')
@@ -75,13 +83,43 @@ describe('apiKeys.create', () => {
 
   it('rejects whitespace-only name', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await expect(createKey(asUser, '   ')).rejects.toThrow('API key name is required')
   })
 
+  it('rejects name exceeding max length', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { asUser } = await setupAuthenticatedUser(t)
+
+    await expect(createKey(asUser, 'a'.repeat(101))).rejects.toThrow('100 characters or less')
+  })
+
+  it('rejects creation beyond per-user limit', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 25; i++) {
+        await ctx.db.insert('apiKeys', {
+          userId,
+          hashedKey: `hash_${i}`.padEnd(64, '0'),
+          prefix: `em_${String(i).padStart(5, '0')}`,
+          name: `Key ${i}`,
+          createdAt: Date.now(),
+        })
+      }
+    })
+
+    await expect(createKey(asUser, 'One too many')).rejects.toThrow('at most 25 API keys')
+  })
+
   it('rejects unauthenticated calls', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
 
     await expect(t.mutation(api.apiKeys.create, { name: 'Test' })).rejects.toThrow(
       'Not authenticated',
@@ -94,6 +132,7 @@ describe('apiKeys.create', () => {
 describe('apiKeys.list', () => {
   it('returns prefix, name, and dates — never the hash', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await createKey(asUser, 'List Key')
@@ -111,6 +150,7 @@ describe('apiKeys.list', () => {
 
   it('returns keys sorted newest first', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await createKey(asUser, 'First')
@@ -130,6 +170,7 @@ describe('apiKeys.list', () => {
 
   it('does not return keys from other users', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser: asUserA } = await setupAuthenticatedUser(t)
     const { asUser: asUserB } = await setupAuthenticatedUser(t)
 
@@ -145,6 +186,7 @@ describe('apiKeys.list', () => {
 describe('apiKeys.revoke', () => {
   it('deletes the key record', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await createKey(asUser)
@@ -159,6 +201,7 @@ describe('apiKeys.revoke', () => {
 
   it("cannot revoke another user's key", async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser: asUserA } = await setupAuthenticatedUser(t)
     const { asUser: asUserB } = await setupAuthenticatedUser(t)
 
@@ -172,6 +215,7 @@ describe('apiKeys.revoke', () => {
 
   it('rejects unauthenticated calls', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await createKey(asUser)
@@ -188,6 +232,7 @@ describe('apiKeys.revoke', () => {
 describe('apiKeys.verify', () => {
   it('returns userId for a valid key', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { userId, asUser } = await setupAuthenticatedUser(t)
 
     const { rawKey } = await createKey(asUser)
@@ -205,6 +250,7 @@ describe('apiKeys.verify', () => {
 
   it('returns null for a revoked key', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     const { rawKey } = await createKey(asUser)
@@ -217,6 +263,7 @@ describe('apiKeys.verify', () => {
 
   it('updates lastUsedAt on successful verification', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     const { rawKey } = await createKey(asUser)
@@ -233,6 +280,7 @@ describe('apiKeys.verify', () => {
 
   it('does not update lastUsedAt on failed verification', async () => {
     const t = convexTest(schema, modules)
+    registerRateLimiter(t)
     const { asUser } = await setupAuthenticatedUser(t)
 
     await createKey(asUser)
