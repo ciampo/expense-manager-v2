@@ -6,7 +6,7 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import { ExpenseForm, ExpenseFormSkeleton } from '@/components/expense-form'
 import { RouteErrorComponent } from '@/components/route-error'
 import { RouteNotFoundComponent } from '@/components/route-not-found'
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 
 // Convex document IDs are 32-character URL-safe base64 strings.
 // Reject obviously invalid formats early so the user sees a 404
@@ -45,14 +45,31 @@ function EditExpensePage() {
   )
 }
 
-function EditExpensePageSkeleton() {
+function EditExpensePageLayout({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  children: ReactNode
+}) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Loading...</h1>
+        <h1 className="text-3xl font-bold">{title}</h1>
+        {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
       </div>
-      <ExpenseFormSkeleton />
+      {children}
     </div>
+  )
+}
+
+function EditExpensePageSkeleton() {
+  return (
+    <EditExpensePageLayout title="Loading...">
+      <ExpenseFormSkeleton />
+    </EditExpensePageLayout>
   )
 }
 
@@ -63,26 +80,36 @@ function EditExpenseContent({ expenseId }: { expenseId: Id<'expenses'> }) {
     return <RouteNotFoundComponent />
   }
 
-  const isDraft = expense.isDraft === true
+  if (expense.isDraft === true) {
+    return (
+      <EditExpensePageLayout
+        title="Complete draft"
+        subtitle="Fill in the missing details to complete this expense"
+      >
+        <ExpenseForm
+          mode="complete-draft"
+          expense={{
+            _id: expense._id,
+            date: expense.date,
+            merchant: expense.merchant,
+            amount: expense.amount,
+            categoryId: expense.categoryId,
+            attachmentId: expense.attachmentId,
+            comment: expense.comment,
+          }}
+        />
+      </EditExpensePageLayout>
+    )
+  }
 
-  if (!isDraft && (!expense.date || !expense.merchant || !expense.amount || !expense.categoryId)) {
+  if (!expense.date || !expense.merchant || !expense.amount || !expense.categoryId) {
     return <RouteNotFoundComponent />
   }
 
-  const mode = isDraft ? 'complete-draft' : 'edit'
-  const title = isDraft ? 'Complete draft' : 'Edit expense'
-  const subtitle = isDraft
-    ? 'Fill in the missing details to complete this expense'
-    : 'Edit the expense details'
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">{title}</h1>
-        <p className="text-muted-foreground">{subtitle}</p>
-      </div>
-
+    <EditExpensePageLayout title="Edit expense" subtitle="Edit the expense details">
       <ExpenseForm
+        mode="edit"
         expense={{
           _id: expense._id,
           date: expense.date,
@@ -92,8 +119,7 @@ function EditExpenseContent({ expenseId }: { expenseId: Id<'expenses'> }) {
           attachmentId: expense.attachmentId,
           comment: expense.comment,
         }}
-        mode={mode}
       />
-    </div>
+    </EditExpensePageLayout>
   )
 }
