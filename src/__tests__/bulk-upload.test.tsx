@@ -39,9 +39,14 @@ vi.mock('@tanstack/react-router', () => ({
   useBlocker: () => mockBlocker,
 }))
 
+const mutationSpies: Record<string, ReturnType<typeof vi.fn>> = {}
+
 vi.mock('@convex-dev/react-query', () => ({
   convexQuery: vi.fn((...args: unknown[]) => args),
-  useConvexMutation: vi.fn(() => vi.fn()),
+  useConvexMutation: vi.fn((ref: string) => {
+    if (!mutationSpies[ref]) mutationSpies[ref] = vi.fn()
+    return mutationSpies[ref]
+  }),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -118,6 +123,7 @@ let UploadPage: React.ComponentType
 
 beforeEach(async () => {
   vi.clearAllMocks()
+  for (const key of Object.keys(mutationSpies)) delete mutationSpies[key]
   Object.assign(mockBlocker, { status: 'idle' })
   capturedComponent = null
   vi.resetModules()
@@ -367,7 +373,7 @@ describe('Bulk upload page', () => {
       vi.unstubAllGlobals()
     })
 
-    it('transitions file through to Done status', async () => {
+    it('transitions file through to Done status and calls mutations in order', async () => {
       render(<UploadPage />)
 
       dropFiles(getDropzone(), [createValidFile()])
@@ -375,6 +381,12 @@ describe('Bulk upload page', () => {
       await waitFor(() => {
         expect(screen.getByText('Done')).toBeDefined()
       })
+
+      const confirmSpy = mutationSpies['storage.confirmUpload']
+      const createDraftSpy = mutationSpies['expenses.createDraft']
+
+      expect(confirmSpy).toHaveBeenCalledWith({ storageId: 'test-storage-id' })
+      expect(createDraftSpy).toHaveBeenCalledWith({ attachmentId: 'test-storage-id' })
     })
 
     it('shows post-completion summary with draft count', async () => {
