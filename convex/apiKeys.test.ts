@@ -241,10 +241,18 @@ describe('apiKeys.verify', () => {
     expect(result).toBe(userId)
   })
 
-  it('returns null for an invalid key', async () => {
+  it('returns null for a malformed key', async () => {
     const t = convexTest(schema, modules)
 
     const result = await t.mutation(internal.apiKeys.verify, { rawKey: 'em_invalid' })
+    expect(result).toBeNull()
+  })
+
+  it('returns null for a well-formed but non-existent key', async () => {
+    const t = convexTest(schema, modules)
+
+    const fakeKey = 'em_' + '0'.repeat(64)
+    const result = await t.mutation(internal.apiKeys.verify, { rawKey: fakeKey })
     expect(result).toBeNull()
   })
 
@@ -285,7 +293,8 @@ describe('apiKeys.verify', () => {
 
     await createKey(asUser)
 
-    await t.mutation(internal.apiKeys.verify, { rawKey: 'em_wrong_key' })
+    const fakeKey = 'em_' + 'f'.repeat(64)
+    await t.mutation(internal.apiKeys.verify, { rawKey: fakeKey })
 
     const keys = await asUser.query(api.apiKeys.list, {})
     expect(keys[0].lastUsedAt).toBeUndefined()
