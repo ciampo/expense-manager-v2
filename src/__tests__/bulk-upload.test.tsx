@@ -36,7 +36,7 @@ vi.mock('@tanstack/react-router', () => ({
     </a>
   ),
   useNavigate: () => vi.fn(),
-  useBlocker: () => mockBlocker,
+  useBlocker: vi.fn(() => mockBlocker),
 }))
 
 const mutationSpies: Record<string, ReturnType<typeof vi.fn>> = {}
@@ -353,6 +353,18 @@ describe('Bulk upload page', () => {
 
       expect(screen.getByRole('alertdialog')).toBeDefined()
       expect(screen.getByText('Unsaved changes')).toBeDefined()
+    })
+
+    it('enables the blocker when uploads are active', async () => {
+      const { useBlocker } = await import('@tanstack/react-router')
+      render(<UploadPage />)
+
+      dropFiles(getDropzone(), [createValidFile()])
+
+      const lastCall = vi.mocked(useBlocker).mock.calls.at(-1)?.[0] as
+        | { disabled?: boolean }
+        | undefined
+      expect(lastCall?.disabled).toBe(false)
     })
   })
 
