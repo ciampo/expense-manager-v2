@@ -95,6 +95,6 @@ test.describe('Page titles — authenticated routes', () => {
     await page.getByRole('link', { name: /edit/i }).first().click()
     await page.waitForURL(/\/expenses\//)
 
-    await expect(page).toHaveTitle('Edit Expense — Expense Manager')
+    await expect(page).toHaveTitle('Expense — Expense Manager')
   })
 })

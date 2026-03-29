@@ -6,7 +6,7 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import { ExpenseForm, ExpenseFormSkeleton } from '@/components/expense-form'
 import { RouteErrorComponent } from '@/components/route-error'
 import { RouteNotFoundComponent } from '@/components/route-not-found'
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 
 // Convex document IDs are 32-character URL-safe base64 strings.
 // Reject obviously invalid formats early so the user sees a 404
@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_authenticated/expenses/$expenseId')({
   component: EditExpensePage,
   errorComponent: RouteErrorComponent,
   head: () => ({
-    meta: [{ title: 'Edit Expense — Expense Manager' }],
+    meta: [{ title: 'Expense — Expense Manager' }],
   }),
   loader: async ({ context, params }) => {
     if (!CONVEX_ID_RE.test(params.expenseId)) return
@@ -39,38 +39,87 @@ function EditExpensePage() {
   }
 
   return (
+    <Suspense fallback={<EditExpensePageSkeleton />}>
+      <EditExpenseContent expenseId={expenseId as Id<'expenses'>} />
+    </Suspense>
+  )
+}
+
+function EditExpensePageLayout({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  children: ReactNode
+}) {
+  return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Edit expense</h1>
-        <p className="text-muted-foreground">Edit the expense details</p>
+        <h1 className="text-3xl font-bold">{title}</h1>
+        {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
       </div>
-
-      <Suspense fallback={<ExpenseFormSkeleton />}>
-        <EditExpenseForm expenseId={expenseId as Id<'expenses'>} />
-      </Suspense>
+      {children}
     </div>
   )
 }
 
-function EditExpenseForm({ expenseId }: { expenseId: Id<'expenses'> }) {
+function EditExpensePageSkeleton() {
+  return (
+    <EditExpensePageLayout title="Loading...">
+      <ExpenseFormSkeleton />
+    </EditExpensePageLayout>
+  )
+}
+
+function EditExpenseContent({ expenseId }: { expenseId: Id<'expenses'> }) {
   const { data: expense } = useSuspenseQuery(convexQuery(api.expenses.get, { id: expenseId }))
 
-  if (!expense || !expense.date || !expense.merchant || !expense.amount || !expense.categoryId) {
+  if (!expense) {
+    return <RouteNotFoundComponent />
+  }
+
+  if (expense.isDraft === true) {
+    return (
+      <EditExpensePageLayout
+        title="Complete draft"
+        subtitle="Fill in the missing details to complete this expense"
+      >
+        <ExpenseForm
+          mode="complete-draft"
+          expense={{
+            _id: expense._id,
+            date: expense.date,
+            merchant: expense.merchant,
+            amount: expense.amount,
+            categoryId: expense.categoryId,
+            attachmentId: expense.attachmentId,
+            comment: expense.comment,
+          }}
+        />
+      </EditExpensePageLayout>
+    )
+  }
+
+  if (!expense.date || !expense.merchant || !expense.amount || !expense.categoryId) {
     return <RouteNotFoundComponent />
   }
 
   return (
-    <ExpenseForm
-      expense={{
-        _id: expense._id,
-        date: expense.date,
-        merchant: expense.merchant,
-        amount: expense.amount,
-        categoryId: expense.categoryId,
-        attachmentId: expense.attachmentId,
-        comment: expense.comment,
-      }}
-      mode="edit"
-    />
+    <EditExpensePageLayout title="Edit expense" subtitle="Edit the expense details">
+      <ExpenseForm
+        mode="edit"
+        expense={{
+          _id: expense._id,
+          date: expense.date,
+          merchant: expense.merchant,
+          amount: expense.amount,
+          categoryId: expense.categoryId,
+          attachmentId: expense.attachmentId,
+          comment: expense.comment,
+        }}
+      />
+    </EditExpensePageLayout>
   )
 }

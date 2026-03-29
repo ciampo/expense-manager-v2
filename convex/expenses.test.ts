@@ -1187,6 +1187,167 @@ describe('expenses.updateDraft', () => {
     const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', oldCategoryId))
     expect(oldCategory).toBeNull()
   })
+
+  it('clears a field when null is sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, {
+      merchant: 'Old Merchant',
+      comment: 'Old comment',
+    })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: null,
+      comment: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBeUndefined()
+    expect(updated?.comment).toBeUndefined()
+  })
+
+  it('clears category when null categoryId is sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const draftId = await insertDraft(t, userId, { categoryId })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      categoryId: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.categoryId).toBeUndefined()
+  })
+
+  it('preserves fields not included in the update when others are cleared', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, {
+      merchant: 'Keep Me',
+      date: '2026-03-15',
+      comment: 'Clear Me',
+    })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      comment: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBe('Keep Me')
+    expect(updated?.date).toBe('2026-03-15')
+    expect(updated?.comment).toBeUndefined()
+  })
+
+  it('clearing a never-set field is a no-op', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBeUndefined()
+  })
+
+  it('clears date when null is sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, { date: '2026-03-15' })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      date: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.date).toBeUndefined()
+  })
+
+  it('clears amount when null is sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, { amount: 42.5 })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      amount: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.amount).toBeUndefined()
+  })
+
+  it('clears one field while updating another in the same call', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, {
+      merchant: 'Old',
+      comment: 'Remove me',
+    })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: 'New',
+      comment: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBe('New')
+    expect(updated?.comment).toBeUndefined()
+  })
+
+  it('clears category with null and cleans up orphaned auto-category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: await insertDraft(t, userId),
+      newCategoryName: 'Orphan Candidate',
+    })
+    const afterSet = await t.query(async (ctx) =>
+      ctx.db
+        .query('expenses')
+        .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+        .first(),
+    )
+    const orphanCatId = afterSet!.categoryId!
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: afterSet!._id,
+      categoryId: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', afterSet!._id))
+    expect(updated?.categoryId).toBeUndefined()
+
+    const orphanCat = await t.query(async (ctx) => ctx.db.get('categories', orphanCatId))
+    expect(orphanCat).toBeNull()
+  })
+
+  it('idempotent clearing does not error', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, { merchant: 'Clear Me' })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: null,
+    })
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBeUndefined()
+  })
 })
 
 // ── completeDraft ───────────────────────────────────────────────────────
@@ -1362,6 +1523,99 @@ describe('expenses.completeDraft', () => {
 
     const oldCategory = await t.query(async (ctx) => ctx.db.get('categories', draftCategoryId))
     expect(oldCategory).toBeNull()
+  })
+})
+
+// ── completeDraft — attachment handling ─────────────────────────────────
+
+describe('expenses.completeDraft — attachment handling', () => {
+  it('preserves existing attachment when attachmentId is omitted', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+    const draftId = await insertDraft(t, userId, { attachmentId: storageId })
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+    })
+
+    const completed = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(completed?.attachmentId).toBe(storageId)
+
+    const fileStillExists = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(fileStillExists).not.toBeNull()
+  })
+
+  it('replaces attachment when a new attachmentId is provided', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const oldStorageId = await setupStorageFile(t)
+    await setupUploadRecord(t, oldStorageId, userId)
+    const newStorageId = await setupStorageFile(t)
+    await setupUploadRecord(t, newStorageId, userId)
+
+    const draftId = await insertDraft(t, userId, { attachmentId: oldStorageId })
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+      attachmentId: newStorageId,
+    })
+
+    const completed = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(completed?.attachmentId).toBe(newStorageId)
+
+    const oldFileStillExists = await t.query(async (ctx) => ctx.storage.getUrl(oldStorageId))
+    expect(oldFileStillExists).toBeNull()
+  })
+
+  it('keeps attachment when the same attachmentId is re-sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, userId)
+
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, userId)
+    const draftId = await insertDraft(t, userId, { attachmentId: storageId })
+
+    await asUser.mutation(api.expenses.completeDraft, {
+      id: draftId,
+      ...VALID_EXPENSE_FIELDS,
+      categoryId,
+      attachmentId: storageId,
+    })
+
+    const completed = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(completed?.attachmentId).toBe(storageId)
+
+    const fileStillExists = await t.query(async (ctx) => ctx.storage.getUrl(storageId))
+    expect(fileStillExists).not.toBeNull()
+  })
+
+  it('rejects attachment not owned by the current user', async () => {
+    const t = convexTest(schema, modules)
+    const { userId: user1Id, asUser: asUser1 } = await setupAuthenticatedUser(t)
+    const { userId: user2Id } = await setupAuthenticatedUser(t)
+    const categoryId = await setupCategory(t, user1Id)
+    const storageId = await setupStorageFile(t)
+    await setupUploadRecord(t, storageId, user2Id)
+    const draftId = await insertDraft(t, user1Id)
+
+    await expect(
+      asUser1.mutation(api.expenses.completeDraft, {
+        id: draftId,
+        ...VALID_EXPENSE_FIELDS,
+        categoryId,
+        attachmentId: storageId,
+      }),
+    ).rejects.toThrow('Attachment not found or not owned by current user')
   })
 })
 

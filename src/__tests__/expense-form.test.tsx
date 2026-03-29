@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { CATEGORY_NAME_MAX_LENGTH, COMMENT_MAX_LENGTH, MAX_FILE_SIZE } from '@/lib/schemas'
-import { expenseFormSchema } from '@/components/expense-form/schema'
+import { expenseFormSchema, draftExpenseFormSchema } from '@/components/expense-form/schema'
 import { expectSuccess, getErrorMessages } from './test-utils'
 import type { Id } from '../../convex/_generated/dataModel'
 
@@ -204,6 +204,8 @@ vi.mock('../../convex/_generated/api', () => ({
       create: 'expenses.create',
       update: 'expenses.update',
       remove: 'expenses.remove',
+      completeDraft: 'expenses.completeDraft',
+      updateDraft: 'expenses.updateDraft',
       getMerchants: 'expenses.getMerchants',
       removeAttachment: 'expenses.removeAttachment',
     },
@@ -240,6 +242,20 @@ const mockExpense = {
   amount: 1250,
   categoryId: 'cat1' as Id<'categories'>,
   comment: 'Latte',
+}
+
+const mockDraftExpenseAttachmentOnly = {
+  _id: 'draft1' as Id<'expenses'>,
+  attachmentId: 'att1' as Id<'_storage'>,
+}
+
+const mockDraftExpensePartial = {
+  _id: 'draft2' as Id<'expenses'>,
+  date: '2026-03-20',
+  merchant: 'Grocery Store',
+  amount: 999,
+  categoryId: 'cat1' as Id<'categories'>,
+  attachmentId: 'att2' as Id<'_storage'>,
 }
 
 // ---------------------------------------------------------------------------
@@ -487,5 +503,169 @@ describe('ExpenseForm component', () => {
         })
       })
     })
+  })
+
+  // ---------------------------------------------------------------------------
+  // 4. Complete-draft mode tests
+  // ---------------------------------------------------------------------------
+
+  describe('complete-draft mode', () => {
+    it('renders with partial draft data (only attachment, empty fields)', () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      const amountInput = screen.getByPlaceholderText('0,00') as HTMLInputElement
+      expect(amountInput.value).toBe('')
+
+      expect(screen.getByText('Select or type...')).toBeDefined()
+      expect(screen.getByText('Select category...')).toBeDefined()
+    })
+
+    it('pre-fills fields that exist on the draft', () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpensePartial} />)
+
+      expect(screen.getByText('Grocery Store')).toBeDefined()
+
+      const amountInput = screen.getByPlaceholderText('0,00') as HTMLInputElement
+      expect(amountInput.value).toBe('9.99')
+    })
+
+    it('shows "Save as complete" primary button', () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      expect(screen.getByRole('button', { name: 'Save as complete' })).toBeDefined()
+    })
+
+    it('shows "Save draft" secondary button', () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      expect(screen.getByRole('button', { name: 'Save draft' })).toBeDefined()
+    })
+
+    it('shows "Delete" button for drafts', () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeDefined()
+    })
+
+    it('shows attachment preview for draft with attachment', () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      expect(screen.getByText('Attachment (optional)')).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Remove attachment' })).toBeDefined()
+    })
+
+    it('"Save as complete" calls completeDraft mutation with all fields', async () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpensePartial} />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save as complete' }))
+
+      await waitFor(() => {
+        expect(convexMutationSpies['expenses.completeDraft']).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: mockDraftExpensePartial._id,
+            date: '2026-03-20',
+            merchant: 'Grocery Store',
+            amount: 999,
+            categoryId: mockDraftExpensePartial.categoryId,
+          }),
+        )
+      })
+    })
+
+    it('"Save as complete" shows validation errors when required fields are missing', async () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save as complete' }))
+
+      await waitFor(() => {
+        const alerts = screen.getAllByRole('alert')
+        expect(alerts.length).toBeGreaterThan(0)
+      })
+
+      expect(convexMutationSpies['expenses.completeDraft']).not.toHaveBeenCalled()
+    })
+
+    it('"Save draft" calls updateDraft mutation with populated field values', async () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpensePartial} />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+
+      await waitFor(() => {
+        expect(convexMutationSpies['expenses.updateDraft']).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: mockDraftExpensePartial._id,
+            date: '2026-03-20',
+            merchant: 'Grocery Store',
+            amount: 999,
+            categoryId: mockDraftExpensePartial.categoryId,
+            attachmentId: mockDraftExpensePartial.attachmentId,
+          }),
+        )
+      })
+    })
+
+    it('"Save draft" with empty form sends null for cleared fields', async () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpenseAttachmentOnly} />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+
+      await waitFor(() => {
+        expect(convexMutationSpies['expenses.updateDraft']).toHaveBeenCalledWith({
+          id: mockDraftExpenseAttachmentOnly._id,
+          date: null,
+          merchant: null,
+          amount: null,
+          categoryId: null,
+          comment: null,
+          attachmentId: mockDraftExpenseAttachmentOnly.attachmentId,
+        })
+      })
+    })
+
+    it('"Save draft" shows toast when a field value is invalid', async () => {
+      render(<ExpenseForm mode="complete-draft" expense={mockDraftExpensePartial} />)
+
+      const commentInput = screen.getByPlaceholderText('Add a note...') as HTMLTextAreaElement
+      fireEvent.change(commentInput, { target: { value: 'x'.repeat(COMMENT_MAX_LENGTH + 1) } })
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+
+      await waitFor(() => {
+        expect(convexMutationSpies['expenses.updateDraft']).not.toHaveBeenCalled()
+      })
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Draft expense form schema tests
+// ---------------------------------------------------------------------------
+
+describe('draftExpenseFormSchema', () => {
+  it('accepts fully empty input (all fields optional)', () => {
+    const result = draftExpenseFormSchema.safeParse({})
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts partial input with only merchant', () => {
+    const result = draftExpenseFormSchema.safeParse({ merchant: 'Coffee Shop' })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts partial input with only amount', () => {
+    const result = draftExpenseFormSchema.safeParse({ amount: '12.50' })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts full input', () => {
+    const result = draftExpenseFormSchema.safeParse({
+      date: '2026-03-15',
+      merchant: 'Coffee Shop',
+      amount: '12.50',
+      categoryId: 'cat-123',
+      newCategoryName: '',
+      comment: 'A note',
+    })
+    expect(result.success).toBe(true)
   })
 })

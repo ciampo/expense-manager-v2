@@ -69,6 +69,7 @@ HELPTEXT
 }
 
 FORCE=false
+UPDATE_SNAPSHOTS=false
 PASSTHROUGH_ARGS=()
 
 for arg in "$@"; do
@@ -78,6 +79,9 @@ for arg in "$@"; do
       ;;
     --force)
       FORCE=true
+      ;;
+    --update-snapshots)
+      UPDATE_SNAPSHOTS=true
       ;;
     *)
       PASSTHROUGH_ARGS+=("$arg")
@@ -248,12 +252,17 @@ pnpm test:e2e:seed
 echo ""
 echo "5. Running visual tests in Docker..."
 
+VISUAL_SCRIPT="test:visual"
+if [ "$UPDATE_SNAPSHOTS" = true ]; then
+  VISUAL_SCRIPT="test:visual:update"
+fi
+
 if [ ${#PASSTHROUGH_ARGS[@]} -gt 0 ]; then
   docker compose -f docker-compose.test.yml run --rm visual-tests \
-    pnpm run test:visual -- "${PASSTHROUGH_ARGS[@]}"
+    pnpm run "$VISUAL_SCRIPT" -- "${PASSTHROUGH_ARGS[@]}"
 else
   docker compose -f docker-compose.test.yml run --rm visual-tests \
-    pnpm run test:visual
+    pnpm run "$VISUAL_SCRIPT"
 fi
 
 echo ""

@@ -377,13 +377,16 @@ export const createDraftsBulk = internalMutation({
 export const updateDraft = mutation({
   args: {
     id: v.id('expenses'),
-    date: v.optional(v.string()),
-    merchant: v.optional(v.string()),
-    amount: v.optional(v.number()),
-    categoryId: v.optional(v.id('categories')),
+    // Fields accept null as an explicit "clear" sentinel. When null is
+    // sent, the field is removed from the document via patch(undefined).
+    // When the arg is omitted entirely (undefined), the field is left as-is.
+    date: v.optional(v.union(v.string(), v.null())),
+    merchant: v.optional(v.union(v.string(), v.null())),
+    amount: v.optional(v.union(v.number(), v.null())),
+    categoryId: v.optional(v.union(v.id('categories'), v.null())),
     newCategoryName: v.optional(v.string()),
     attachmentId: v.optional(v.id('_storage')),
-    comment: v.optional(v.string()),
+    comment: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx)
@@ -400,30 +403,40 @@ export const updateDraft = mutation({
     }
 
     const validated = validateDraftUpdate({
-      date: args.date,
-      merchant: args.merchant,
-      amount: args.amount,
-      comment: args.comment,
+      date: args.date ?? undefined,
+      merchant: args.merchant ?? undefined,
+      amount: args.amount ?? undefined,
+      comment: args.comment ?? undefined,
     })
 
     const patch: Record<string, unknown> = {}
     if (validated.date !== undefined) patch.date = validated.date
+    else if (args.date === null) patch.date = undefined
     if (validated.merchant !== undefined) patch.merchant = validated.merchant
+    else if (args.merchant === null) patch.merchant = undefined
     if (validated.amount !== undefined) patch.amount = validated.amount
+    else if (args.amount === null) patch.amount = undefined
     if (validated.comment !== undefined) patch.comment = validated.comment
+    else if (args.comment === null) patch.comment = undefined
 
     // Category is optional for partial updates — `resolveCategory` can't be
     // used here because it throws when neither ID nor name is provided.
     let previousCategoryId: Id<'categories'> | undefined
     if (args.categoryId !== undefined || args.newCategoryName !== undefined) {
-      let categoryId: Id<'categories'> | undefined = args.categoryId
-      if (!categoryId && args.newCategoryName) {
-        categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
-      }
-      if (categoryId) {
-        await verifyCategoryAccess(ctx, categoryId, userId)
+      if (args.categoryId === null && !args.newCategoryName) {
         previousCategoryId = existing.categoryId
-        patch.categoryId = categoryId
+        patch.categoryId = undefined
+      } else {
+        let categoryId: Id<'categories'> | undefined =
+          args.categoryId === null ? undefined : args.categoryId
+        if (!categoryId && args.newCategoryName) {
+          categoryId = await upsertCategory(ctx, userId, args.newCategoryName)
+        }
+        if (categoryId) {
+          await verifyCategoryAccess(ctx, categoryId, userId)
+          previousCategoryId = existing.categoryId
+          patch.categoryId = categoryId
+        }
       }
     }
 
@@ -465,6 +478,7 @@ export const completeDraft = mutation({
     amount: v.number(),
     categoryId: v.optional(v.id('categories')),
     newCategoryName: v.optional(v.string()),
+    attachmentId: v.optional(v.id('_storage')),
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -484,6 +498,18 @@ export const completeDraft = mutation({
     const { date, merchant, amount, comment } = validateDraftCompletion(args)
     const categoryId = await resolveCategory(ctx, userId, args)
 
+    if (args.attachmentId !== undefined && args.attachmentId !== existing.attachmentId) {
+      await verifyAttachmentOwnership(ctx, args.attachmentId, userId)
+      if (existing.attachmentId) {
+        try {
+          await ctx.storage.delete(existing.attachmentId)
+        } catch {
+          // File may have already been deleted
+        }
+        await deleteUploadRecord(ctx, existing.attachmentId)
+      }
+    }
+
     const previousCategoryId = existing.categoryId
 
     await ctx.db.patch('expenses', args.id, {
@@ -493,6 +519,7 @@ export const completeDraft = mutation({
       amount,
       categoryId,
       comment,
+      ...(args.attachmentId !== undefined ? { attachmentId: args.attachmentId } : {}),
     })
 
     await upsertMerchant(ctx, userId, merchant)

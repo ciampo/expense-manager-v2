@@ -269,6 +269,48 @@ describe('categories.rename', () => {
     expect(cat).not.toBeNull()
     expect(cat?.name).toBe('Kept Category')
   })
+
+  it('preserves icon when newIcon is omitted', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'Food', userId, icon: '🍕' })
+
+    await asUser.mutation(api.categories.rename, { id: catId, newName: 'Groceries' })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('categories', catId))
+    expect(updated?.name).toBe('Groceries')
+    expect(updated?.icon).toBe('🍕')
+  })
+
+  it('updates icon when newIcon is a non-empty string', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'Food', userId, icon: '🍕' })
+
+    await asUser.mutation(api.categories.rename, {
+      id: catId,
+      newName: 'Food',
+      newIcon: '🥗',
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('categories', catId))
+    expect(updated?.icon).toBe('🥗')
+  })
+
+  it('clears icon when newIcon is null', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const catId = await insertCategory(t, { name: 'Food', userId, icon: '🍕' })
+
+    await asUser.mutation(api.categories.rename, {
+      id: catId,
+      newName: 'Food',
+      newIcon: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('categories', catId))
+    expect(updated?.icon).toBeUndefined()
+  })
 })
 
 describe('categories.remove', () => {

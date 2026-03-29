@@ -45,7 +45,7 @@ export const expenseFormSchema = z
 
 // ---------------------------------------------------------------------------
 // Draft expense form schema — relaxed validation for saving partial data.
-// Full draft-aware form logic will be implemented in a follow-up issue.
+// Used by the complete-draft mode's "Save draft" handler.
 // ---------------------------------------------------------------------------
 
 export const draftExpenseFormSchema = z.object({

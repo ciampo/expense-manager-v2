@@ -23,25 +23,42 @@ import { parseCurrencyToCents, centsToInputValue, getTodayISO } from '@/lib/form
 import { toast } from 'sonner'
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
 import { UnsavedChangesDialog } from '@/components/unsaved-changes-dialog'
-import { expenseFormSchema, MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES } from './schema'
+import {
+  expenseFormSchema,
+  draftExpenseFormSchema,
+  MAX_FILE_SIZE,
+  ALLOWED_CONTENT_TYPES,
+} from './schema'
 import { DateField } from './date-field'
 import { MerchantField } from './merchant-field'
 import { CategoryField } from './category-field'
 import { AmountField } from './amount-field'
 import { AttachmentField } from './attachment-field'
 
-interface ExpenseFormProps {
-  expense?: {
-    _id: Id<'expenses'>
-    date: string
-    merchant: string
-    amount: number
-    categoryId: Id<'categories'>
-    attachmentId?: Id<'_storage'>
-    comment?: string
-  }
-  mode: 'create' | 'edit'
+interface DraftExpense {
+  _id: Id<'expenses'>
+  date?: string
+  merchant?: string
+  amount?: number
+  categoryId?: Id<'categories'>
+  attachmentId?: Id<'_storage'>
+  comment?: string
 }
+
+interface CompleteExpense {
+  _id: Id<'expenses'>
+  date: string
+  merchant: string
+  amount: number
+  categoryId: Id<'categories'>
+  attachmentId?: Id<'_storage'>
+  comment?: string
+}
+
+type ExpenseFormProps =
+  | { mode: 'create'; expense?: undefined }
+  | { mode: 'edit'; expense: CompleteExpense }
+  | { mode: 'complete-draft'; expense: DraftExpense }
 
 export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   const navigate = useNavigate()
@@ -51,11 +68,12 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
 
   // Stable initial values — computed once on mount for both the form and
   // the dirty comparison. Using useState with an initializer avoids
-  // recomputation on re-renders.
+  // recomputation on re-renders. For complete-draft mode, missing fields
+  // get empty/null defaults so the user fills them in.
   const [defaultFormValues] = useState(() => ({
-    date: expense?.date || getTodayISO(),
+    date: expense?.date || (mode === 'complete-draft' ? '' : getTodayISO()),
     merchant: expense?.merchant || '',
-    amount: expense ? centsToInputValue(expense.amount) : '',
+    amount: expense?.amount !== undefined ? centsToInputValue(expense.amount) : '',
     categoryId: (expense?.categoryId ?? null) as string | null,
     newCategoryName: '',
     comment: expense?.comment || '',
@@ -96,6 +114,28 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     },
   })
 
+  const completeDraft = useMutation({
+    mutationFn: useConvexMutation(api.expenses.completeDraft),
+    onSuccess: () => {
+      toast.success('Draft completed')
+      navigateAway()
+    },
+    onError: () => {
+      toast.error('Error completing draft')
+    },
+  })
+
+  const updateDraft = useMutation({
+    mutationFn: useConvexMutation(api.expenses.updateDraft),
+    onSuccess: () => {
+      toast.success('Draft saved')
+      navigateAway()
+    },
+    onError: () => {
+      toast.error('Error saving draft')
+    },
+  })
+
   const deleteExpense = useMutation({
     mutationFn: useConvexMutation(api.expenses.remove),
     onSuccess: () => {
@@ -132,6 +172,25 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     },
     onSubmit: async ({ value }) => {
       const amountCents = parseCurrencyToCents(value.amount)
+
+      if (mode === 'complete-draft' && expense) {
+        try {
+          await completeDraft.mutateAsync({
+            id: expense._id,
+            date: value.date,
+            merchant: value.merchant.trim(),
+            amount: amountCents,
+            ...(value.categoryId
+              ? { categoryId: value.categoryId as Id<'categories'> }
+              : { newCategoryName: value.newCategoryName.trim() }),
+            attachmentId,
+            comment: value.comment.trim() || undefined,
+          })
+        } catch {
+          // Error toast shown by mutation onError callbacks
+        }
+        return
+      }
 
       const data = {
         date: value.date,
@@ -239,10 +298,69 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
     }
   }
 
+  async function handleSaveDraft() {
+    if (!expense || updateDraft.isPending || completeDraft.isPending) return
+
+    const values = form.state.values
+
+    // Strip empty strings so the draft schema's optional validators
+    // receive undefined rather than invalid empty values.
+    const toValidate: Record<string, unknown> = {}
+    if (values.date) toValidate.date = values.date
+    if (values.merchant.trim()) toValidate.merchant = values.merchant.trim()
+    if (values.amount) toValidate.amount = values.amount
+    if (values.categoryId) toValidate.categoryId = values.categoryId
+    if (values.newCategoryName?.trim()) toValidate.newCategoryName = values.newCategoryName.trim()
+    if (values.comment?.trim()) toValidate.comment = values.comment.trim()
+
+    const parsed = draftExpenseFormSchema.safeParse(toValidate)
+    if (!parsed.success) {
+      const firstMsg = parsed.error.issues[0]?.message
+      toast.error(firstMsg ?? 'Invalid field values')
+      return
+    }
+
+    // Build the mutation payload. Populated fields are sent as values;
+    // fields the user has cleared are sent as null so the backend can
+    // unset them via patch(undefined). Omitted args (undefined) leave
+    // the existing DB value untouched.
+    const draftData: {
+      id: Id<'expenses'>
+      date?: string | null
+      merchant?: string | null
+      amount?: number | null
+      categoryId?: Id<'categories'> | null
+      newCategoryName?: string
+      comment?: string | null
+      attachmentId?: Id<'_storage'>
+    } = { id: expense._id }
+
+    draftData.date = parsed.data.date ?? null
+    draftData.merchant = parsed.data.merchant ?? null
+    draftData.amount = parsed.data.amount ?? null
+    if (parsed.data.categoryId) {
+      draftData.categoryId = parsed.data.categoryId as Id<'categories'>
+    } else if (parsed.data.newCategoryName) {
+      draftData.newCategoryName = parsed.data.newCategoryName
+    } else {
+      draftData.categoryId = null
+    }
+    draftData.comment = parsed.data.comment ?? null
+    if (attachmentId) draftData.attachmentId = attachmentId
+
+    try {
+      await updateDraft.mutateAsync(draftData)
+    } catch {
+      // Error toast shown by mutation onError callbacks
+    }
+  }
+
   const isLoading =
     form.state.isSubmitting ||
     createExpense.isPending ||
     updateExpense.isPending ||
+    completeDraft.isPending ||
+    updateDraft.isPending ||
     deleteExpense.isPending ||
     removeAttachment.isPending ||
     isUploading
@@ -330,8 +448,20 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
               ? 'Saving...'
               : mode === 'create'
                 ? 'Create expense'
-                : 'Save changes'}
+                : mode === 'complete-draft'
+                  ? 'Save as complete'
+                  : 'Save changes'}
           </Button>
+          {mode === 'complete-draft' && (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isLoading}
+              onClick={handleSaveDraft}
+            >
+              {updateDraft.isPending ? 'Saving...' : 'Save draft'}
+            </Button>
+          )}
           {/* Uses navigate() (not navigateAway()) so the blocker can
               intercept when the form is dirty. navigateAway() bypasses
               the guard and is reserved for post-save/delete success. */}
@@ -344,7 +474,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
             Cancel
           </Button>
 
-          {mode === 'edit' && expense && (
+          {(mode === 'edit' || mode === 'complete-draft') && expense && (
             <AlertDialog open={showDeleteExpense} onOpenChange={setShowDeleteExpense}>
               <AlertDialogTrigger
                 render={
