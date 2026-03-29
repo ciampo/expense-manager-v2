@@ -145,3 +145,68 @@ export async function createExpenseWithAttachment(
   await page.getByRole('button', { name: /create expense/i }).click()
   await page.waitForURL('**/dashboard', { timeout: 15_000 })
 }
+
+/**
+ * Upload one or more receipt files via the bulk upload page.
+ * Waits until all uploads complete (the summary section appears).
+ * Does NOT navigate away — the caller decides where to go next.
+ */
+export async function uploadReceipts(page: Page, count: number = 1): Promise<void> {
+  await page.goto('/expenses/upload')
+  await page.getByRole('heading', { name: /upload receipts/i }).waitFor()
+
+  const files = Array.from({ length: count }, (_, i) => ({
+    name: `receipt-${i + 1}.png`,
+    mimeType: 'image/png' as const,
+    buffer: Buffer.from(TEST_PNG_BASE64, 'base64'),
+  }))
+
+  const fileInput = page.getByLabel(/upload receipt files/i)
+  await fileInput.setInputFiles(files)
+
+  await expect(page.getByText(/draft.? created/i)).toBeVisible({ timeout: 30_000 })
+}
+
+/**
+ * Switch to a specific filter tab on the dashboard (Complete / Drafts / All).
+ */
+export async function switchDashboardTab(
+  page: Page,
+  tab: 'Complete' | 'Drafts' | 'All',
+): Promise<void> {
+  const tabsList = page.getByRole('tablist', { name: /filter expenses by status/i })
+  await tabsList.getByRole('tab', { name: new RegExp(tab, 'i') }).click()
+}
+
+/**
+ * Complete a draft expense from the dashboard Drafts tab.
+ *
+ * Clicks "Complete" on the first (or specified) draft row, fills required
+ * fields, and submits. Waits for the redirect back to the dashboard.
+ */
+export async function completeDraft(
+  page: Page,
+  merchant: string,
+  amount: string,
+  options?: { category?: string; day?: number },
+): Promise<void> {
+  await page.getByRole('button', { name: /save as complete/i }).waitFor()
+
+  if (options?.day) {
+    await selectCalendarDay(page, options.day)
+  }
+
+  await selectComboboxOption(page, /merchant/i, merchant)
+
+  if (options?.category) {
+    await selectComboboxOption(page, /category/i, options.category)
+  } else {
+    await page.getByRole('combobox', { name: /category/i }).click()
+    await page.getByRole('option', { name: /coworking/i }).click()
+  }
+
+  await page.getByLabel(/amount/i).fill(amount)
+
+  await page.getByRole('button', { name: /save as complete/i }).click()
+  await page.waitForURL('**/dashboard', { timeout: 15_000 })
+}
