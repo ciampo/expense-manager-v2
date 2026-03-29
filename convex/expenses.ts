@@ -508,7 +508,11 @@ export const completeDraft = mutation({
 /**
  * Return the count of the current user's draft expenses.
  * Uses the `by_user_and_draft_and_date` index prefix.
+ *
+ * Capped at {@link DRAFT_COUNT_CAP} to bound document reads.
+ * If more granularity is needed at scale, consider `@convex-dev/aggregate`.
  */
+const DRAFT_COUNT_CAP = 100
 export const draftCount = query({
   args: {},
   handler: async (ctx) => {
@@ -520,7 +524,7 @@ export const draftCount = query({
     const drafts = await ctx.db
       .query('expenses')
       .withIndex('by_user_and_draft_and_date', (q) => q.eq('userId', userId).eq('isDraft', true))
-      .collect()
+      .take(DRAFT_COUNT_CAP)
 
     return drafts.length
   },

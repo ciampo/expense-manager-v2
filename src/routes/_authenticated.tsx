@@ -2,6 +2,9 @@ import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useConvexAuth } from 'convex/react'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { convexQuery } from '@convex-dev/react-query'
+import { api } from '../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { RouteNotFoundComponent } from '@/components/route-not-found'
 import {
@@ -97,7 +100,10 @@ function AuthenticatedLayout() {
               to="/dashboard"
               className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
             >
-              Dashboard
+              <span className="inline-flex items-center gap-1.5">
+                Dashboard
+                <DraftCountIndicator />
+              </span>
             </Link>
             <Link
               to="/reports"
@@ -150,7 +156,10 @@ function AuthenticatedLayout() {
                   className="text-muted-foreground hover:text-foreground [&.active]:text-foreground text-sm font-medium transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Dashboard
+                  <span className="inline-flex items-center gap-1.5">
+                    Dashboard
+                    <DraftCountIndicator />
+                  </span>
                 </Link>
                 <Link
                   to="/reports"
@@ -195,5 +204,22 @@ function AuthenticatedLayout() {
         </div>
       </footer>
     </div>
+  )
+}
+
+function DraftCountIndicator() {
+  const { data: count } = useQuery({
+    ...convexQuery(api.expenses.draftCount, {}),
+  })
+
+  if (!count) return null
+
+  return (
+    <span
+      className="bg-primary text-primary-foreground inline-flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-4 font-semibold"
+      aria-label={`${count} draft expense${count === 1 ? '' : 's'}`}
+    >
+      {count}
+    </span>
   )
 }
