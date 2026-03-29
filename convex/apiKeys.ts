@@ -5,6 +5,7 @@ import { rateLimiter, formatRetryDelay } from './rateLimits'
 import { validateApiKeyName } from './validation'
 
 const API_KEY_PREFIX = 'em_'
+const RAW_KEY_LENGTH = 67 // "em_" (3) + 64 hex chars
 const DISPLAY_PREFIX_LENGTH = 8 // first 8 chars of raw key shown in UI
 const MAX_API_KEYS_PER_USER = 25
 
@@ -37,6 +38,14 @@ export const create = mutation({
 
     const name = validateApiKeyName(args.name)
 
+    const existing = await ctx.db
+      .query('apiKeys')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+    if (existing.length >= MAX_API_KEYS_PER_USER) {
+      throw new Error(`You can have at most ${MAX_API_KEYS_PER_USER} API keys.`)
+    }
+
     const { ok, retryAfter } = await rateLimiter.limit(ctx, 'apiKeyCreate', {
       key: userId,
     })
@@ -46,13 +55,6 @@ export const create = mutation({
       )
     }
 
-    const existing = await ctx.db
-      .query('apiKeys')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .collect()
-    if (existing.length >= MAX_API_KEYS_PER_USER) {
-      throw new Error(`You can have at most ${MAX_API_KEYS_PER_USER} API keys.`)
-    }
     const rawKey = generateRawKey()
     const hashedKey = await sha256Hex(rawKey)
     const prefix = rawKey.slice(0, DISPLAY_PREFIX_LENGTH)
@@ -104,12 +106,12 @@ export const revoke = mutation({
     const userId = await auth.getUserId(ctx)
     if (!userId) throw new Error('Not authenticated')
 
-    const key = await ctx.db.get(args.id)
+    const key = await ctx.db.get('apiKeys', args.id)
     if (!key || key.userId !== userId) {
       throw new Error('API key not found')
     }
 
-    await ctx.db.delete(args.id)
+    await ctx.db.delete('apiKeys', args.id)
   },
 })
 
@@ -117,13 +119,19 @@ export const revoke = mutation({
  * Verify an API key by its raw value. Updates `lastUsedAt` on success.
  *
  * Internal-only — called by the REST API HTTP action, never exposed
- * to clients directly.
+ * to clients directly. The HTTP action that calls this MUST enforce its
+ * own rate limiting (e.g. by IP or key prefix) to prevent brute-force
+ * key enumeration.
  *
  * Returns the userId on success, or null if the key is invalid.
  */
 export const verify = internalMutation({
   args: { rawKey: v.string() },
   handler: async (ctx, args) => {
+    if (!args.rawKey.startsWith(API_KEY_PREFIX) || args.rawKey.length !== RAW_KEY_LENGTH) {
+      return null
+    }
+
     const hashedKey = await sha256Hex(args.rawKey)
 
     const record = await ctx.db
