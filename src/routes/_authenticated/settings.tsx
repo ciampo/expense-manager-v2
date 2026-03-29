@@ -37,7 +37,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { type FormEvent, Suspense, useCallback, useRef, useState } from 'react'
+import { type FormEvent, Suspense, useCallback, useState } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { RouteErrorComponent } from '@/components/route-error'
 import { API_KEY_NAME_MAX_LENGTH } from '@/lib/schemas'
@@ -528,7 +528,6 @@ function CreateApiKeyForm({
   isPending: boolean
 }) {
   const [name, setName] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -543,7 +542,6 @@ function CreateApiKeyForm({
       <div className="flex flex-1 flex-col gap-2">
         <Label htmlFor="api-key-name">Key name</Label>
         <Input
-          ref={inputRef}
           id="api-key-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -564,14 +562,18 @@ function NewKeyDisplay({ rawKey, onDismiss }: { rawKey: string; onDismiss: () =>
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(rawKey)
-    setCopied(true)
-    toast.success('API key copied to clipboard')
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(rawKey)
+      setCopied(true)
+      toast.success('API key copied to clipboard')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Failed to copy to clipboard')
+    }
   }, [rawKey])
 
   return (
-    <div className="bg-muted rounded-lg border p-4" role="alert">
+    <div className="bg-muted rounded-lg border p-4" role="status">
       <p className="mb-2 text-sm font-medium">Copy this key now. It won&apos;t be shown again.</p>
       <div className="flex items-center gap-2">
         <code className="bg-background flex-1 overflow-auto rounded border px-3 py-2 text-xs break-all">
