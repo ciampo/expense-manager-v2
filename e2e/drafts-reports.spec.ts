@@ -1,22 +1,12 @@
-import { readFileSync } from 'node:fs'
 import { test, expect } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
+import { CSV_HEADER, parseCsvLines } from '../tests/shared/csv'
 import {
   createExpense,
   uploadReceipts,
   switchDashboardTab,
   completeDraft,
 } from '../tests/shared/expenses'
-
-const CSV_HEADER =
-  'giorno,descrizione,aliquota,imponibile,imposta,imponibile,imposta,totale spese documentate'
-
-function parseCsvLines(filePath: string): string[] {
-  return readFileSync(filePath, 'utf-8')
-    .replace(/^\uFEFF/, '')
-    .split('\r\n')
-    .filter(Boolean)
-}
 
 test.describe('Reports exclude draft expenses', () => {
   test.setTimeout(120_000)
