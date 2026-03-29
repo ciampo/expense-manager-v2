@@ -253,7 +253,8 @@ export const rename = mutation({
   args: {
     id: v.id('categories'),
     newName: v.string(),
-    newIcon: v.optional(v.string()),
+    // null = explicitly clear the icon; omitted = leave as-is.
+    newIcon: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx)
@@ -265,10 +266,7 @@ export const rename = mutation({
       throw new Error('Cannot modify this category')
     }
 
-    const { name, icon } = validateCategoryFields({
-      name: args.newName,
-      icon: args.newIcon,
-    })
+    const { name } = validateCategoryFields({ name: args.newName })
     const normalizedName = name.toLowerCase()
 
     if (normalizedName !== category.normalizedName) {
@@ -280,7 +278,15 @@ export const rename = mutation({
       }
     }
 
-    await ctx.db.patch('categories', args.id, { name, normalizedName, icon, source: 'manual' })
+    const patch: Record<string, unknown> = { name, normalizedName, source: 'manual' }
+    if (args.newIcon === null) {
+      patch.icon = undefined
+    } else if (args.newIcon !== undefined) {
+      const { icon } = validateCategoryFields({ name: args.newName, icon: args.newIcon })
+      patch.icon = icon
+    }
+
+    await ctx.db.patch('categories', args.id, patch)
     return args.id
   },
 })

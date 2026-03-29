@@ -208,7 +208,7 @@ function RenameCategoryDialog({
   categoryId: Id<'categories'>
   currentName: string
   currentIcon?: string
-  onRename: (newName: string, newIcon?: string) => void
+  onRename: (newName: string, newIcon: string | null) => void
 }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(currentName)
@@ -227,7 +227,7 @@ function RenameCategoryDialog({
     const trimmed = name.trim()
     if (!trimmed) return
     setOpen(false)
-    onRename(trimmed, icon.trim() || undefined)
+    onRename(trimmed, icon.trim() || null)
   }
 
   return (

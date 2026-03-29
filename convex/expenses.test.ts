@@ -1241,6 +1241,113 @@ describe('expenses.updateDraft', () => {
     expect(updated?.date).toBe('2026-03-15')
     expect(updated?.comment).toBeUndefined()
   })
+
+  it('clearing a never-set field is a no-op', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBeUndefined()
+  })
+
+  it('clears date when null is sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, { date: '2026-03-15' })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      date: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.date).toBeUndefined()
+  })
+
+  it('clears amount when null is sent', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, { amount: 42.5 })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      amount: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.amount).toBeUndefined()
+  })
+
+  it('clears one field while updating another in the same call', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, {
+      merchant: 'Old',
+      comment: 'Remove me',
+    })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: 'New',
+      comment: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBe('New')
+    expect(updated?.comment).toBeUndefined()
+  })
+
+  it('clears category with null and cleans up orphaned auto-category', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: await insertDraft(t, userId),
+      newCategoryName: 'Orphan Candidate',
+    })
+    const afterSet = await t.query(async (ctx) =>
+      ctx.db
+        .query('expenses')
+        .withIndex('by_user_and_date', (q) => q.eq('userId', userId))
+        .first(),
+    )
+    const orphanCatId = afterSet!.categoryId!
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: afterSet!._id,
+      categoryId: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', afterSet!._id))
+    expect(updated?.categoryId).toBeUndefined()
+
+    const orphanCat = await t.query(async (ctx) => ctx.db.get('categories', orphanCatId))
+    expect(orphanCat).toBeNull()
+  })
+
+  it('idempotent clearing does not error', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
+    const draftId = await insertDraft(t, userId, { merchant: 'Clear Me' })
+
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: null,
+    })
+    await asUser.mutation(api.expenses.updateDraft, {
+      id: draftId,
+      merchant: null,
+    })
+
+    const updated = await t.query(async (ctx) => ctx.db.get('expenses', draftId))
+    expect(updated?.merchant).toBeUndefined()
+  })
 })
 
 // ── completeDraft ───────────────────────────────────────────────────────
