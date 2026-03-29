@@ -1,10 +1,12 @@
 import { v } from 'convex/values'
 import { mutation, query, internalMutation } from './_generated/server'
 import { auth } from './auth'
+import { rateLimiter, formatRetryDelay } from './rateLimits'
 import { validateApiKeyName } from './validation'
 
 const API_KEY_PREFIX = 'em_'
 const DISPLAY_PREFIX_LENGTH = 8 // first 8 chars of raw key shown in UI
+const MAX_API_KEYS_PER_USER = 25
 
 async function sha256Hex(data: string): Promise<string> {
   const encoded = new TextEncoder().encode(data)
@@ -34,6 +36,23 @@ export const create = mutation({
     if (!userId) throw new Error('Not authenticated')
 
     const name = validateApiKeyName(args.name)
+
+    const { ok, retryAfter } = await rateLimiter.limit(ctx, 'apiKeyCreate', {
+      key: userId,
+    })
+    if (!ok) {
+      throw new Error(
+        `Too many API key creation attempts. Please try again in ${formatRetryDelay(retryAfter)}.`,
+      )
+    }
+
+    const existing = await ctx.db
+      .query('apiKeys')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+    if (existing.length >= MAX_API_KEYS_PER_USER) {
+      throw new Error(`You can have at most ${MAX_API_KEYS_PER_USER} API keys.`)
+    }
     const rawKey = generateRawKey()
     const hashedKey = await sha256Hex(rawKey)
     const prefix = rawKey.slice(0, DISPLAY_PREFIX_LENGTH)
@@ -65,6 +84,7 @@ export const list = query({
       .collect()
 
     return keys
+      .sort((a, b) => b.createdAt - a.createdAt || b._creationTime - a._creationTime)
       .map((k) => ({
         _id: k._id,
         name: k.name,
@@ -72,7 +92,6 @@ export const list = query({
         createdAt: k.createdAt,
         lastUsedAt: k.lastUsedAt,
       }))
-      .sort((a, b) => b.createdAt - a.createdAt || b._creationTime - a._creationTime)
   },
 })
 
