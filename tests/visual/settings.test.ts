@@ -12,7 +12,7 @@ test.describe('Visual Regression - Settings', () => {
   test('default state with predefined categories and no merchants', async ({ page }) => {
     await page.goto('/settings')
     await page.getByRole('heading', { name: /settings/i }).waitFor()
-    await page.getByText(/manage your categories/i).waitFor()
+    await page.getByText(/manage your categories, merchants, and API keys/i).waitFor()
     await page.getByText(/no merchants found/i).waitFor()
 
     await expect(page).toHaveScreenshot('settings-default.png', {
