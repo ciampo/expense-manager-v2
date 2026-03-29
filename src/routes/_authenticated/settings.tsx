@@ -430,11 +430,13 @@ function ApiKeysSection() {
   const queryClient = useQueryClient()
   const { data: keys } = useSuspenseQuery(convexQuery(api.apiKeys.list, {}))
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null)
+  const [formKey, setFormKey] = useState(0)
 
   const createKey = useMutation({
     mutationFn: useConvexMutation(api.apiKeys.create),
     onSuccess: (data: { rawKey: string }) => {
       setNewKeyValue(data.rawKey)
+      setFormKey((k) => k + 1)
       toast.success('API key created')
       queryClient.invalidateQueries({
         queryKey: convexQuery(api.apiKeys.list, {}).queryKey,
@@ -446,6 +448,7 @@ function ApiKeysSection() {
   const revokeKey = useMutation({
     mutationFn: useConvexMutation(api.apiKeys.revoke),
     onSuccess: () => {
+      setNewKeyValue(null)
       toast.success('API key revoked')
       queryClient.invalidateQueries({
         queryKey: convexQuery(api.apiKeys.list, {}).queryKey,
@@ -466,8 +469,10 @@ function ApiKeysSection() {
       </CardHeader>
       <CardContent className="space-y-6">
         <CreateApiKeyForm
+          key={formKey}
           onSubmit={(name) => createKey.mutate({ name })}
           isPending={createKey.isPending}
+          disabled={newKeyValue !== null}
         />
 
         {newKeyValue && (
@@ -523,9 +528,11 @@ function ApiKeysSection() {
 function CreateApiKeyForm({
   onSubmit,
   isPending,
+  disabled,
 }: {
   onSubmit: (name: string) => void
   isPending: boolean
+  disabled: boolean
 }) {
   const [name, setName] = useState('')
 
@@ -534,8 +541,9 @@ function CreateApiKeyForm({
     const trimmed = name.trim()
     if (!trimmed) return
     onSubmit(trimmed)
-    setName('')
   }
+
+  const isDisabled = isPending || disabled
 
   return (
     <form onSubmit={handleSubmit} className="flex items-end gap-3">
@@ -548,10 +556,10 @@ function CreateApiKeyForm({
           placeholder="e.g. iOS Shortcuts"
           maxLength={API_KEY_NAME_MAX_LENGTH}
           required
-          disabled={isPending}
+          disabled={isDisabled}
         />
       </div>
-      <Button type="submit" disabled={isPending || !name.trim()}>
+      <Button type="submit" disabled={isDisabled || !name.trim()}>
         {isPending ? 'Generating…' : 'Generate'}
       </Button>
     </form>
