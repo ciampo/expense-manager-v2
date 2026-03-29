@@ -389,13 +389,13 @@ describe('Bulk upload page', () => {
       expect(screen.getByRole('button', { name: 'Upload more' })).toBeDefined()
     })
 
-    it('shows "View drafts" link after successful uploads', async () => {
+    it('shows dashboard link after successful uploads', async () => {
       render(<UploadPage />)
 
       dropFiles(getDropzone(), [createValidFile()])
 
       await waitFor(() => {
-        expect(screen.getByText('View drafts')).toBeDefined()
+        expect(screen.getByText('Go to dashboard')).toBeDefined()
       })
     })
   })

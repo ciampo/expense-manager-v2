@@ -372,7 +372,7 @@ function UploadPage() {
                 <div className="flex gap-3">
                   {doneCount > 0 && (
                     <Button render={<Link to="/dashboard" />} size="sm">
-                      View drafts
+                      Go to dashboard
                     </Button>
                   )}
                   <Button variant="outline" size="sm" onClick={handleReset}>
