@@ -260,6 +260,9 @@ function UploadPage() {
   }, [items, processFile])
 
   // ── Retry handler ────────────────────────────────────────────────────
+  // Safe under rapid double-click: the functional updater serializes both
+  // calls. The second sees the already-queued item and re-validates (a
+  // no-op), so the orchestrator picks it up exactly once.
 
   const handleRetry = useCallback((id: string) => {
     setItems((prev) =>

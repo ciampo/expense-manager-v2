@@ -100,6 +100,10 @@ function createValidFile(name = 'receipt.jpg'): File {
   return createFile(name, 1024, 'image/jpeg')
 }
 
+// Uses a plain File[] instead of a real FileList (which has no public
+// constructor in JSDOM). This is acceptable because the component
+// immediately calls Array.from(files) and never uses FileList-specific
+// APIs like .item().
 function dropFiles(dropzone: HTMLElement, files: File[]) {
   const dataTransfer = {
     files,
