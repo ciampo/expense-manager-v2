@@ -234,6 +234,11 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       }
       if (!file) return
 
+      if (file.size === 0) {
+        toast.error('File is empty')
+        return
+      }
+
       if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
         toast.error('Unsupported file type. Use images or PDF.')
         return
