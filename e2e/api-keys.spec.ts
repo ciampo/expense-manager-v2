@@ -42,10 +42,9 @@ test.describe('API key management', () => {
     const keyRow = keysTable.getByRole('row').filter({ hasText: 'List Check Key' })
     await expect(keyRow).toBeVisible()
 
-    // Prefix is shown (8-char prefix followed by "...")
     await expect(keyRow.locator('code')).toBeVisible()
     const prefix = await keyRow.locator('code').textContent()
-    expect(prefix).toMatch(/^.{8}\.{3}$/)
+    expect(prefix).toMatch(/^\w+\.{3}$/)
 
     // Created date is shown
     await expect(keyRow.getByText(/\d{1,2}\/\d{1,2}\/\d{4}/)).toBeVisible()

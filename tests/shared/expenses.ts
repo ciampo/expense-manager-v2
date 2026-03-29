@@ -164,7 +164,7 @@ export async function uploadReceipts(page: Page, count: number = 1): Promise<voi
   const fileInput = page.getByLabel(/upload receipt files/i)
   await fileInput.setInputFiles(files)
 
-  await expect(page.getByText(/draft.? created/i)).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText(/drafts? created/i)).toBeVisible({ timeout: 30_000 })
 }
 
 /**
@@ -179,10 +179,11 @@ export async function switchDashboardTab(
 }
 
 /**
- * Complete a draft expense from the dashboard Drafts tab.
+ * Fill and submit the draft completion form.
  *
- * Clicks "Complete" on the first (or specified) draft row, fills required
- * fields, and submits. Waits for the redirect back to the dashboard.
+ * Assumes the page is already on the expense edit page (the caller has
+ * navigated there). Fills required fields and clicks "Save as complete".
+ * Waits for the redirect back to the dashboard.
  */
 export async function completeDraft(
   page: Page,
