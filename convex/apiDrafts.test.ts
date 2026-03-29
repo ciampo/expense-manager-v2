@@ -3,37 +3,14 @@ import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 import rateLimiterTesting from '@convex-dev/rate-limiter/test'
 import schema from './schema'
-import { setupAuthenticatedUser } from './testHelpers'
+import { setupAuthenticatedUser, setupApiKey } from './testHelpers'
 import type { TestCtx } from './testHelpers'
+import { MAX_FILE_SIZE } from './uploadLimits'
 
 const modules = import.meta.glob('./**/*.ts')
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
-
-async function sha256Hex(data: string): Promise<string> {
-  const encoded = new TextEncoder().encode(data)
-  const digest = await crypto.subtle.digest('SHA-256', encoded)
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-}
-
-const TEST_RAW_KEY = 'em_' + 'a'.repeat(64)
-
-async function setupApiKey(t: TestCtx, userId: string) {
-  const hashedKey = await sha256Hex(TEST_RAW_KEY)
-  await t.run(async (ctx) => {
-    await ctx.db.insert('apiKeys', {
-      userId: userId as never,
-      hashedKey,
-      prefix: TEST_RAW_KEY.slice(0, 8),
-      name: 'Test Key',
-      createdAt: Date.now(),
-    })
-  })
-  return TEST_RAW_KEY
-}
 
 function makeFile(name: string, type = 'image/jpeg', sizeBytes = 100): File {
   return new File([new Uint8Array(sizeBytes)], name, { type })
@@ -121,7 +98,6 @@ describe('POST /api/v1/drafts — auth', () => {
 
     const rawKey = await setupApiKey(t, userId)
 
-    // Revoke the key by deleting it
     await t.run(async (ctx) => {
       const keys = await ctx.db.query('apiKeys').collect()
       for (const key of keys) {
@@ -202,12 +178,31 @@ describe('POST /api/v1/drafts — file validation', () => {
       rawKey,
       body: buildFormData([file]),
     })
-    expect(response.status).toBe(200) // partial success — all files in errors
+    expect(response.status).toBe(200)
     const json = await response.json()
     expect(json.created).toHaveLength(0)
     expect(json.errors).toHaveLength(1)
     expect(json.errors[0].filename).toBe('document.txt')
     expect(json.errors[0].error).toMatch(/unsupported file type/i)
+  })
+
+  it('rejects files exceeding max size', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { userId } = await setupAuthenticatedUser(t)
+    const rawKey = await setupApiKey(t, userId)
+
+    const oversizedFile = makeFile('huge.jpg', 'image/jpeg', MAX_FILE_SIZE + 1)
+    const response = await fetchDrafts(t, {
+      rawKey,
+      body: buildFormData([oversizedFile]),
+    })
+    expect(response.status).toBe(200)
+    const json = await response.json()
+    expect(json.created).toHaveLength(0)
+    expect(json.errors).toHaveLength(1)
+    expect(json.errors[0].filename).toBe('huge.jpg')
+    expect(json.errors[0].error).toMatch(/exceeds maximum size/i)
   })
 
   it('returns mixed results when some files are valid and others are not', async () => {
@@ -328,13 +323,12 @@ describe('POST /api/v1/drafts — draft creation', () => {
 // ── Rate limiting ───────────────────────────────────────────────────────
 
 describe('POST /api/v1/drafts — rate limiting', () => {
-  it('returns 429 after exceeding rate limit', async () => {
+  it('returns 429 with Retry-After header after exceeding rate limit', async () => {
     const t = convexTest(schema, modules)
     registerRateLimiter(t)
     const { userId } = await setupAuthenticatedUser(t)
     const rawKey = await setupApiKey(t, userId)
 
-    // Token bucket: 5 requests/min — exhaust the bucket
     for (let i = 0; i < 5; i++) {
       const res = await fetchDrafts(t, {
         rawKey,
@@ -343,7 +337,6 @@ describe('POST /api/v1/drafts — rate limiting', () => {
       expect(res.status).not.toBe(429)
     }
 
-    // 6th request should be rate-limited
     const response = await fetchDrafts(t, {
       rawKey,
       body: buildFormData([makeFile('one-too-many.jpg')]),
@@ -351,5 +344,6 @@ describe('POST /api/v1/drafts — rate limiting', () => {
     expect(response.status).toBe(429)
     const json = await response.json()
     expect(json.error).toMatch(/rate limit/i)
+    expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0)
   })
 })

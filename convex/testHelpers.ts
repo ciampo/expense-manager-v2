@@ -166,3 +166,33 @@ export async function setupUploadRecord(
     })
   })
 }
+
+// ── API key helpers ─────────────────────────────────────────────────────
+
+export async function sha256Hex(data: string): Promise<string> {
+  const encoded = new TextEncoder().encode(data)
+  const digest = await crypto.subtle.digest('SHA-256', encoded)
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+const DEFAULT_TEST_RAW_KEY = 'em_' + 'a'.repeat(64)
+
+/**
+ * Insert an API key record for direct DB-level test setup.
+ * Returns the raw key string for use in `Authorization: Bearer` headers.
+ */
+export async function setupApiKey(t: TestCtx, userId: Id<'users'>, rawKey = DEFAULT_TEST_RAW_KEY) {
+  const hashedKey = await sha256Hex(rawKey)
+  await t.run(async (ctx) => {
+    await ctx.db.insert('apiKeys', {
+      userId,
+      hashedKey,
+      prefix: rawKey.slice(0, 8),
+      name: 'Test Key',
+      createdAt: Date.now(),
+    })
+  })
+  return rawKey
+}
