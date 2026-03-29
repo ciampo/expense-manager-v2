@@ -299,7 +299,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
   }
 
   async function handleSaveDraft() {
-    if (!expense || updateDraft.isPending) return
+    if (!expense || updateDraft.isPending || completeDraft.isPending) return
 
     const values = form.state.values
 
@@ -330,7 +330,7 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
       merchant?: string | null
       amount?: number | null
       categoryId?: Id<'categories'> | null
-      newCategoryName?: string | null
+      newCategoryName?: string
       comment?: string | null
       attachmentId?: Id<'_storage'>
     } = { id: expense._id }

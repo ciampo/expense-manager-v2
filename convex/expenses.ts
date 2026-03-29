@@ -384,7 +384,7 @@ export const updateDraft = mutation({
     merchant: v.optional(v.union(v.string(), v.null())),
     amount: v.optional(v.union(v.number(), v.null())),
     categoryId: v.optional(v.union(v.id('categories'), v.null())),
-    newCategoryName: v.optional(v.union(v.string(), v.null())),
+    newCategoryName: v.optional(v.string()),
     attachmentId: v.optional(v.id('_storage')),
     comment: v.optional(v.union(v.string(), v.null())),
   },
