@@ -6,10 +6,14 @@ import { rateLimiter, formatRetryDelay } from './rateLimits'
 
 const MAX_FILES_PER_REQUEST = 5
 
-function jsonResponse(body: unknown, status: number): Response {
+function jsonResponse(
+  body: unknown,
+  status: number,
+  extraHeaders?: Record<string, string>,
+): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
   })
 }
 
@@ -43,6 +47,7 @@ export const bulkCreateDrafts = httpAction(async (ctx, request) => {
     return jsonResponse(
       { error: `Rate limit exceeded. Try again in ${formatRetryDelay(retryAfter)}.` },
       429,
+      { 'Retry-After': String(Math.ceil(retryAfter / 1000)) },
     )
   }
 
@@ -93,8 +98,12 @@ export const bulkCreateDrafts = httpAction(async (ctx, request) => {
       continue
     }
 
-    const storageId = await ctx.storage.store(file)
-    validStorageIds.push({ storageId, filename })
+    try {
+      const storageId = await ctx.storage.store(file)
+      validStorageIds.push({ storageId, filename })
+    } catch {
+      errors.push({ filename, error: 'Failed to store file' })
+    }
   }
 
   // ── Create drafts ────────────────────────────────────────────────────
@@ -107,7 +116,7 @@ export const bulkCreateDrafts = httpAction(async (ctx, request) => {
     userId,
   })
 
-  const created = expenseIds.map((id: string, i: number) => ({
+  const created = expenseIds.map((id, i) => ({
     id,
     filename: validStorageIds[i].filename,
   }))
