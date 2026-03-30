@@ -7,7 +7,7 @@ export default defineSchema({
 
   expenses: defineTable({
     userId: v.id('users'),
-    isDraft: v.optional(v.boolean()), // undefined treated as false after backfill
+    isDraft: v.optional(v.boolean()), // always set explicitly; optional only for legacy compat
     date: v.optional(v.string()), // ISO date string (YYYY-MM-DD)
     merchant: v.optional(v.string()), // Merchant name (autocomplete from existing)
     amount: v.optional(v.number()), // EUR cents (e.g., 1250 = €12.50)
