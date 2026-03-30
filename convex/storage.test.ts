@@ -6,8 +6,8 @@ import schema from './schema'
 import type { Id } from './_generated/dataModel'
 import { ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE } from './uploadLimits'
 import { validateFileMetadata } from './storage'
+import rateLimiterTesting from '@convex-dev/rate-limiter/test'
 import {
-  registerRateLimiter,
   setupAuthenticatedUser,
   setupCategory,
   setupStorageFile,
@@ -15,6 +15,9 @@ import {
   insertExpense,
   type TestCtx,
 } from './testHelpers'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
 
 const modules = import.meta.glob('./**/*.ts')
 

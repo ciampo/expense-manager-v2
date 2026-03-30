@@ -3,11 +3,15 @@ import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { fetchApi, registerRateLimiter, setupAuthenticatedUser, setupApiKey } from './testHelpers'
+import rateLimiterTesting from '@convex-dev/rate-limiter/test'
+import { fetchApi, setupAuthenticatedUser, setupApiKey } from './testHelpers'
 import type { TestCtx } from './testHelpers'
 import { MAX_FILE_SIZE } from './uploadLimits'
 
 const modules = import.meta.glob('./**/*.ts')
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
 
 function makeFile(name: string, type = 'image/jpeg', sizeBytes = 100): File {
   return new File([new Uint8Array(sizeBytes)], name, { type })

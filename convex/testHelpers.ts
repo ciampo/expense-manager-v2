@@ -1,12 +1,8 @@
 import type { TestConvex } from 'convex-test'
-import rateLimiterTesting from '@convex-dev/rate-limiter/test'
 import type { Id } from './_generated/dataModel'
 import type schema from './schema'
 
 export type TestCtx = TestConvex<typeof schema>
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
 
 /**
  * Issue an HTTP request against a Convex HTTP action route.

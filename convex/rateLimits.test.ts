@@ -3,7 +3,11 @@ import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { registerRateLimiter } from './testHelpers'
+import rateLimiterTesting from '@convex-dev/rate-limiter/test'
+import type { TestCtx } from './testHelpers'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
 
 const modules = import.meta.glob('./**/*.ts')
 
