@@ -37,7 +37,7 @@ jobs:
           git config --global user.email "${{ env.AUTHOR_EMAIL }}"
           git config --global --add safe.directory $GITHUB_WORKSPACE
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
