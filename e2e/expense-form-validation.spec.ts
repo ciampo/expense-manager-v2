@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
 import { signUpTestUser } from '../tests/shared/auth'
-
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+import { runAxeAudit } from '../tests/shared/a11y'
 
 test.describe('Expense form validation', () => {
   test.setTimeout(60_000)
@@ -84,7 +82,7 @@ test.describe('Expense form validation', () => {
     await page.getByRole('button', { name: /create expense/i }).click()
     await expect(page.getByText('Merchant name is required.')).toBeVisible()
 
-    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
+    const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
   })
 })

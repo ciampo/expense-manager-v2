@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
 import { waitForHydration } from '../tests/shared/page-readiness'
-
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+import { runAxeAudit } from '../tests/shared/a11y'
 
 test.describe('Sign-up form validation', () => {
   test.beforeEach(async ({ page }) => {
@@ -97,7 +95,7 @@ test.describe('Sign-up form validation', () => {
     await page.getByRole('button', { name: 'Sign Up' }).click()
     await expect(page.getByText('Email is required.')).toBeVisible()
 
-    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
+    const results = await runAxeAudit(page)
     expect(results.violations).toEqual([])
   })
 })
