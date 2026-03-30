@@ -84,7 +84,7 @@ test.describe('Settings page', () => {
       .getByRole('table', { name: /expenses/i })
       .getByRole('row')
       .filter({ hasText: 'Ephemeral Merchant' })
-    await expenseRow.getByRole('button', { name: 'Delete' }).click()
+    await expenseRow.getByRole('button', { name: /delete.*expense/i }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
     await expect(page.getByText('Expense deleted')).toBeVisible()
 

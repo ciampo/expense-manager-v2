@@ -6,6 +6,7 @@ import {
   uploadReceipts,
   switchDashboardTab,
   completeDraft,
+  selectCalendarDay,
 } from '../tests/shared/expenses'
 
 test.describe('Reports exclude draft expenses', () => {
@@ -31,13 +32,17 @@ test.describe('Reports exclude draft expenses', () => {
       .click()
     await page.waitForURL(/\/expenses\//)
 
-    // Partially fill the draft (set date + amount) and save as draft
+    // Partially fill the draft (set date + amount) and save as draft.
+    // The date is required so the draft falls within the same month as
+    // the real expense — without it, the draft would never appear in the
+    // date-range query regardless of the isDraft filter.
     await page.getByRole('button', { name: /save as complete/i }).waitFor()
+    await selectCalendarDay(page, 10)
     await page.getByLabel(/amount/i).fill('99,00')
     await page.getByRole('button', { name: /save draft/i }).click()
-    await page.waitForURL('**/dashboard', { timeout: 15_000 })
+    await expect(page.getByText('Draft saved')).toBeVisible({ timeout: 15_000 })
+    await page.waitForURL('**/dashboard')
 
-    // Reports should only reflect the real expense (€50.00)
     await page.goto('/reports')
     await page.getByText('Total expenses').waitFor()
 

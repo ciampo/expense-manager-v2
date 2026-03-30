@@ -1,44 +1,29 @@
 import { test, expect } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
+import { createExpense } from '../tests/shared/expenses'
 
 test.describe('Expense CRUD', () => {
-  test.setTimeout(60000)
+  test.setTimeout(60_000)
 
-  test('create, edit, and delete an expense', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await signUpTestUser(page)
+  })
 
-    // --- CREATE ---
+  test('creates an expense and displays it on the dashboard', async ({ page }) => {
+    await createExpense(page, 'Test Merchant', '25,50')
 
-    await page.getByRole('link', { name: /new expense/i }).click()
-    await page.waitForURL('**/expenses/new')
-    await page.getByRole('button', { name: /create expense/i }).waitFor()
-
-    // Merchant
-    await page.getByRole('combobox', { name: /merchant/i }).click()
-    await page.getByPlaceholder(/search or create/i).fill('Test Merchant')
-    await page.getByRole('option', { name: '+ Use "Test Merchant"', exact: true }).click()
-
-    // Wait for the merchant popover to fully unmount (exit animation)
-    // before opening the category popover.
-    await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
-
-    // Category — pick the first predefined one
-    await page.getByRole('combobox', { name: /category/i }).click()
-    await page.getByRole('option', { name: /coworking/i }).click()
-
-    // Amount
-    await page.getByLabel(/amount/i).fill('25,50')
-
-    // Submit
-    await page.getByRole('button', { name: /create expense/i }).click()
-
-    await page.waitForURL('**/dashboard', { timeout: 15000 })
     await expect(page.getByText('Test Merchant')).toBeVisible()
     await expect(page.getByText('€25.50')).toBeVisible()
+  })
 
-    // --- EDIT ---
+  test('edits an expense amount and reflects the change', async ({ page }) => {
+    await createExpense(page, 'Edit Target', '25,50')
 
-    await page.getByRole('link', { name: /edit/i }).first().click()
+    await page
+      .getByRole('table', { name: /expenses/i })
+      .getByRole('link', { name: /edit.*expense/i })
+      .first()
+      .click()
     await page.waitForURL(/\/expenses\//)
     await page.getByRole('button', { name: /save changes/i }).waitFor()
 
@@ -47,18 +32,24 @@ test.describe('Expense CRUD', () => {
     await amountInput.fill('50,00')
 
     await page.getByRole('button', { name: /save changes/i }).click()
-    await page.waitForURL('**/dashboard', { timeout: 15000 })
+    await page.waitForURL('**/dashboard', { timeout: 15_000 })
 
-    await expect(page.getByText('Test Merchant')).toBeVisible()
+    await expect(page.getByText('Edit Target')).toBeVisible()
     await expect(page.getByText('€50.00')).toBeVisible()
+  })
 
-    // --- DELETE ---
+  test('deletes an expense and shows empty state', async ({ page }) => {
+    await createExpense(page, 'Delete Target', '10,00')
 
-    await page.getByRole('button', { name: 'Delete' }).first().click()
-
+    const table = page.getByRole('table', { name: /expenses/i })
+    await table
+      .getByRole('button', { name: /delete.*expense/i })
+      .first()
+      .click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
 
-    await expect(page.getByText('Test Merchant')).not.toBeVisible()
+    await expect(page.getByText('Expense deleted')).toBeVisible()
+    await expect(page.getByText('Delete Target')).not.toBeVisible()
     await expect(page.getByText(/haven't recorded any expenses/i)).toBeVisible()
   })
 })

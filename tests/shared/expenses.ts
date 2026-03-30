@@ -14,7 +14,7 @@ function escapeRegExp(value: string): string {
  * decides whether to show the create action. The helper just types,
  * waits for options, and clicks the right one.
  */
-async function selectComboboxOption(
+export async function selectComboboxOption(
   page: Page,
   comboboxName: RegExp,
   value: string,
@@ -38,7 +38,7 @@ async function selectComboboxOption(
  * Open the date picker and select a specific day in the currently-displayed
  * month. If the day is already selected the picker is closed without changes.
  */
-async function selectCalendarDay(page: Page, day: number): Promise<void> {
+export async function selectCalendarDay(page: Page, day: number): Promise<void> {
   await page.locator('#date-picker').click()
   const calendar = page.locator('[data-slot="calendar"]')
   await calendar.waitFor()

@@ -1,21 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
-import { createExpense } from '../tests/shared/expenses'
-
-/**
- * Select a merchant in an open combobox. Handles both new merchants
- * (the "+ Use" CommandItem) and existing ones — both render as
- * role="option", and the merchant name appears in the accessible name
- * of either variant, so a single locator covers both paths.
- */
-async function selectMerchant(page: Page, merchantName: string) {
-  await page.getByRole('combobox', { name: /merchant/i }).click()
-  const input = page.getByPlaceholder('Search or create...')
-  await expect(input).toBeVisible()
-  await input.fill(merchantName)
-
-  await page.getByRole('option', { name: merchantName }).first().click()
-}
+import { createExpense, selectComboboxOption } from '../tests/shared/expenses'
 
 async function openMerchantCombobox(page: Page) {
   await page.goto('/expenses/new')
@@ -81,7 +66,7 @@ test.describe('Merchant Autocomplete', () => {
     // Wait for the expense data to populate the merchant combobox
     await expect(page.getByRole('combobox', { name: /merchant/i })).toHaveText('Alpha Market')
 
-    await selectMerchant(page, 'Beta Deli')
+    await selectComboboxOption(page, /merchant/i, 'Beta Deli')
 
     await page.getByRole('button', { name: /save changes/i }).click()
     await page.waitForURL('**/dashboard', { timeout: 15_000 })

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
+import { createExpense } from '../tests/shared/expenses'
 
 test.describe('Expense form — combobox UX', () => {
   test.setTimeout(45000)
@@ -32,20 +33,8 @@ test.describe('Expense form — combobox UX', () => {
     test('"+ Use" option does not appear when input exactly matches an existing merchant', async ({
       page,
     }) => {
-      // First, create an expense so we have a known merchant
-      await page.getByRole('combobox', { name: /merchant/i }).click()
-      await page.getByPlaceholder(/search or create/i).fill('TestMerchant')
-      await page.getByRole('option', { name: '+ Use "TestMerchant"', exact: true }).click()
-      await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
+      await createExpense(page, 'TestMerchant', '10,00')
 
-      // Fill out remaining required fields and submit
-      await page.getByRole('combobox', { name: /category/i }).click()
-      await page.getByRole('option', { name: /coworking/i }).click()
-      await page.getByLabel(/amount/i).fill('10,00')
-      await page.getByRole('button', { name: /create expense/i }).click()
-      await page.waitForURL('**/dashboard', { timeout: 15000 })
-
-      // Navigate to new expense — "TestMerchant" should now be listed
       await page.goto('/expenses/new')
       await page.getByRole('button', { name: /create expense/i }).waitFor()
 
@@ -143,29 +132,8 @@ test.describe('Expense form — combobox UX', () => {
     })
 
     test('deferred category is created on form submission', async ({ page }) => {
-      // Set up merchant
-      await page.getByRole('combobox', { name: /merchant/i }).click()
-      await page.getByPlaceholder(/search or create/i).fill('SomeShop')
-      await page.getByRole('option', { name: '+ Use "SomeShop"', exact: true }).click()
+      await createExpense(page, 'SomeShop', '25,00', { category: 'Brand New Cat' })
 
-      // Wait for the merchant popover content to fully unmount (exit animation)
-      // before opening the next popover — avoids two "Search or create..." inputs
-      // coexisting in the DOM (strict mode violation).
-      await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
-
-      // Choose a new category via "+ Use"
-      await page.getByRole('combobox', { name: /category/i }).click()
-      await page.getByPlaceholder(/search or create/i).fill('Brand New Cat')
-      await page.getByRole('option', { name: '+ Use "Brand New Cat"', exact: true }).click()
-
-      // Fill amount
-      await page.getByLabel(/amount/i).fill('25,00')
-
-      // Submit the form
-      await page.getByRole('button', { name: /create expense/i }).click()
-      await page.waitForURL('**/dashboard', { timeout: 15000 })
-
-      // Navigate to a new expense form — the category should now exist
       await page.goto('/expenses/new')
       await page.getByRole('button', { name: /create expense/i }).waitFor()
 

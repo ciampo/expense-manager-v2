@@ -1,21 +1,9 @@
 import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
+import { createExpense } from '../tests/shared/expenses'
 
 async function createExpenseAndNavigateToEdit(page: Page) {
-  await page.goto('/expenses/new')
-  await page.getByRole('button', { name: /create expense/i }).waitFor()
-
-  await page.getByRole('combobox', { name: /merchant/i }).click()
-  await page.getByPlaceholder(/search or create/i).fill('Guard Test')
-  await page.getByRole('option', { name: '+ Use "Guard Test"', exact: true }).click()
-  await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
-
-  await page.getByRole('combobox', { name: /category/i }).click()
-  await page.getByRole('option').first().click()
-
-  await page.getByLabel(/amount/i).fill('10')
-  await page.getByRole('button', { name: /create expense/i }).click()
-  await page.waitForURL('**/dashboard', { timeout: 15_000 })
+  await createExpense(page, 'Guard Test', '10,00')
 
   await page.getByRole('link', { name: /edit/i }).first().click()
   await page.waitForURL(/\/expenses\//)

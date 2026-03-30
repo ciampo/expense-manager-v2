@@ -33,7 +33,7 @@ test.describe('Dashboard pagination', () => {
 
     // Delete the only item on page 2.
     await page
-      .getByRole('button', { name: /delete/i })
+      .getByRole('button', { name: /delete.*expense/i })
       .first()
       .click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
