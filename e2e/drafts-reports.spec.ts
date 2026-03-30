@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
 import { CSV_HEADER, parseCsvLines } from '../tests/shared/csv'
 import {
-  createExpense,
+  createExpenseWithAttachment,
   uploadReceipts,
   switchDashboardTab,
   completeDraft,
@@ -15,8 +15,9 @@ test.describe('Reports exclude draft expenses', () => {
   test('draft with date does not appear in report totals or CSV', async ({ page }) => {
     await signUpTestUser(page)
 
-    // Create a real expense so the Reports page has data for this month
-    await createExpense(page, 'Real Shop', '50,00', { day: 10 })
+    // Create a real expense with attachment so Reports has data and a
+    // downloadable attachment for this month.
+    await createExpenseWithAttachment(page, 'Real Shop', '50,00', { day: 10 })
 
     // Upload a receipt to create a draft, then give it a date via "Save draft"
     await uploadReceipts(page, 1)
@@ -62,6 +63,15 @@ test.describe('Reports exclude draft expenses', () => {
     // Only 3 lines: month title, header, one data row
     expect(lines).toHaveLength(3)
     expect(lines[2]).toContain('50.00')
+
+    // Attachments card should count only the real expense's attachment (not the draft's).
+    // The draft was created via uploadReceipts, which stores the receipt as an attachment,
+    // so this verifies the monthlyAttachments query excludes draft attachments.
+    const attachmentsCard = page.locator('[data-slot="card"]').filter({ hasText: /Attachments/ })
+    await expect(attachmentsCard.getByText('1', { exact: true })).toBeVisible()
+
+    const zipButton = page.getByRole('button', { name: /download attachments/i })
+    await expect(zipButton).toBeEnabled()
   })
 
   test('completing a draft makes it appear in report totals', async ({ page }) => {
