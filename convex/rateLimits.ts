@@ -23,6 +23,8 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   fileUpload: { kind: 'token bucket', rate: 10, period: MINUTE },
   // API keys: prevent mass key creation
   apiKeyCreate: { kind: 'fixed window', rate: 10, period: HOUR },
+  // REST API: prevent bulk draft upload abuse (keyed by userId)
+  apiDraftUpload: { kind: 'token bucket', rate: 5, period: MINUTE },
 })
 
 /**
