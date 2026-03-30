@@ -337,11 +337,13 @@ present and promotes the draft to a full expense (`isDraft: false`).
 The regular `update` mutation rejects drafts to enforce the two-phase
 contract.
 
-**Schema migration:** The `isDraft` field is `v.optional()` so existing
-expenses don't require an immediate backfill. A `postDeploy` migration
-(`backfillExpensesDraft` in `seed.ts`) sets `isDraft: false` on legacy
-rows. The `by_user_and_draft_and_date` index enables efficient filtered
-queries (drafts only, completed only, or all).
+**Schema migration:** The `isDraft` field is `v.optional()` for backward
+compatibility, but is always set explicitly on all insert paths (`false`
+for complete expenses, `true` for drafts). The `backfillExpensesDraft`
+migration in `seed.ts` (run via `postDeploy`) set `isDraft: false` on
+all pre-existing legacy rows. Report queries use `eq('isDraft', false)`
+at the index level via `by_user_and_draft_and_date`, so any expense
+without `isDraft` explicitly set would be excluded from reports.
 
 **At scale:** If draft-specific metadata grows (e.g. OCR processing
 status, AI extraction confidence), consider a separate `draftMetadata`
