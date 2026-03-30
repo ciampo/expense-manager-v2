@@ -1,12 +1,6 @@
-import { test, expect, type Page } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
+import { test, expect } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
-
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
-
-async function runAxeAudit(page: Page) {
-  return new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
-}
+import { runAxeAudit } from '../tests/shared/a11y'
 
 // ── Public pages ──────────────────────────────────────────────
 

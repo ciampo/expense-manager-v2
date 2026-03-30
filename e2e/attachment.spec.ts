@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { signUpTestUser } from '../tests/shared/auth'
+import { selectComboboxOption } from '../tests/shared/expenses'
 import { TEST_PNG_BASE64, TEST_PDF } from '../tests/shared/fixtures'
 
 async function navigateToNewExpense(page: Page) {
@@ -9,10 +10,7 @@ async function navigateToNewExpense(page: Page) {
 }
 
 async function fillExpenseForm(page: Page, merchant: string) {
-  await page.getByRole('combobox', { name: /merchant/i }).click()
-  await page.getByPlaceholder(/search or create/i).fill(merchant)
-  await page.getByRole('option', { name: `+ Use "${merchant}"`, exact: true }).click()
-  await expect(page.getByPlaceholder(/search or create/i)).toHaveCount(0)
+  await selectComboboxOption(page, /merchant/i, merchant)
 
   await page.getByRole('combobox', { name: /category/i }).click()
   await page.getByRole('option', { name: /coworking/i }).click()
