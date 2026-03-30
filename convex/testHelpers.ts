@@ -1,8 +1,25 @@
 import type { TestConvex } from 'convex-test'
+import rateLimiterTesting from '@convex-dev/rate-limiter/test'
 import type { Id } from './_generated/dataModel'
 import type schema from './schema'
 
 export type TestCtx = TestConvex<typeof schema>
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
+
+/**
+ * Issue an HTTP request against a Convex HTTP action route.
+ *
+ * `convex-test` exposes a `fetch` method at runtime for HTTP action testing,
+ * but the `TestConvex` type doesn't include it — hence the cast.
+ */
+export function fetchApi(t: TestCtx, path: string, init: RequestInit): Promise<Response> {
+  return (t as never as { fetch: (p: string, i: RequestInit) => Promise<Response> }).fetch(
+    path,
+    init,
+  )
+}
 
 /**
  * Create an authenticated test context.

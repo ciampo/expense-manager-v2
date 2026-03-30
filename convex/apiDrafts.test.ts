@@ -1,16 +1,13 @@
 // @vitest-environment edge-runtime
 import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
-import rateLimiterTesting from '@convex-dev/rate-limiter/test'
+import { api } from './_generated/api'
 import schema from './schema'
-import { setupAuthenticatedUser, setupApiKey } from './testHelpers'
+import { fetchApi, registerRateLimiter, setupAuthenticatedUser, setupApiKey } from './testHelpers'
 import type { TestCtx } from './testHelpers'
 import { MAX_FILE_SIZE } from './uploadLimits'
 
 const modules = import.meta.glob('./**/*.ts')
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const registerRateLimiter = (t: TestCtx) => rateLimiterTesting.register(t as any)
 
 function makeFile(name: string, type = 'image/jpeg', sizeBytes = 100): File {
   return new File([new Uint8Array(sizeBytes)], name, { type })
@@ -24,7 +21,7 @@ function buildFormData(files: File[]): FormData {
   return fd
 }
 
-async function fetchDrafts(
+function fetchDrafts(
   t: TestCtx,
   options: { rawKey?: string; body?: FormData | string; headers?: Record<string, string> } = {},
 ) {
@@ -32,9 +29,7 @@ async function fetchDrafts(
   if (options.rawKey) {
     headers['Authorization'] = `Bearer ${options.rawKey}`
   }
-  return await (
-    t as never as { fetch: (path: string, init: RequestInit) => Promise<Response> }
-  ).fetch('/api/v1/drafts', {
+  return fetchApi(t, '/api/v1/drafts', {
     method: 'POST',
     headers,
     body: options.body,
@@ -71,6 +66,8 @@ describe('POST /api/v1/drafts — auth', () => {
     })
     expect(response.status).toBe(401)
     expectJsonContentType(response)
+    const json = await response.json()
+    expect(json.error).toMatch(/authorization/i)
   })
 
   it('returns 401 for an invalid API key', async () => {
@@ -97,21 +94,19 @@ describe('POST /api/v1/drafts — auth', () => {
     })
     expect(response.status).toBe(401)
     expectJsonContentType(response)
+    const json = await response.json()
+    expect(json.error).toMatch(/invalid api key/i)
   })
 
   it('returns 401 for a revoked API key', async () => {
     const t = convexTest(schema, modules)
     registerRateLimiter(t)
-    const { userId } = await setupAuthenticatedUser(t)
+    const { userId, asUser } = await setupAuthenticatedUser(t)
 
     const rawKey = await setupApiKey(t, userId)
 
-    await t.run(async (ctx) => {
-      const keys = await ctx.db.query('apiKeys').collect()
-      for (const key of keys) {
-        await ctx.db.delete('apiKeys', key._id)
-      }
-    })
+    const keys = await asUser.query(api.apiKeys.list, {})
+    await asUser.mutation(api.apiKeys.revoke, { id: keys[0]._id })
 
     const response = await fetchDrafts(t, {
       rawKey,
@@ -119,6 +114,8 @@ describe('POST /api/v1/drafts — auth', () => {
     })
     expect(response.status).toBe(401)
     expectJsonContentType(response)
+    const json = await response.json()
+    expect(json.error).toMatch(/invalid api key/i)
   })
 })
 
@@ -295,6 +292,50 @@ describe('POST /api/v1/drafts — file validation', () => {
     expect(expenses[0].isDraft).toBe(true)
     const uploads = await t.run(async (ctx) => ctx.db.query('uploads').collect())
     expect(uploads).toHaveLength(1)
+  })
+})
+
+describe('POST /api/v1/drafts — status code contract', () => {
+  it('returns 200 (not 201) when all files fail validation', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { userId } = await setupAuthenticatedUser(t)
+    const rawKey = await setupApiKey(t, userId)
+
+    const files = [
+      new File([new Uint8Array(100)], 'a.txt', { type: 'text/plain' }),
+      new File([new Uint8Array(100)], 'b.zip', { type: 'application/zip' }),
+    ]
+    const response = await fetchDrafts(t, {
+      rawKey,
+      body: buildFormData(files),
+    })
+    expect(response.status).toBe(200)
+    expectJsonContentType(response)
+    const json = await response.json()
+    expect(json.created).toHaveLength(0)
+    expect(json.errors).toHaveLength(2)
+  })
+
+  it('returns 201 when at least one file succeeds (even if others fail)', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { userId } = await setupAuthenticatedUser(t)
+    const rawKey = await setupApiKey(t, userId)
+
+    const files = [
+      makeFile('good.jpg', 'image/jpeg'),
+      new File([new Uint8Array(100)], 'bad.txt', { type: 'text/plain' }),
+    ]
+    const response = await fetchDrafts(t, {
+      rawKey,
+      body: buildFormData(files),
+    })
+    expect(response.status).toBe(201)
+    expectJsonContentType(response)
+    const json = await response.json()
+    expect(json.created).toHaveLength(1)
+    expect(json.errors).toHaveLength(1)
   })
 })
 
