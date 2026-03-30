@@ -41,6 +41,10 @@ async function fetchDrafts(
   })
 }
 
+function expectJsonContentType(response: Response) {
+  expect(response.headers.get('Content-Type')).toBe('application/json')
+}
+
 // ── Auth ────────────────────────────────────────────────────────────────
 
 describe('POST /api/v1/drafts — auth', () => {
@@ -52,6 +56,7 @@ describe('POST /api/v1/drafts — auth', () => {
       body: buildFormData([makeFile('receipt.jpg')]),
     })
     expect(response.status).toBe(401)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.error).toMatch(/authorization/i)
   })
@@ -65,6 +70,7 @@ describe('POST /api/v1/drafts — auth', () => {
       body: buildFormData([makeFile('receipt.jpg')]),
     })
     expect(response.status).toBe(401)
+    expectJsonContentType(response)
   })
 
   it('returns 401 for an invalid API key', async () => {
@@ -76,6 +82,7 @@ describe('POST /api/v1/drafts — auth', () => {
       body: buildFormData([makeFile('receipt.jpg')]),
     })
     expect(response.status).toBe(401)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.error).toMatch(/invalid api key/i)
   })
@@ -89,6 +96,7 @@ describe('POST /api/v1/drafts — auth', () => {
       body: buildFormData([makeFile('receipt.jpg')]),
     })
     expect(response.status).toBe(401)
+    expectJsonContentType(response)
   })
 
   it('returns 401 for a revoked API key', async () => {
@@ -110,6 +118,7 @@ describe('POST /api/v1/drafts — auth', () => {
       body: buildFormData([makeFile('receipt.jpg')]),
     })
     expect(response.status).toBe(401)
+    expectJsonContentType(response)
   })
 })
 
@@ -128,8 +137,26 @@ describe('POST /api/v1/drafts — request validation', () => {
       body: JSON.stringify({ files: [] }),
     })
     expect(response.status).toBe(400)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.error).toMatch(/multipart/i)
+  })
+
+  it('returns 400 when form data contains only text fields (no files)', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { userId } = await setupAuthenticatedUser(t)
+    const rawKey = await setupApiKey(t, userId)
+
+    const fd = new FormData()
+    fd.append('name', 'not-a-file')
+    fd.append('description', 'also not a file')
+
+    const response = await fetchDrafts(t, { rawKey, body: fd })
+    expect(response.status).toBe(400)
+    expectJsonContentType(response)
+    const json = await response.json()
+    expect(json.error).toMatch(/no files/i)
   })
 
   it('returns 400 when no files are in the request', async () => {
@@ -143,6 +170,7 @@ describe('POST /api/v1/drafts — request validation', () => {
       body: buildFormData([]),
     })
     expect(response.status).toBe(400)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.error).toMatch(/no files/i)
   })
@@ -159,15 +187,34 @@ describe('POST /api/v1/drafts — request validation', () => {
       body: buildFormData(files),
     })
     expect(response.status).toBe(400)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.error).toMatch(/too many files/i)
+  })
+
+  it('accepts exactly 5 files (boundary)', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { userId } = await setupAuthenticatedUser(t)
+    const rawKey = await setupApiKey(t, userId)
+
+    const files = Array.from({ length: 5 }, (_, i) => makeFile(`file-${i}.jpg`))
+    const response = await fetchDrafts(t, {
+      rawKey,
+      body: buildFormData(files),
+    })
+    expect(response.status).toBe(201)
+    expectJsonContentType(response)
+    const json = await response.json()
+    expect(json.created).toHaveLength(5)
+    expect(json.errors).toHaveLength(0)
   })
 })
 
 // ── File validation ─────────────────────────────────────────────────────
 
 describe('POST /api/v1/drafts — file validation', () => {
-  it('rejects files with unsupported content types', async () => {
+  it('rejects files with unsupported content types without creating any DB records', async () => {
     const t = convexTest(schema, modules)
     registerRateLimiter(t)
     const { userId } = await setupAuthenticatedUser(t)
@@ -179,14 +226,23 @@ describe('POST /api/v1/drafts — file validation', () => {
       body: buildFormData([file]),
     })
     expect(response.status).toBe(200)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.created).toHaveLength(0)
     expect(json.errors).toHaveLength(1)
-    expect(json.errors[0].filename).toBe('document.txt')
-    expect(json.errors[0].error).toMatch(/unsupported file type/i)
+    expect(json.errors[0]).toEqual({
+      filename: 'document.txt',
+      error: expect.stringMatching(/unsupported file type/i),
+    })
+
+    // Verify no expenses or uploads were created
+    const expenses = await t.run(async (ctx) => ctx.db.query('expenses').collect())
+    expect(expenses).toHaveLength(0)
+    const uploads = await t.run(async (ctx) => ctx.db.query('uploads').collect())
+    expect(uploads).toHaveLength(0)
   })
 
-  it('rejects files exceeding max size', async () => {
+  it('rejects files exceeding max size without creating any DB records', async () => {
     const t = convexTest(schema, modules)
     registerRateLimiter(t)
     const { userId } = await setupAuthenticatedUser(t)
@@ -198,14 +254,21 @@ describe('POST /api/v1/drafts — file validation', () => {
       body: buildFormData([oversizedFile]),
     })
     expect(response.status).toBe(200)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.created).toHaveLength(0)
     expect(json.errors).toHaveLength(1)
-    expect(json.errors[0].filename).toBe('huge.jpg')
-    expect(json.errors[0].error).toMatch(/exceeds maximum size/i)
+    expect(json.errors[0]).toEqual({
+      filename: 'huge.jpg',
+      error: expect.stringMatching(/exceeds maximum size/i),
+    })
+
+    // Verify no expenses or uploads were created
+    const expenses = await t.run(async (ctx) => ctx.db.query('expenses').collect())
+    expect(expenses).toHaveLength(0)
   })
 
-  it('returns mixed results when some files are valid and others are not', async () => {
+  it('returns mixed results: valid files create drafts, invalid files appear in errors', async () => {
     const t = convexTest(schema, modules)
     registerRateLimiter(t)
     const { userId } = await setupAuthenticatedUser(t)
@@ -218,12 +281,20 @@ describe('POST /api/v1/drafts — file validation', () => {
       rawKey,
       body: buildFormData([validFile, invalidFile]),
     })
-    const json = await response.json()
     expect(response.status).toBe(201)
+    expectJsonContentType(response)
+    const json = await response.json()
     expect(json.created).toHaveLength(1)
     expect(json.created[0].filename).toBe('receipt.jpg')
     expect(json.errors).toHaveLength(1)
     expect(json.errors[0].filename).toBe('readme.txt')
+
+    // Verify exactly 1 expense and 1 upload were created
+    const expenses = await t.run(async (ctx) => ctx.db.query('expenses').collect())
+    expect(expenses).toHaveLength(1)
+    expect(expenses[0].isDraft).toBe(true)
+    const uploads = await t.run(async (ctx) => ctx.db.query('uploads').collect())
+    expect(uploads).toHaveLength(1)
   })
 })
 
@@ -241,10 +312,13 @@ describe('POST /api/v1/drafts — draft creation', () => {
       body: buildFormData([makeFile('receipt.jpg')]),
     })
     expect(response.status).toBe(201)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.created).toHaveLength(1)
-    expect(json.created[0].filename).toBe('receipt.jpg')
-    expect(json.created[0].id).toBeTruthy()
+    expect(json.created[0]).toEqual({
+      id: expect.any(String),
+      filename: 'receipt.jpg',
+    })
     expect(json.errors).toHaveLength(0)
   })
 
@@ -264,6 +338,7 @@ describe('POST /api/v1/drafts — draft creation', () => {
       body: buildFormData(files),
     })
     expect(response.status).toBe(201)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.created).toHaveLength(3)
     expect(json.created.map((c: { filename: string }) => c.filename)).toEqual([
@@ -274,7 +349,7 @@ describe('POST /api/v1/drafts — draft creation', () => {
     expect(json.errors).toHaveLength(0)
   })
 
-  it('created drafts have isDraft: true and correct attachmentId', async () => {
+  it('created drafts have isDraft: true, correct userId, and a valid attachment in storage', async () => {
     const t = convexTest(schema, modules)
     registerRateLimiter(t)
     const { userId } = await setupAuthenticatedUser(t)
@@ -290,11 +365,42 @@ describe('POST /api/v1/drafts — draft creation', () => {
     const expense = await t.run(async (ctx) => {
       return await ctx.db.get('expenses', expenseId as never)
     })
-
     expect(expense).not.toBeNull()
     expect(expense!.isDraft).toBe(true)
     expect(expense!.userId).toBe(userId)
     expect(expense!.attachmentId).toBeTruthy()
+
+    // Verify the referenced file actually exists in storage
+    const fileMetadata = await t.run(async (ctx) => {
+      return await ctx.db.system.get(expense!.attachmentId!)
+    })
+    expect(fileMetadata).not.toBeNull()
+  })
+
+  it('creates upload ownership records alongside drafts', async () => {
+    const t = convexTest(schema, modules)
+    registerRateLimiter(t)
+    const { userId } = await setupAuthenticatedUser(t)
+    const rawKey = await setupApiKey(t, userId)
+
+    const response = await fetchDrafts(t, {
+      rawKey,
+      body: buildFormData([makeFile('a.jpg'), makeFile('b.png')]),
+    })
+    const json = await response.json()
+    expect(json.created).toHaveLength(2)
+
+    // Verify upload records exist for each created draft
+    const uploads = await t.run(async (ctx) => ctx.db.query('uploads').collect())
+    expect(uploads).toHaveLength(2)
+    expect(uploads.every((u) => u.userId === userId)).toBe(true)
+
+    // Each upload's storageId should match an expense's attachmentId
+    const expenses = await t.run(async (ctx) => ctx.db.query('expenses').collect())
+    const attachmentIds = new Set(expenses.map((e) => e.attachmentId))
+    for (const upload of uploads) {
+      expect(attachmentIds.has(upload.storageId)).toBe(true)
+    }
   })
 
   it('updates lastUsedAt on the API key after successful auth', async () => {
@@ -342,6 +448,7 @@ describe('POST /api/v1/drafts — rate limiting', () => {
       body: buildFormData([makeFile('one-too-many.jpg')]),
     })
     expect(response.status).toBe(429)
+    expectJsonContentType(response)
     const json = await response.json()
     expect(json.error).toMatch(/rate limit/i)
     expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0)
