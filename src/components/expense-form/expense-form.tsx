@@ -263,9 +263,13 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           throw new Error('Upload failed')
         }
 
-        const { storageId } = await response.json()
-        await confirmUploadAsync({ storageId })
-        setAttachmentId(storageId)
+        const json: unknown = await response.json()
+        const storageId = (json as { storageId?: string })?.storageId
+        if (!storageId) {
+          throw new Error('Upload response missing storageId')
+        }
+        await confirmUploadAsync({ storageId: storageId as Id<'_storage'> })
+        setAttachmentId(storageId as Id<'_storage'>)
         toast.success('File uploaded')
       } catch (error) {
         toast.error(
