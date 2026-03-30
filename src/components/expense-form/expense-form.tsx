@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useForm, useStore } from '@tanstack/react-form'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { parseStorageId } from '@/lib/storage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -263,13 +264,9 @@ export function ExpenseForm({ expense, mode }: ExpenseFormProps) {
           throw new Error('Upload failed')
         }
 
-        const json: unknown = await response.json()
-        const storageId = (json as { storageId?: string })?.storageId
-        if (!storageId) {
-          throw new Error('Upload response missing storageId')
-        }
-        await confirmUploadAsync({ storageId: storageId as Id<'_storage'> })
-        setAttachmentId(storageId as Id<'_storage'>)
+        const storageId = parseStorageId(await response.json())
+        await confirmUploadAsync({ storageId })
+        setAttachmentId(storageId)
         toast.success('File uploaded')
       } catch (error) {
         toast.error(
