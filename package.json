@@ -78,7 +78,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
-    "@cloudflare/vite-plugin": "^1.30.0",
+    "@cloudflare/vite-plugin": "^1.30.3",
     "@edge-runtime/vm": "^5.0.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
@@ -112,10 +112,10 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.1",
-    "vite": "^8.0.2",
+    "vite": "^8.0.3",
     "vitest": "^4.1.1",
     "web-vitals": "^5.1.0",
-    "wrangler": "^4.76.0"
+    "wrangler": "^4.79.0"
   },
   "pnpm": {
     "overrides": {
