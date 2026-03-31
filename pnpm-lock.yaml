@@ -20,13 +20,13 @@ importers:
         version: 1.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@convex-dev/auth':
         specifier: ^0.0.91
-        version: 0.0.91(@auth/core@0.37.0)(convex@1.34.0(react@19.2.4))(react@19.2.4)
+        version: 0.0.91(@auth/core@0.37.0)(convex@1.34.1(react@19.2.4))(react@19.2.4)
       '@convex-dev/rate-limiter':
         specifier: ^0.3.2
-        version: 0.3.2(convex@1.34.0(react@19.2.4))(react@19.2.4)
+        version: 0.3.2(convex@1.34.1(react@19.2.4))(react@19.2.4)
       '@convex-dev/react-query':
         specifier: ^0.1.0
-        version: 0.1.0(@tanstack/react-query@5.95.2(react@19.2.4))(convex@1.34.0(react@19.2.4))
+        version: 0.1.0(@tanstack/react-query@5.95.2(react@19.2.4))(convex@1.34.1(react@19.2.4))
       '@fontsource-variable/noto-sans':
         specifier: ^5.2.10
         version: 5.2.10
@@ -70,8 +70,8 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       convex:
-        specifier: ^1.34.0
-        version: 1.34.0(react@19.2.4)
+        specifier: ^1.34.1
+        version: 1.34.1(react@19.2.4)
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -164,8 +164,8 @@ importers:
         specifier: ^4.1.1
         version: 4.1.1(@vitest/browser@4.1.1(msw@2.12.11(@types/node@24.12.0)(typescript@5.9.3))(vite@8.0.2(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))(vitest@4.1.1))(vitest@4.1.1)
       convex-test:
-        specifier: ^0.0.43
-        version: 0.0.43(convex@1.34.0(react@19.2.4))
+        specifier: ^0.0.46
+        version: 0.0.46(convex@1.34.1(react@19.2.4))
       eslint:
         specifier: ^10.1.0
         version: 10.1.0(jiti@2.6.1)
@@ -2538,13 +2538,13 @@ packages:
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
-  convex-test@0.0.43:
-    resolution: {integrity: sha512-pOJlaSohlnyNYsAnYcfKkUS4pETYGCjfwOzZIOeYPafAu5HYV0a0XNbzSCFjbWtqDMzZKpezMuRF1VlXJtg75A==}
+  convex-test@0.0.46:
+    resolution: {integrity: sha512-Me4BqUUyJEKI2COvwCBKqnByNT0AZq6eKs9aTjpPX7mz3PSdmvRRP+Kt8VrWT4kCJ168X+hAEGKHPeH98ncSmg==}
     peerDependencies:
       convex: ^1.32.0
 
-  convex@1.34.0:
-    resolution: {integrity: sha512-TbC509Z4urZMChZR2aLPgalQ8gMhAYSz2VMxaYsCvba8YqB0Uxma7zWnXwRn7aEGXuA8ro5/uHgD1IJ0HhYYPg==}
+  convex@1.34.1:
+    resolution: {integrity: sha512-ooyFnZVVq0u6b5zt0Ptq8QB2ixhf/2vXe+PIcUtdtrs0lq/TwpkmmruHdqkFmWgMd6N+Tmfy8AGkz6QnZUYZBA==}
     engines: {node: '>=18.0.0', npm: '>=7.0.0'}
     hasBin: true
     peerDependencies:
@@ -4973,12 +4973,12 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260317.1':
     optional: true
 
-  '@convex-dev/auth@0.0.91(@auth/core@0.37.0)(convex@1.34.0(react@19.2.4))(react@19.2.4)':
+  '@convex-dev/auth@0.0.91(@auth/core@0.37.0)(convex@1.34.1(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@auth/core': 0.37.0
       '@oslojs/crypto': 1.0.1
       '@oslojs/encoding': 1.1.0
-      convex: 1.34.0(react@19.2.4)
+      convex: 1.34.1(react@19.2.4)
       cookie: 1.1.1
       is-network-error: 1.3.1
       jose: 5.10.0
@@ -4990,16 +4990,16 @@ snapshots:
     optionalDependencies:
       react: 19.2.4
 
-  '@convex-dev/rate-limiter@0.3.2(convex@1.34.0(react@19.2.4))(react@19.2.4)':
+  '@convex-dev/rate-limiter@0.3.2(convex@1.34.1(react@19.2.4))(react@19.2.4)':
     dependencies:
-      convex: 1.34.0(react@19.2.4)
+      convex: 1.34.1(react@19.2.4)
     optionalDependencies:
       react: 19.2.4
 
-  '@convex-dev/react-query@0.1.0(@tanstack/react-query@5.95.2(react@19.2.4))(convex@1.34.0(react@19.2.4))':
+  '@convex-dev/react-query@0.1.0(@tanstack/react-query@5.95.2(react@19.2.4))(convex@1.34.1(react@19.2.4))':
     dependencies:
       '@tanstack/react-query': 5.95.2(react@19.2.4)
-      convex: 1.34.0(react@19.2.4)
+      convex: 1.34.1(react@19.2.4)
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -6793,11 +6793,11 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex-test@0.0.43(convex@1.34.0(react@19.2.4)):
+  convex-test@0.0.46(convex@1.34.1(react@19.2.4)):
     dependencies:
-      convex: 1.34.0(react@19.2.4)
+      convex: 1.34.1(react@19.2.4)
 
-  convex@1.34.0(react@19.2.4):
+  convex@1.34.1(react@19.2.4):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.8.1
