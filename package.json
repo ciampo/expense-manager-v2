@@ -51,7 +51,7 @@
     "@convex-dev/rate-limiter": "^0.3.2",
     "@convex-dev/react-query": "^0.1.0",
     "@fontsource-variable/noto-sans": "^5.2.10",
-    "@hugeicons/core-free-icons": "^4.0.0",
+    "@hugeicons/core-free-icons": "^4.1.1",
     "@hugeicons/react": "^1.1.6",
     "@marsidev/react-turnstile": "^1.4.2",
     "@oslojs/crypto": "^1.0.1",
